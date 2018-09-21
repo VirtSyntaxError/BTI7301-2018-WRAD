@@ -5,9 +5,9 @@ BTI7301pq - Projekt 1 - 18/19
 Christof Jungo
 
 ## Studenten
-Philipp Köfer
-Nicola Michaelis
-Beat Schärz
+Philipp Köfer<br>
+Nicola Michaelis<br>
+Beat Schärz<br>
 Dario Furigo
 
 ## Summary
