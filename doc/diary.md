@@ -8,13 +8,16 @@
 
 ### Agenda
 * Brainstorming
-* Module
+* Module und Abhängigkeiten
 * Funktionen und Eingrenzung
+* Git Repo, Whatsapp Gruppe
 
 ### Decisions
+* Interface Funktionen und Navigation
 
 ### ToDo
 * Modulbeschreibung                -> alle
 * Research Module                  -> alle
 * Allgemeine Suche nach Frameworks -> alle
 * Testdaten                        -> Philipp
+* Projektexcel -> Philipp
