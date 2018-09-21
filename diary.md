@@ -14,6 +14,7 @@
 ### Decisions
 
 ### ToDo
-* Modulbeschreibung
-* Research Module
-* Allgemeine Suche nach Frameworks
+* Modulbeschreibung                -> alle
+* Research Module                  -> alle
+* Allgemeine Suche nach Frameworks -> alle
+* Testdaten                        -> Philipp
