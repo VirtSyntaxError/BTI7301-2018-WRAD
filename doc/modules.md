@@ -32,3 +32,33 @@ Abhängigkeiten: Datencontainer, IST-Daten
 Kurzbeschrieb: Dieser Modul ist optional und ermöglich das Sammeln der Berechtigungen auf definierten Filesshares. Es ermöglicht das Auditieren der Berechtigungen.
 Wichtige Funktionen: Aulesen von Berechtigungen auf Fileshares
 Abhängigkeiten: keine
+
+**Modulname: Auslesen der Daten (Rohdaten)**<br>
+Kurzbeschrieb: Dieses Modul dient zum auslesen der Rohdaten aus dem AD und anschliessendes abspeichern im Datencontainer. Diese Funktion sollte skalierbar, aktuell und vollständig sein.
+Wichtige Funktionen: Auslesen von Daten, Speichern von Daten
+Abhängigkeiten: Datencontainer, Rohdaten (Testdaten)
+
+**Modulname: Testdaten (Testsystem)**<br>
+Kurzbeschrieb: Eine Umgebung mit realitätsnahen Testdaten welche wir zum Entwickeln und Testen nutzen können. 
+Wichtige Funktionen: Testing, Entwickeln
+Abhängigkeiten: keine
+
+**Modulname: Daten SOLL**<br>
+Kurzbeschrieb: Der aktuell gewünschte Berechtigungs-Zustand (SOLL) wird im Datencontainer abgespeichert.
+Wichtige Funktionen: Bereitstellen des Soll-Zustandes
+Abhängigkeiten: Datencontainer
+
+**Modulname: (OPTION) Einlesen Daten SOLL**<br>
+Kurzbeschrieb: Die Daten des gewünschten Berechtigungs-Zustands (SOLL) können von den Anwendern importiert/aktualisiert werden. Diese Daten sind in Form eines .CSV-Files vorhanden.
+Wichtige Funktionen: Einlesen von .CSV-Files in den Daten SOLL
+Abhängigkeiten: Datencontainer, Daten SOLL
+
+**Modulname: (OPTION) Exportieren Daten SOLL**<br>
+Kurzbeschrieb: Der aktuell in der Applikation hinterlegte Berechtigungs-Zustands (SOLL) kann in ein .CSV-File exportieren werden. Dient zum anpassen und erneuten importieren des Berechtigungs-Zustands (SOLL).
+Wichtige Funktionen: Exportieren des Daten SOLL in ein .CSV-File
+Abhängigkeiten: Datencontainer, Daten SOLL
+
+**Modulname: Alarmierung**<br>
+Kurzbeschrieb: Ein Modul zur aktiven Alarmierung von bestimmten Administratoren bei Veränderung von Berechtigungen im AD.
+Wichtige Funktionen: Alarmierung von Administratoren
+Abhängigkeiten: keine
