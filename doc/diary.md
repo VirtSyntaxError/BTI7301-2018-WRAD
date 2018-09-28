@@ -1,11 +1,29 @@
 # Meetings
 
+## 2018-09-28
+### Attendees
+* Beat Schärz (pidu2)
+* Dario Furigo (VirtSyntaxError)
+* Philipp Köfer (kofep1)
+* Nicola Michaelis (michn2)
+
+### Agenda
+* Projektmanagement Dokumente
+* Stakeholder
+* Zugriff auf Azure VM für alle
+
+### Decisions
+
+### ToDo
+* siehe 2018-09-26
+
 ## 2018-09-26
 ### Attendees
 * Beat Schärz (pidu2)
 * Dario Furigo (VirtSyntaxError)
 * Philipp Köfer (kofep1)
 * Nicola Michaelis (michn2)
+* Christof Jungo
 
 ### Agenda
 * Nicola zeigte Mockups
@@ -27,6 +45,7 @@
 * Dario Furigo (VirtSyntaxError)
 * Philipp Köfer (kofep1)
 * Nicola Michaelis (michn2)
+* Christof Jungo
 
 ### Agenda
 * Brainstorming
