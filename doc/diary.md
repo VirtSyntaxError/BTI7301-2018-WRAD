@@ -1,5 +1,26 @@
 # Meetings
 
+## 2018-10-05
+### Attendees
+* Beat Schärz (pidu2)
+* Dario Furigo (VirtSyntaxError)
+* Philipp Köfer (kofep1)
+* Nicola Michaelis (michn2)
+* Christof Jungo
+
+### Agenda
+* Projektmanagement Dokumente - wer macht was?
+* Zeitplan Project 1
+
+### Decisions
+* UniversalDashboard als Framework
+
+### ToDo
+* Dario -> Kapitel 4
+* Beat -> 5.1 und 5.2
+* Nicola -> 5.3 und 5.4
+* Philipp -> 5.5
+
 ## 2018-09-28
 ### Attendees
 * Beat Schärz (pidu2)
