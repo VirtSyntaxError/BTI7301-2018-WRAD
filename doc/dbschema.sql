@@ -19,12 +19,12 @@ CREATE TABLE WRADUser
   SAMAccountName VARCHAR(104) NOT NULL,
   DistinguishedName VARCHAR(2048) NOT NULL,
   LastLogonTimestamp TIMESTAMP NULL,
-  userPrincipalName VARCHAR(1024),
+  userPrincipalName VARCHAR(1024) NOT NULL,
   DisplayName VARCHAR(256) NOT NULL,
   CreatedDate TIMESTAMP,
   LastModifiedDate TIMESTAMP,
   Enabled BOOLEAN NOT NULL,
-  Description TEXT,
+  Description TEXT NOT NULL,
   Expired BOOLEAN NOT NULL,
   PRIMARY KEY (ObjectGUID)
 );
@@ -32,7 +32,7 @@ CREATE TABLE WRADUser
 CREATE TABLE WRADUserArchive
 (
   ArchiveID INT NOT NULL AUTO_INCREMENT,
-  userPrincipalName VARCHAR(1024),
+  userPrincipalName VARCHAR(1024) NOT NULL,
   SAMAccountName VARCHAR(104) NOT NULL,
   DistinguishedName VARCHAR(2048) NOT NULL,
   ObjectGUID VARCHAR(36) NOT NULL,
@@ -40,7 +40,7 @@ CREATE TABLE WRADUserArchive
   VersionStartTime TIMESTAMP,
   VersionEndTime TIMESTAMP,
   DisplayName VARCHAR(256) NOT NULL,
-  Description TEXT,
+  Description TEXT NOT NULL,
   Enabled BOOLEAN NOT NULL,
   Expired BOOLEAN NOT NULL,
   PRIMARY KEY (ArchiveID)
@@ -53,16 +53,16 @@ CREATE TABLE WRADGroup
   LastModifiedDate TIMESTAMP,
   SAMAccountName VARCHAR(104) NOT NULL,
   GroupType ENUM('ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP','ADS_GROUP_TYPE_UNIVERSAL_GROUP') NOT NULL,
-  GroupTypeSecurity BOOLEAN,
+  GroupTypeSecurity BOOLEAN NOT NULL,
   CommonName VARCHAR(256) NOT NULL,
   DistinguishedName VARCHAR(2048) NOT NULL,
-  Description TEXT,
+  Description TEXT NOT NULL,
   PRIMARY KEY (ObjectGUID)
 );
 
 CREATE TABLE WRADUserGroup
 (
-  CreatedDate DATETIME,
+  CreatedDate TIMESTAMP,
   UserObjectGUID VARCHAR(36) NOT NULL,
   GroupObjectGUID VARCHAR(36) NOT NULL,
   PRIMARY KEY (UserObjectGUID, GroupObjectGUID),
@@ -72,7 +72,7 @@ CREATE TABLE WRADUserGroup
 
 CREATE TABLE WRADGroupGroup
 (
-  CreatedDate DATETIME,
+  CreatedDate TIMESTAMP,
   ChildGroup VARCHAR(36) NOT NULL,
   ParentGroup VARCHAR(36) NOT NULL,
   PRIMARY KEY (ChildGroup, ParentGroup),
@@ -97,12 +97,12 @@ CREATE TABLE WRADGroupArchive
   CommonName VARCHAR(256) NOT NULL,
   SAMAccountName VARCHAR(104) NOT NULL,
   GroupType ENUM('ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP','ADS_GROUP_TYPE_UNIVERSAL_GROUP') NOT NULL,
-  GroupTypeSecurity BOOLEAN,
+  GroupTypeSecurity BOOLEAN NOT NULL,
   VersionStartTime TIMESTAMP,
   OperationType ENUM('u','d'),
   VersionEndTime TIMESTAMP,
   DistinguishedName VARCHAR(2048) NOT NULL,
-  Description TEXT,
+  Description TEXT NOT NULL,
   PRIMARY KEY (ArchiveID)
 );
 
@@ -128,7 +128,7 @@ CREATE TABLE WRADExcludeUser
   ExcludeID INT NOT NULL AUTO_INCREMENT,
   ObjectGUID VARCHAR(36) NOT NULL,
   PRIMARY KEY (ExcludeID),
-  CONSTRAINT `FK_User` FOREIGN KEY (ObjectGUID) REFERENCES WRADUser(ObjectGUID) ON DELETE CASCADE
+  CONSTRAINT `FK_ExcludeUser` FOREIGN KEY (ObjectGUID) REFERENCES WRADUser(ObjectGUID) ON DELETE CASCADE
 );
 
 
@@ -137,24 +137,25 @@ CREATE TABLE WRADExcludeGroup
   ExcludeID INT NOT NULL AUTO_INCREMENT,
   ObjectGUID VARCHAR(36) NOT NULL,
   PRIMARY KEY (ExcludeID),
-  CONSTRAINT `FK_Group` FOREIGN KEY (ObjectGUID) REFERENCES WRADGroup(ObjectGUID) ON DELETE CASCADE	
+  CONSTRAINT `FK_ExcludeGroup` FOREIGN KEY (ObjectGUID) REFERENCES WRADGroup(ObjectGUID) ON DELETE CASCADE	
 );
 
-DELIMITER $$
+DELIMITER //
+
 CREATE TRIGGER UserInsert
   BEFORE INSERT ON WRADUser
   FOR EACH ROW BEGIN
 	SET NEW.LastModifiedDate = UTC_TIMESTAMP(),NEW.CreatedDate = UTC_TIMESTAMP();
- END$$ DELIMITER;
+ END
+// 
 
-DELIMITER $$
 CREATE TRIGGER UserDelete
   AFTER DELETE ON WRADUser
   FOR EACH ROW BEGIN
 	INSERT INTO WRADUserArchive (ObjectGUID,SAMAccountName,DistinguishedName,userPrincipalName,DisplayName,Enabled,Description,Expired,OperationType,VersionStartTime,VersionEndTime) VALUES (OLD.ObjectGUID, OLD.SAMAccountName, OLD.DistinguishedName,OLD.userPrincipalName,OLD.DisplayName,OLD.Enabled,OLD.Description,OLD.Expired,'d',OLD.LastModifiedDate,UTC_TIMESTAMP());
- END$$ DELIMITER;
+ END
+//
 
-DELIMITER $$
 CREATE TRIGGER UserUpdateBefore
   BEFORE UPDATE ON WRADUser
   FOR EACH ROW BEGIN
@@ -162,9 +163,9 @@ CREATE TRIGGER UserUpdateBefore
 	THEN 
 	SET NEW.LastModifiedDate = UTC_TIMESTAMP();
 	END IF;
- END$$ DELIMITER;
+ END
+//
 
-DELIMITER $$
 CREATE TRIGGER UserUpdateAfter
   AFTER UPDATE ON WRADUser
   FOR EACH ROW
@@ -173,34 +174,64 @@ CREATE TRIGGER UserUpdateAfter
 	THEN 
 	INSERT INTO WRADUserArchive (ObjectGUID,SAMAccountName,DistinguishedName,userPrincipalName,DisplayName,Enabled,Description,Expired,OperationType,VersionStartTime,VersionEndTime) VALUES (OLD.ObjectGUID, OLD.SAMAccountName, OLD.DistinguishedName,OLD.userPrincipalName,OLD.DisplayName,OLD.Enabled,OLD.Description,OLD.Expired,'u',OLD.LastModifiedDate,UTC_TIMESTAMP());
   END IF;
-END$$ DELIMITER;
+END
+//
 
-DELIMITER $$
 CREATE TRIGGER GroupInsert
   BEFORE INSERT ON WRADGroup
   FOR EACH ROW BEGIN
 	SET NEW.LastModifiedDate = UTC_TIMESTAMP(),NEW.CreatedDate = UTC_TIMESTAMP();
- END$$ DELIMITER;
+ END
+//
 
-DELIMITER $$
 CREATE TRIGGER GroupDelete
   AFTER DELETE ON WRADGroup
   FOR EACH ROW BEGIN
 	INSERT INTO WRADGroupArchive (ObjectGUID,SAMAccountName,DistinguishedName,CommonName,Description,GroupType,GroupTypeSecurity,OperationType,VersionStartTime,VersionEndTime) VALUES (OLD.ObjectGUID, OLD.SAMAccountName, OLD.DistinguishedName,OLD.CommonName,OLD.Description,OLD.GroupType,OLD.GroupTypeSecurity,'d',OLD.LastModifiedDate,UTC_TIMESTAMP());
- END$$ DELIMITER;
+ END
+//
 
-DELIMITER $$
 CREATE TRIGGER GroupUpdateBefore
   BEFORE UPDATE ON WRADGroup
   FOR EACH ROW BEGIN
 	SET NEW.LastModifiedDate = UTC_TIMESTAMP();
- END$$ DELIMITER;
+ END
+//
 
-DELIMITER $$
 CREATE TRIGGER GroupUpdateAfter
   AFTER UPDATE ON WRADGroup
   FOR EACH ROW BEGIN
 	INSERT INTO WRADGroupArchive (ObjectGUID,SAMAccountName,DistinguishedName,CommonName,Description,GroupType,GroupTypeSecurity,OperationType,VersionStartTime,VersionEndTime) VALUES (OLD.ObjectGUID, OLD.SAMAccountName, OLD.DistinguishedName,OLD.CommonName,OLD.Description,OLD.GroupType,OLD.GroupTypeSecurity,'u',OLD.LastModifiedDate,UTC_TIMESTAMP());
- END$$ DELIMITER;
+ END
+//
 
+CREATE TRIGGER UserGroupInsert
+  BEFORE INSERT ON WRADUserGroup
+  FOR EACH ROW BEGIN
+	SET NEW.CreatedDate = UTC_TIMESTAMP();
+ END
+//
+
+CREATE TRIGGER UserGroupDelete
+  AFTER DELETE ON WRADUserGroup
+  FOR EACH ROW BEGIN
+	INSERT INTO WRADUserGroupArchive (UserObjectGUID,GroupObjectGUID,VersionStartTime,VersionEndTime) VALUES (OLD.UserObjectGUID, OLD.GroupObjectGUID,OLD.CreatedDate,UTC_TIMESTAMP());
+ END
+//
+
+CREATE TRIGGER GroupGroupInsert
+  BEFORE INSERT ON WRADGroupGroup
+  FOR EACH ROW BEGIN
+	SET NEW.CreatedDate = UTC_TIMESTAMP();
+ END
+//
+
+CREATE TRIGGER GroupGroupDelete
+  AFTER DELETE ON WRADGroupGroup
+  FOR EACH ROW BEGIN
+	INSERT INTO WRADGroupGroupArchive (ParentGroup,ChildGroup,VersionStartTime,VersionEndTime) VALUES (OLD.ParentGroup, OLD.ChildGroup,OLD.CreatedDate,UTC_TIMESTAMP());
+ END
+//
+
+DELIMITER ;
 
