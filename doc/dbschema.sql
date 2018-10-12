@@ -123,6 +123,14 @@ CREATE TABLE WRADSetting
 (
   SettingID INT NOT NULL AUTO_INCREMENT,
   ADSyncIntervalInHours INT NOT NULL,
+  ADRoleDepartmentLead VARCHAR(36) NOT NULL,
+  ADRoleAuditor VARCHAR(36) NOT NULL,
+  ADRoleSysAdmin VARCHAR(36) NOT NULL,
+  ADRoleApplOwner VARCHAR(36) NOT NULL,
+  LogToFile BOOLEAN NOT NULL DEFAULT true,
+  LogFilePath VARCHAR(260) NOT NULL,
+  LogSyslogServer VARCHAR(300) NOT NULL,
+  LogSyslogServerProtocol ENUM('tcp','udp') DEFAULT 'udp',
   PRIMARY KEY (SettingID)
 );
 
