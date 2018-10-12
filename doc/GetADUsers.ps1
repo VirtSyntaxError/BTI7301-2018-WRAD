@@ -28,7 +28,6 @@ function GetADUsers
     
     Get-ADUser -Filter:$filter -SearchBase:$searchbase -Properties:* | ForEach-Object {
     $user = $_
-    $samAccountName = $_.SamAccountName
 	$parents = Get-ADPrincipalGroupMembership -Identity:$_.DistinguishedName
 	$parentNames = $parents | Select-Object -ExpandProperty 'name'
 	foreach ($parent in $parents)
@@ -36,9 +35,7 @@ function GetADUsers
 		$parentNames += Get-ADNestedGroupMembership -strADObject:($parent.DistinguishedName) -parents:($parents | Select-Object -ExpandProperty 'DistinguishedName')
 	}
     $user.AllGroups = $parentNames
-    # $user | Add-Member -NotePropertyName "AllGroups" -NotePropertyValue $parentNames | Select *
 	$user | Select *
-    #$parentNames | Select-Object -Unique 
 }
 
 
