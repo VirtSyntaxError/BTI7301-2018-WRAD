@@ -26,19 +26,19 @@ function GetADUsers
         [String]$searchbase
     )
     
-    Get-ADUser -Filter:$filter -SearchBase:$searchbase -Properties:* | ForEach-Object {
-    $user = $_
-	$parents = Get-ADPrincipalGroupMembership -Identity:$_.DistinguishedName
-	$parentNames = $parents | Select-Object -ExpandProperty 'name'
-	foreach ($parent in $parents)
+	Get-ADUser -Filter:$filter -SearchBase:$searchbase -Properties:* | ForEach-Object 
 	{
-		$parentNames += Get-ADNestedGroupMembership -strADObject:($parent.DistinguishedName) -parents:($parents | Select-Object -ExpandProperty 'DistinguishedName')
+		$user = $_
+		$parents = Get-ADPrincipalGroupMembership -Identity:$_.DistinguishedName
+		$parentNames = $parents | Select-Object -ExpandProperty 'name'
+		foreach ($parent in $parents)
+		{
+			$parentNames += Get-ADNestedGroupMembership -strADObject:($parent.DistinguishedName) -parents:($parents | Select-Object -ExpandProperty 'DistinguishedName')
+		}
+		$user.AllGroups = $parentNames
+		#$user | Select *
+		$user | Select-Object DisplayName,SaMAccountName,DistinguishedName,Description,Enabled,Expired,LastLogonTimestamp,CreatedDate,LastModifiedDate,AllGroups
 	}
-    $user.AllGroups = $parentNames
-	$user | Select *
-}
-
-
 }
 
 #Example function call
