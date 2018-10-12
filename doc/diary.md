@@ -1,5 +1,29 @@
 # Meetings
 
+## 2018-10-12
+### Attendees
+* Beat Schärz (pidu2)
+* Dario Furigo (VirtSyntaxError)
+* Philipp Köfer (kofep1)
+* Nicola Michaelis (michn2)
+* Christof Jungo
+
+### Agenda
+* Database Design
+* Mockups
+* Timeplan
+
+### Decisions
+* Roles Auditor, DepartmentLead, SysAdmin and ApplOwner
+* Syslog Server optional in settings - Log file prefered
+
+### ToDo
+* Dario -> DB 
+* Beat -> Auditing
+* Nicola -> GUI, Roles
+* Philipp -> IST
+
+
 ## 2018-10-05
 ### Attendees
 * Beat Schärz (pidu2)
