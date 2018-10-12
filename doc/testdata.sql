@@ -6,7 +6,7 @@ INSERT INTO `wraduser` (`ObjectGUID`, `SAMAccountName`, `DistinguishedName`, `La
 
 INSERT INTO `wradgroup` (`ObjectGUID`, `CreatedDate`, `LastModifiedDate`, `SAMAccountName`, `GroupType`, `GroupTypeSecurity`, `CommonName`, `DistinguishedName`, `Description`) VALUES ('testid', CURRENT_TIMESTAMP, '0000-00-00 00:00:00.000000', 'Domain Admins', 'ADS_GROUP_TYPE_GLOBAL_GROUP', '0', 'Domain Admins', 'cn=\"Domain Admins\",cn=\"example\",cn=\"local\"', 'Domain Admins');
 
-INSERT INTO `wradgroup` (`ObjectGUID`, `CreatedDate`, `LastModifiedDate`, `SAMAccountName`, `GroupType`, `GroupTypeSecurity`, `CommonName`, `DistinguishedName`, `Description`) VALUES ('testid2', CURRENT_TIMESTAMP, '0000-00-00 00:00:00.000000', 'Domain Users', 'ADS_GROUP_TYPE_GLOBAL_GROUP', '0', 'Domain Admins', 'cn=\"Domain Users\",cn=\"example\",cn=\"local\"', 'Domain Users');
+INSERT INTO `wradgroup` (`ObjectGUID`, `CreatedDate`, `LastModifiedDate`, `SAMAccountName`, `GroupType`, `GroupTypeSecurity`, `CommonName`, `DistinguishedName`, `Description`) VALUES ('testid2', CURRENT_TIMESTAMP, '0000-00-00 00:00:00.000000', 'Domain Users', 'ADS_GROUP_TYPE_GLOBAL_GROUP', '0', 'Domain Users', 'cn=\"Domain Users\",cn=\"example\",cn=\"local\"', 'Domain Users');
 
 
 INSERT INTO `wradusergroup` (`CreatedDate`, `UserObjectGUID`, `GroupObjectGUID`) VALUES (CURRENT_TIMESTAMP, 'testid', 'testid2'), (CURRENT_TIMESTAMP, 'testid2', 'testid2');
