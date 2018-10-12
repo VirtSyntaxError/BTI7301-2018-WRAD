@@ -5,7 +5,7 @@ CREATE TABLE WRADUser
   ObjectGUID VARCHAR(36) NOT NULL,
   SAMAccountName VARCHAR(104) NOT NULL,
   DistinguishedName VARCHAR(2048) NOT NULL,
-  LastLogonTimestamp TIMESTAMP DEFAULT NULL,
+  LastLogonTimestamp TIMESTAMP NULL,
   userPrincipalName VARCHAR(1024),
   DisplayName VARCHAR(256) NOT NULL,
   CreatedDate TIMESTAMP,
