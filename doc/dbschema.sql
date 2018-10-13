@@ -76,11 +76,11 @@ CREATE TABLE WRADUserGroup
 CREATE TABLE WRADGroupGroup
 (
   CreatedDate TIMESTAMP,
-  ChildGroup VARCHAR(36) NOT NULL,
-  ParentGroup VARCHAR(36) NOT NULL,
-  PRIMARY KEY (ChildGroup, ParentGroup),
-  CONSTRAINT `FK_ChildGroup` FOREIGN KEY (ChildGroup) REFERENCES WRADGroup(ObjectGUID) ON DELETE CASCADE,
-  CONSTRAINT `FK_ParentGroup` FOREIGN KEY (ParentGroup) REFERENCES WRADGroup(ObjectGUID) ON DELETE CASCADE
+  ChildGroupObjectGUID VARCHAR(36) NOT NULL,
+  ParentGroupObjectGUID VARCHAR(36) NOT NULL,
+  PRIMARY KEY (ChildGroupObjectGUID, ParentGroupObjectGUID),
+  CONSTRAINT `FK_ChildGroup` FOREIGN KEY (ChildGroupObjectGUID) REFERENCES WRADGroup(ObjectGUID) ON DELETE CASCADE,
+  CONSTRAINT `FK_ParentGroup` FOREIGN KEY (ParentGroupObjectGUID) REFERENCES WRADGroup(ObjectGUID) ON DELETE CASCADE
 );
 
 CREATE TABLE WRADUserGroupArchive
@@ -112,8 +112,8 @@ CREATE TABLE WRADGroupArchive
 CREATE TABLE WRADGroupGroupArchive
 (
   ArchiveID INT NOT NULL AUTO_INCREMENT,
-  ParentGroup VARCHAR(36) NOT NULL,
-  ChildGroup VARCHAR(36) NOT NULL,
+  ParentGroupObjectGUID VARCHAR(36) NOT NULL,
+  ChildGroupObjectGUID VARCHAR(36) NOT NULL,
   VersionStartTime TIMESTAMP,
   VersionEndTime TIMESTAMP,
   PRIMARY KEY (ArchiveID)
@@ -122,17 +122,12 @@ CREATE TABLE WRADGroupGroupArchive
 CREATE TABLE WRADSetting
 (
   SettingID INT NOT NULL AUTO_INCREMENT,
-  ADSyncIntervalInHours INT NOT NULL,
-  ADRoleDepartmentLead VARCHAR(36) NOT NULL,
-  ADRoleAuditor VARCHAR(36) NOT NULL,
-  ADRoleSysAdmin VARCHAR(36) NOT NULL,
-  ADRoleApplOwner VARCHAR(36) NOT NULL,
-  LogToFile BOOLEAN NOT NULL DEFAULT true,
-  LogFilePath VARCHAR(260) NOT NULL,
-  LogSyslogServer VARCHAR(300) NOT NULL,
-  LogSyslogServerProtocol ENUM('tcp','udp') DEFAULT 'udp',
+  SettingName VARCHAR(30) NOT NULL,
+  SettingValue VARCHAR(300) NOT NULL,
   PRIMARY KEY (SettingID)
 );
+
+INSERT INTO WRADSetting (SettingName,SettingValue) VALUES ("ADRoleDepartmentLead",""),("ADRoleAuditor",""),("ADRoleSysAdmin",""),("ADRoleApplOwner",""),("LogToFile","true"),("LogFilePath",""),("LogSyslogServer",""),("LogSyslogServerProtocol","udp");
 
 CREATE TABLE WRADExcludeUser
 (
