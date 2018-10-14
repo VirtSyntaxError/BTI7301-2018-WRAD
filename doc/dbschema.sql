@@ -56,7 +56,7 @@ CREATE TABLE WRADGroup
   LastModifiedDate TIMESTAMP,
   SAMAccountName VARCHAR(104) NOT NULL,
   GroupType ENUM('ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP','ADS_GROUP_TYPE_UNIVERSAL_GROUP') NOT NULL,
-  GroupTypeSecurity BOOLEAN NOT NULL,
+  GroupTypeSecurity ENUM('Security','Distribution') NOT NULL,
   CommonName VARCHAR(256) NOT NULL,
   DistinguishedName VARCHAR(2048) NOT NULL,
   Description TEXT NOT NULL,
@@ -69,8 +69,8 @@ CREATE TABLE WRADUserGroup
   UserObjectGUID VARCHAR(36) NOT NULL,
   GroupObjectGUID VARCHAR(36) NOT NULL,
   PRIMARY KEY (UserObjectGUID, GroupObjectGUID),
-  CONSTRAINT `FK_User` FOREIGN KEY (UserObjectGUID) REFERENCES WRADUser(ObjectGUID) ON DELETE CASCADE,
-  CONSTRAINT `FK_Group` FOREIGN KEY (GroupObjectGUID) REFERENCES WRADGroup(ObjectGUID)  ON DELETE CASCADE
+  CONSTRAINT `FK_User` FOREIGN KEY (UserObjectGUID) REFERENCES WRADUser(ObjectGUID),
+  CONSTRAINT `FK_Group` FOREIGN KEY (GroupObjectGUID) REFERENCES WRADGroup(ObjectGUID)
 );
 
 CREATE TABLE WRADGroupGroup
@@ -79,8 +79,8 @@ CREATE TABLE WRADGroupGroup
   ChildGroupObjectGUID VARCHAR(36) NOT NULL,
   ParentGroupObjectGUID VARCHAR(36) NOT NULL,
   PRIMARY KEY (ChildGroupObjectGUID, ParentGroupObjectGUID),
-  CONSTRAINT `FK_ChildGroup` FOREIGN KEY (ChildGroupObjectGUID) REFERENCES WRADGroup(ObjectGUID) ON DELETE CASCADE,
-  CONSTRAINT `FK_ParentGroup` FOREIGN KEY (ParentGroupObjectGUID) REFERENCES WRADGroup(ObjectGUID) ON DELETE CASCADE
+  CONSTRAINT `FK_ChildGroup` FOREIGN KEY (ChildGroupObjectGUID) REFERENCES WRADGroup(ObjectGUID),
+  CONSTRAINT `FK_ParentGroup` FOREIGN KEY (ParentGroupObjectGUID) REFERENCES WRADGroup(ObjectGUID)
 );
 
 CREATE TABLE WRADUserGroupArchive
@@ -100,7 +100,7 @@ CREATE TABLE WRADGroupArchive
   CommonName VARCHAR(256) NOT NULL,
   SAMAccountName VARCHAR(104) NOT NULL,
   GroupType ENUM('ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP','ADS_GROUP_TYPE_UNIVERSAL_GROUP') NOT NULL,
-  GroupTypeSecurity BOOLEAN NOT NULL,
+  GroupTypeSecurity ENUM('Security','Distribution') NOT NULL,
   VersionStartTime TIMESTAMP,
   OperationType ENUM('u','d'),
   VersionEndTime TIMESTAMP,
@@ -155,7 +155,14 @@ CREATE TRIGGER UserInsert
  END
 // 
 
-CREATE TRIGGER UserDelete
+CREATE TRIGGER UserDeleteBefore
+  BEFORE DELETE ON WRADUser
+  FOR EACH ROW BEGIN
+	DELETE FROM WRADUserGroup WHERE UserObjectGUID = OLD.ObjectGUID;
+ END
+//
+
+CREATE TRIGGER UserDeleteAfter
   AFTER DELETE ON WRADUser
   FOR EACH ROW BEGIN
 	INSERT INTO WRADUserArchive (ObjectGUID,SAMAccountName,DistinguishedName,userPrincipalName,DisplayName,Enabled,Description,Expired,OperationType,VersionStartTime,VersionEndTime) VALUES (OLD.ObjectGUID, OLD.SAMAccountName, OLD.DistinguishedName,OLD.userPrincipalName,OLD.DisplayName,OLD.Enabled,OLD.Description,OLD.Expired,'d',OLD.LastModifiedDate,UTC_TIMESTAMP());
@@ -190,7 +197,15 @@ CREATE TRIGGER GroupInsert
  END
 //
 
-CREATE TRIGGER GroupDelete
+CREATE TRIGGER GroupDeleteBefore
+  BEFORE DELETE ON WRADGroup
+  FOR EACH ROW BEGIN
+	DELETE FROM WRADUserGroup WHERE GroupObjectGUID = OLD.ObjectGUID;
+	DELETE FROM WRADGroupGroup WHERE ChildGroupObjectGUID = OLD.ObjectGUID OR ParentGroupObjectGUID = OLD.ObjectGUID;
+ END
+//
+
+CREATE TRIGGER GroupDeleteAfter
   AFTER DELETE ON WRADGroup
   FOR EACH ROW BEGIN
 	INSERT INTO WRADGroupArchive (ObjectGUID,SAMAccountName,DistinguishedName,CommonName,Description,GroupType,GroupTypeSecurity,OperationType,VersionStartTime,VersionEndTime) VALUES (OLD.ObjectGUID, OLD.SAMAccountName, OLD.DistinguishedName,OLD.CommonName,OLD.Description,OLD.GroupType,OLD.GroupTypeSecurity,'d',OLD.LastModifiedDate,UTC_TIMESTAMP());
@@ -235,7 +250,7 @@ CREATE TRIGGER GroupGroupInsert
 CREATE TRIGGER GroupGroupDelete
   AFTER DELETE ON WRADGroupGroup
   FOR EACH ROW BEGIN
-	INSERT INTO WRADGroupGroupArchive (ParentGroup,ChildGroup,VersionStartTime,VersionEndTime) VALUES (OLD.ParentGroup, OLD.ChildGroup,OLD.CreatedDate,UTC_TIMESTAMP());
+	INSERT INTO WRADGroupGroupArchive (ParentGroupObjectGUID,ChildGroupObjectGUID,VersionStartTime,VersionEndTime) VALUES (OLD.ParentGroupObjectGUID, OLD.ChildGroupObjectGUID,OLD.CreatedDate,UTC_TIMESTAMP());
  END
 //
 
