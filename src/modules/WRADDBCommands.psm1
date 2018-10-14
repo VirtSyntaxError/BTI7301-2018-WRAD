@@ -4,23 +4,36 @@ $null = [System.Reflection.Assembly]::LoadWithPartialName('MySql.Data')
 $BuiltinParameters = @("ErrorAction","WarningAction","Verbose","ErrorVariable","WarningVariable","OutVariable","OutBuffer","Debug")
 
 function Connect-WRADDatabase {
-    $PasswordPlain = "ktX4xRb7qxSw6oPctx"
-    $Password = ConvertTo-SecureString -AsPlainText $PasswordPlain -Force
-    $Username = "wradadmin"
-    $Server = "localhost"
-    $Port = "3306"
-    $Database = "WRAD"
-    $SSLMode = "none"
+    begin
+	{
+        $PasswordPlain = "ktX4xRb7qxSw6oPctx"
+        $Password = ConvertTo-SecureString -AsPlainText $PasswordPlain -Force
+        $Username = "wradadmin"
+        $Server = "localhost"
+        $Port = "3306"
+        $Database = "WRAD"
+        $SSLMode = "none"
 
-    $Credentials =  New-Object -Typename System.Management.Automation.PSCredential -Argumentlist $Username,$Password
+        $Credentials =  New-Object -Typename System.Management.Automation.PSCredential -Argumentlist $Username,$Password
+        $ConnectionString = "server=$Server;port=$Port;uid=$Username;pwd=$PasswordPlain;database=$Database;SSLMode=$SSLMode"
+	}
+	Process
+	{
+		try
+		{
+    
+            [MySql.Data.MySqlClient.MySqlConnection]$Connection = New-Object MySql.Data.MySqlClient.MySqlConnection($ConnectionString)
 
-    $ConnectionString = "server=$Server;port=$Port;uid=$Username;pwd=$PasswordPlain;database=$Database;SSLMode=$SSLMode"
-    [MySql.Data.MySqlClient.MySqlConnection]$Connection = New-Object MySql.Data.MySqlClient.MySqlConnection($ConnectionString)
+            $Global:WRADDBConnection = $Connection
 
-    $Global:WRADDBConnection = $Connection
-
-    Write-Verbose "Connecting to Database";
-    $Connection.Open()
+            Write-Verbose "Connecting to Database";
+            $Connection.Open()
+        }
+		catch
+		{
+			Write-Error -Message $_.Exception.Message
+		}
+	}
 
     <#
     .SYNOPSIS
@@ -185,7 +198,7 @@ function Get-WRADUser {
 		}
 		catch
 		{
-			$Error[0];
+            Write-Error -Message $_.Exception.Message
 			break
 		}
 	}
@@ -345,7 +358,7 @@ function New-WRADUser {
 		}
 		catch
 		{
-			$Error[0];
+			Write-Error -Message $_.Exception.Message
 			break
 		}
 	}
@@ -513,7 +526,7 @@ function Update-WRADUser {
 		}
 		catch
 		{
-			$Error[0];
+			Write-Error -Message $_.Exception.Message
 			break
 		}
 	}
@@ -594,7 +607,7 @@ function Remove-WRADUser {
 		}
 		catch
 		{
-			$Error[0];
+			Write-Error -Message $_.Exception.Message
 			break
 		}
 	}
@@ -656,7 +669,7 @@ function Get-WRADGroup {
 		}
 		catch
 		{
-			$Error[0];
+			Write-Error -Message $_.Exception.Message
 			break
 		}
 	}
@@ -726,7 +739,7 @@ function New-WRADGroup {
 		}
 		catch
 		{
-			$Error[0];
+			Write-Error -Message $_.Exception.Message
 			break
 		}
 	}
@@ -863,7 +876,7 @@ function Update-WRADGroup {
 		}
 		catch
 		{
-			$Error[0];
+			Write-Error -Message $_.Exception.Message
 			break
 		}
 	}
@@ -938,7 +951,7 @@ function Remove-WRADGroup {
 		}
 		catch
 		{
-			$Error[0];
+			Write-Error -Message $_.Exception.Message
 			break
 		}
 	}
@@ -976,7 +989,7 @@ function Get-WRADGroupOfUser {
 		}
 		catch
 		{
-			$Error[0];
+			Write-Error -Message $_.Exception.Message
 			break
 		}
 	}
@@ -1016,7 +1029,7 @@ function New-WRADGroupOfUser {
 		}
 		catch
 		{
-			$Error[0];
+			Write-Error -Message $_.Exception.Message
 			break
 		}
 	}
@@ -1055,7 +1068,7 @@ function Remove-WRADGroupOfUser {
 		}
 		catch
 		{
-			$Error[0];
+			Write-Error -Message $_.Exception.Message
 			break
 		}
 	}
@@ -1092,7 +1105,7 @@ function Get-WRADGroupOfGroup {
 		}
 		catch
 		{
-			$Error[0];
+			Write-Error -Message $_.Exception.Message
 			break
 		}
 	}
@@ -1132,7 +1145,7 @@ function New-WRADGroupOfGroup {
 		}
 		catch
 		{
-			$Error[0];
+			Write-Error -Message $_.Exception.Message
 			break
 		}
 	}
@@ -1171,7 +1184,7 @@ function Remove-WRADGroupOfGroup {
 		}
 		catch
 		{
-			$Error[0];
+			Write-Error -Message $_.Exception.Message
 			break
 		}
 	}
@@ -1200,7 +1213,7 @@ function Get-WRADHistoryOfUser {
 		}
 		catch
 		{
-			$Error[0];
+			Write-Error -Message $_.Exception.Message
 			break
 		}
 	}
@@ -1229,7 +1242,7 @@ function Get-WRADHistoryOfGroup {
 		}
 		catch
 		{
-			$Error[0];
+			Write-Error -Message $_.Exception.Message
 			break
 		}
 	}
@@ -1255,7 +1268,7 @@ function Get-WRADDeletedUser {
 		}
 		catch
 		{
-			$Error[0];
+			Write-Error -Message $_.Exception.Message
 			break
 		}
 	}
@@ -1281,7 +1294,7 @@ function Get-WRADDeletedGroup {
 		}
 		catch
 		{
-			$Error[0];
+			Write-Error -Message $_.Exception.Message
 			break
 		}
 	}
@@ -1310,7 +1323,7 @@ function Get-WRADDeletedGroupOfUser {
 		}
 		catch
 		{
-			$Error[0];
+			Write-Error -Message $_.Exception.Message
 			break
 		}
 	}
@@ -1339,7 +1352,7 @@ function Get-WRADDeletedGroupOfGroup {
 		}
 		catch
 		{
-			$Error[0];
+			Write-Error -Message $_.Exception.Message
 			break
 		}
 	}
@@ -1365,7 +1378,7 @@ function Get-WRADSetting {
 		}
 		catch
 		{
-			$Error[0];
+			Write-Error -Message $_.Exception.Message
 			break
 		}
 	}
