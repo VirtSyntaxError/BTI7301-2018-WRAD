@@ -77,7 +77,7 @@ $auth = New-UDAuthenticationMethod -Endpoint {
 	New-UDAuthenticationResult -ErrorMessage "You are not allowed to login!"
 }
     
-    
+$login = new-UDLoginPage -AuthenticationMethod $auth -WelcomeText "Welcome to WRAD" -PageBackgroundColor "white" -LoginFormFontColor "black" -LoginFormBackgroundColor "grey"
 
 $PageALDashboard = New-UDPage -Name "Abteilungsleiter" -Content {
 	New-UDHeading -Content {
