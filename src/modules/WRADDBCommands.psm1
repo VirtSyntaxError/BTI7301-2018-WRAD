@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 
 $null = [System.Reflection.Assembly]::LoadWithPartialName('MySql.Data')
-$BuiltinParameters = @("ErrorAction","WarningAction","Verbose","ErrorVariable","WarningVariable","OutVariable","OutBuffer","Debug")
+$BuiltinParameters = @("ErrorAction","WarningAction","Verbose","ErrorVariable","WarningVariable","OutVariable","OutBuffer","Debug","Reference")
 
 function Connect-WRADDatabase {
     begin
@@ -133,37 +133,52 @@ function Invoke-MariaDBQuery {
 }
 
 function Get-WRADUser {
+    [CmdletBinding(DefaultParameterSetName="ACTUAL")]
     Param
 	(
-        [Parameter()]
+        [Parameter(ParameterSetName="REFERENCE")]
+		[ValidateNotNullOrEmpty()]
+		[Switch]$Reference,
+
+        [Parameter(ParameterSetName="REFERENCE")]
+		[ValidateNotNullOrEmpty()]
+		[String]$Username,
+
+        [Parameter(ParameterSetName="ACTUAL")]
 		[ValidateNotNullOrEmpty()]
 		[string]$SAMAccountName,
 
-        [Parameter()]
+        [Parameter(ParameterSetName="ACTUAL")]
 		[ValidateNotNullOrEmpty()]
 		[string]$UserPrincipalName,
 
-        [Parameter()]
+        [Parameter(ParameterSetName="ACTUAL")]
+        [Parameter(ParameterSetName="REFERENCE")]
 		[ValidateNotNullOrEmpty()]
 		[string]$DisplayName,
 
-        [Parameter()]
+        [Parameter(ParameterSetName="ACTUAL")]
 		[ValidateNotNullOrEmpty()]
 		[string]$ObjectGUID,
 
-        [Parameter()]
+        [Parameter(ParameterSetName="ACTUAL")]
+        [Parameter(ParameterSetName="REFERENCE")]
 		[ValidateNotNullOrEmpty()]
-		[switch]$Disabled,
+		[Switch]$Disabled,
 
-        [Parameter()]
+        [Parameter(ParameterSetName="ACTUAL")]
 		[ValidateNotNullOrEmpty()]
-		[switch]$Expired
+		[Switch]$Expired
 
 
 	)
 	begin
 	{
-        $Query = 'SELECT * FROM WRADUser';
+        $Table = 'WRADUser'
+        if($Reference){
+            $Table = 'WRADRefUser'
+        }
+        $Query = 'SELECT * FROM '+$Table;
 
         $FirstParameter = $true;
 
@@ -193,7 +208,7 @@ function Get-WRADUser {
 	{
 		try
 		{
-			Write-Verbose "Invoking SELECT SQL Query on table WRADUser";
+			Write-Verbose "Invoking SELECT SQL Query on table $Table";
 			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
 		}
 		catch
@@ -211,24 +226,31 @@ function Get-WRADUser {
 
     Gets all users which actually exist in the database. These are the fetched users from the Active Directory.
     The Output does not conaint any deleted users.
+    It is possible to load all refernce users with the -Reference Switch.
+
+    .PARAMETER Reference
+    Specifies if the reference user table should be used instead of the actual one.
 
     .PARAMETER SAMAccountName
-    Specifies the SAMAccountName of an user.
+    Specifies the SAMAccountName of an user. Only usable with actual users.
 
     .PARAMETER UserPrincipalName
-    Specifies the UserPrincipalName of an user.
+    Specifies the UserPrincipalName of an user. Only usable with actual users.
+
+    .PARAMETER Username
+    Specifies the Username of an user. Only usable with reference users.
     
     .PARAMETER DisplayName
     Specifies the DisplayName of an user.
 
     .PARAMETER ObjectGUID
-    Specifies the Globally Unique Identifier of an user.
+    Specifies the Globally Unique Identifier of an user. Only usable with actual users.
 
     .PARAMETER Disabled
     Specifies if an user is disabled.
 
     .PARAMETER Expired
-    Specifies if an user is expired.
+    Specifies if an user is expired. Only usable with actual users.
 
     .INPUTS
 
@@ -236,7 +258,16 @@ function Get-WRADUser {
 
     .OUTPUTS
 
-    System.Array. Get-WRADUser returns all parameters from the user table in an array.
+    System.Array. Get-WRADUser returns all parameters from the user table (actual or reference) in an array.
+
+    .EXAMPLE
+
+    C:\PS> Get-WRADUser -Reference -Username furid
+    Username           : furid
+    DisplayName        : Dario Furigo
+    CreatedDate        : 15.10.2018 10:51:00
+    Enabled            : True
+    Description        : Darios User
 
     .EXAMPLE
 
@@ -617,54 +648,63 @@ function Remove-WRADUser {
 }
 
 function Get-WRADGroup {
+    [CmdletBinding(DefaultParameterSetName="ACTUAL")]
     Param
-	(
-        [Parameter()]
+    (
+        [Parameter(ParameterSetName="REFERENCE")]
+		[ValidateNotNullOrEmpty()]
+		[Switch]$Reference,
+
+        [Parameter(ParameterSetName="ACTUAL")]
 		[ValidateNotNullOrEmpty()]
 		[string]$SAMAccountName,
 
-        [Parameter()]
+        [Parameter(ParameterSetName="ACTUAL")]
+        [Parameter(ParameterSetName="REFERENCE")]
 		[ValidateNotNullOrEmpty()]
 		[string]$CommonName,
 
-        [Parameter()]
+        [Parameter(ParameterSetName="ACTUAL")]
         [ValidateSet('ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP','ADS_GROUP_TYPE_UNIVERSAL_GROUP')]
 		[string]$GroupType,
 
-        [Parameter()]
+        [Parameter(ParameterSetName="ACTUAL")]
 		[ValidateNotNullOrEmpty()]
 		[string]$ObjectGUID,
         
-        [Parameter()]
+        [Parameter(ParameterSetName="ACTUAL")]
 		[ValidateSet('Security','Distribution')]
 		[String]$GroupTypeSecurity
 
 	)
 	begin
 	{
-        $Query = "SELECT * FROM WRADGroup";
+        $Table = 'WRADGroup'
+        if($Reference){
+            $Table = 'WRADRefGroup'
+        }
+        $Query = 'SELECT * FROM '+$Table;
 
         $FirstParameter = $true;
 
         $PSBoundParameters.Keys | ForEach {
-        if ($BuiltinParameters -notcontains $_) {
-            $Value = Get-Variable -Name $_ -ErrorAction Stop | Select-Object -ExpandProperty Value -ErrorAction Stop
+            if ($BuiltinParameters -notcontains $_) {
+                $Value = Get-Variable -Name $_ -ErrorAction Stop | Select-Object -ExpandProperty Value -ErrorAction Stop
 
-            if($FirstParameter){
-                $Query += ' WHERE `'+$_+'` = "'+$Value+'" '
-                $FirstParameter = $false
-            } else {
-                $Query += ' AND `'+$_+'` = "'+$Value+'" '
+                if($FirstParameter){
+                    $Query += ' WHERE `'+$_+'` = "'+$Value+'" '
+                    $FirstParameter = $false
+                } else {
+                    $Query += ' AND `'+$_+'` = "'+$Value+'" '
+                }
             }
-        }
-}
-		
+        }		
 	}
 	Process
 	{
 		try
 		{
-			Write-Verbose "Invoking SELECT SQL Query on table WRADGroup";
+			Write-Verbose "Invoking SELECT SQL Query on table $Table";
 			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
 		}
 		catch
@@ -1389,10 +1429,10 @@ function Get-WRADSetting {
 
 Connect-WRADDatabase
 
-Export-ModuleMember Get-*
-Export-ModuleMember Update-*
-Export-ModuleMember New-*
-Export-ModuleMember Remove-*
+#Export-ModuleMember Get-*
+#Export-ModuleMember Update-*
+#Export-ModuleMember New-*
+#Export-ModuleMember Remove-*
 
 #Get-WRADUser -Disabled -Verbose | foreach { write-host $_.DisplayName }
 
