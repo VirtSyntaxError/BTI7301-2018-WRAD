@@ -124,6 +124,6 @@ Get-UDDashboard | Stop-UDDashboard
 
 Start-UDDashboard -Port 10000 -AllowHttpForLogin -Content {
 
-    New-UdDashboard -Login $login -Pages @($PageALDashboard) -Title "GUI" -Color 'Black'
+    New-UdDashboard -Login $login -Pages @($PageALDashboard) -Title "Mock up Dashboards" -Color 'Black'
 
 } -Verbose -debug
