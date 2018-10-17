@@ -3,37 +3,11 @@ if(!(get-module UniversalDashboard)){
 }
 $SearchBase = (Get-ADDomain).DistinguishedName
 
-$LogonList = @()
-#Use LastLogonTimestamp when multiple DCs are in use!
-#$OlderUser = (Get-ADUser -Filter * -Properties LastLogonTimestamp | where {$_.LastLogonTimestamp -lt (get-date).AddDays(-90).ToInt64()}).Count
-$InactiveUser = (Search-ADAccount -AccountInactive -UsersOnly -TimeSpan 90 |measure ).count
-$DeactivatedUser = (Search-ADAccount -AccountDisabled -UsersOnly -SearchBase $SearchBase |measure).count
-$ExpiredUser = (Search-ADAccount -AccountExpired -UsersOnly |measure).count
-$AllUser = (Get-ADUser -Filter * |measure).count
-$ActiveUser = $AllUser - $InactiveUser
-$InactiveUserChart = New-Object PSobject
-$InactiveUserChart | Add-Member -membertype noteproperty -Name "Name" -Value "Logon older than 90 days"
-$InactiveUserChart | Add-Member -membertype noteproperty -Name "Count" -Value $InactiveUser
-$LogonList += $InactiveUserChart
-$ActiveUserChart = New-Object PSobject
-$ActiveUserChart | Add-Member -membertype noteproperty -Name "Name" -Value "Logon in last 90 days"
-$ActiveUserChart | Add-Member -membertype noteproperty -Name "Count" -Value $ActiveUser
-$LogonList += $ActiveUserChart
-$ExpiredUserChart = New-Object PSobject
-$ExpiredUserChart | Add-Member -membertype noteproperty -Name "Name" -Value "Expired Users"
-$ExpiredUserChart | Add-Member -membertype noteproperty -Name "Count" -Value $ExpiredUser
-$LogonList += $ExpiredUserChart
-$DeactivatedUserChart = New-Object PSobject
-$DeactivatedUserChart | Add-Member -membertype noteproperty -Name "Name" -Value "Deactivated Users"
-$DeactivatedUserChart | Add-Member -membertype noteproperty -Name "Count" -Value $DeactivatedUser
-$LogonList += $DeactivatedUserChart
 
-$LastLogon = New-Object PSobject
-$LastLogon | Add-Member -membertype noteproperty -Name "Name" -Value "Logon in last 90 days"
-$LastLogon | Add-Member -membertype noteproperty -Name "Inactive" -Value $InactiveUser
-$LastLogon | Add-Member -membertype noteproperty -Name "Active" -Value $ActiveUser
-$LastLogon | Add-Member -membertype noteproperty -Name "Deactivated" -Value $DeactivatedUser
-$LastLogon | Add-Member -membertype noteproperty -Name "Expired" -Value $ExpiredUser
+# Dashboard Daten
+
+$FpMBckgrn = "#95cc0000"
+$FpMBckgrnHvr = "#A1220C"
 
 $ArrAL_RF = @(
 	New-Object PSObject	-Property @{step="Warnung"; date="2018-01-01"; descr="User1 ist in Gruppe2."}
@@ -64,12 +38,46 @@ $ADUserLLb30a90 = (Search-ADAccount -AccountInactive -UsersOnly -TimeSpan 30 |me
 $ADUserActive = (Search-ADAccount -AccountInactive -UsersOnly -TimeSpan 0 |measure ).count - $ADUserLLb30a90
 
 $ADUserActivity = @(
-    New-Object PSObject	-Property @{descr="Aelter als 90 Tage"; count=3; bckgrnd="#80ff0000"}
-    New-Object PSObject	-Property @{descr="Zwischen 30 und 90 Tagen"; count=10; bckgrnd="#80ffff00"}
-    New-Object PSObject	-Property @{descr="Aktive Benutzer"; count=87; bckgrnd="#8000ff00"}
+    New-Object PSObject	-Property @{descr="Aelter als 90 Tage"; count=3; bckgrnd="#ff0000"}
+    New-Object PSObject	-Property @{descr="Zwischen 30 und 90 Tagen"; count=10; bckgrnd="#ffff00"}
+    New-Object PSObject	-Property @{descr="Aktive Benutzer"; count=87; bckgrnd="#00ff00"}
 )
 
+$ArrSA_LC = @(
+	New-Object PSObject	-Property @{step="Warnung"; date="2018-01-01"; usr="M. Mustermann"; descr="User1 aus Gruppe 1 entfernt."}
+	New-Object PSObject	-Property @{step="Warnung"; date="2018-01-01"; usr="M. Mustermann"; descr="User1 zu Gruppe 2 hinzugefuegt."}
+	New-Object PSObject	-Property @{step="Information"; date="2018-01-02"; usr="M. Mustermann"; descr="User2 wurde in WRAD hinzugefuegt."}
 
+)
+
+$ArrAO_LCAD = @(
+	New-Object PSObject	-Property @{step="Warnung"; date="2018-01-02"; usr="S. Achter"; descr="User2 wurde in der AD erstellt."}
+	New-Object PSObject	-Property @{step="Warnung"; date="2018-01-02"; usr="S. Achter"; descr="Der Benutzer User 1 ist neu Mitglied der Gruppe 2"}
+	New-Object PSObject	-Property @{step="Information"; date="2018-01-02"; usr="S. Achter"; descr="User1 wurde aus der Mitgliederliste der Guppe 1 entfernt."}
+
+)
+
+$ArrAO_SysLog = @(
+	New-Object PSObject	-Property @{date="2018-01-01 10:00"; usr="M. Mustermann"; descr="User1 aus Gruppe 1 entfernt."}
+	New-Object PSObject	-Property @{date="2018-01-01 10:01"; usr="M. Mustermann"; descr="User 1 zu Gruppen 2 hinzugefuegt."}
+	New-Object PSObject	-Property @{date="2018-01-02 08:00"; usr="M. Mustermann"; descr="User 2 erstellt."}
+	New-Object PSObject	-Property @{date="2018-01-02 09:00"; usr="M. Mustermann"; descr="IST-SOLL vergleich ausgeführt."}
+	New-Object PSObject	-Property @{date="2018-01-02 14:00"; usr="S. Achter"; descr="IST-SOLL vergleich ausgeführt."}
+	New-Object PSObject	-Property @{date="2018-01-03 08:00"; usr="A. Osen"; descr="IST-SOLL vergleich ausgeführt."}
+    
+)
+
+$AllUsr = @(
+	New-Object PSObject	-Property @{username="User01"; prename="User"; name="01"; mmbrships="1"}
+	New-Object PSObject	-Property @{username="User02"; prename="User"; name="02"; mmbrships="0"}
+)
+
+$AllGrp = @(
+	New-Object PSObject	-Property @{name="Gruppe1"; mmbrcnt="0"}
+	New-Object PSObject	-Property @{name="Gruppe2"; mmbrcnt="1"}
+)
+
+#Login
 $auth = New-UDAuthenticationMethod -Endpoint {
 	param([PSCredential]$Credentials)
 
@@ -78,31 +86,44 @@ $auth = New-UDAuthenticationMethod -Endpoint {
 	$AuthorizedGroup = 'Administrators'
 
 	if ($Credentials | ? {$_ | Test-ADCredential} | Test-ADGroupMembership -TargetGroup $AuthorizedGroup) {
-		New-UDAuthenticationResult -Success -UserName $Credentials.UserName
-	}
+		New-UDAuthenticationResult -Success -UserName $Credentials.UserName -Role "WRADadmin"
+	} elseif ($Credentials.UserName -eq "Auditor" -and $Credentials.GetNetworkCredential().Password -eq "Auditor") {
+		New-UDAuthenticationResult -Success -UserName $Credentials.UserName -Role "Auditor"
+    }
 
 	New-UDAuthenticationResult -ErrorMessage "You are not allowed to login!"
 }
     
 $login = new-UDLoginPage -AuthenticationMethod $auth -WelcomeText "Welcome to WRAD" -PageBackgroundColor "white" -LoginFormFontColor "black" -LoginFormBackgroundColor "grey"
 
-$PageALDashboard = New-UDPage -Name "Abteilungsleiter" -Content {
+#Abteilungsleiter Dashboard
+$PageALDashboard = New-UDPage -Name "Abteilungsleiter" -AuthorizedRole @("WRADadmin","Abteilungsleiter") -Content {
     New-UDHeading -Content {
-		New-UDCard -Endpoint { $User }
+        New-UDButton -Text "Dashboard"
+        New-UDButton -Text "Benutzer / Gruppen"
+        New-UDButton -Text "Reports"
 	}
     
 	New-UDRow {
-		New-UDColumn -size 6 -Content {
+        #Rechtefehler
+		New-UDColumn -size 4 -Content {
 			New-UdGrid -Title "Rechtefehler" -Headers @("Stufe", "Datum", "Beschreibung") -Properties @("step", "date", "descr") -AutoRefresh -RefreshInterval 60 -Endpoint {
 				$ArrAL_RF | Select step,date,descr | Out-UDGridData
 			}
 		}
-    
-		New-UDColumn -size 6 -Content {
+        
+        #Letzte anderungen
+		New-UDColumn -size 4 -Content {
 			New-UdGrid -Title "Letzte Aenderungen" -Headers @("Stufe", "Datum", "Beschreibung") -Properties @("step", "date", "descr") -AutoRefresh -RefreshInterval 60 -Endpoint {
 				$ArrAL_LC | Select step,date,descr | Out-UDGridData
 			}
 		}
+		#Status 
+        New-UDColumn -size 4 -Content {
+            New-UdGrid -Title "Status" -Headers @("Beschreibung", "Anzahl") -Properties @("descr", "count") -AutoRefresh -RefreshInterval 60 -Endpoint {
+				$ADUserActivity | Select descr,count | Out-UDGridData
+			}
+        }
 	}
 	
 	New-UDRow {
@@ -110,7 +131,7 @@ $PageALDashboard = New-UDPage -Name "Abteilungsleiter" -Content {
 		New-UDColumn -size 6 -Content {
 			New-UDChart -Title "Letzte Anmledung" -Type Doughnut -RefreshInterval 5 -Endpoint { 
                 $ADUserActivity | Out-UDChartData -LabelProperty "descr" -Dataset @(
-				    New-UDChartDataset -DataProperty "count"  -Label "Users" -BackgroundColor "#9055AAFF" -HoverBackgroundColor "#90ffffff"
+				    New-UDChartDataset -DataProperty "count"  -BackgroundColor "#9055AAFF" -HoverBackgroundColor "bckgrnd" -Label "Users" 
                )
                 
 			}
@@ -120,13 +141,41 @@ $PageALDashboard = New-UDPage -Name "Abteilungsleiter" -Content {
 		New-UDColumn -size 6 -Content {
 			New-UDChart -Title "Fehler pro Monat" -Type bar -RefreshInterval 5 -Endpoint { 
 				$ArrAL_FpM | Out-UDChartData -LabelProperty "month" -Dataset @(
-                    New-UDChartDataset -DataProperty "count" -Label "Fehler" -BackgroundColor "#80990000" -HoverBackgroundColor "#80ff0000"
+                    New-UDChartDataset -DataProperty "count" -Label "Fehler" -BackgroundColor $FpMBckgrn -HoverBackgroundColor $FpMBckgrnHvr
                 )
 			}
 		}
 	}
-	
+}
+
+#Auditor Dashboard
+$PageAtDashboard = New-UDPage -Name "Auditor" -AuthorizedRole @("WRADadmin","Auditor") -Content {
+    New-UDHeading -Content {
+        New-UDButton -Text "Dashboard"
+        New-UDButton -Text "Benutzer / Gruppen"
+        New-UDButton -Text "Reports"
+	}
+    
 	New-UDRow {
+		#Fehler pro Monat
+		New-UDColumn -size 6 -Content {
+			New-UDChart -Title "Fehler pro Monat" -Type bar -RefreshInterval 5 -Endpoint { 
+				$ArrAL_FpM | Out-UDChartData -LabelProperty "month" -Dataset @(
+                    New-UDChartDataset -DataProperty "count" -Label "Fehler" -BackgroundColor $FpMBckgrn -HoverBackgroundColor $FpMBckgrnHvr
+                )
+			}
+		}
+    }
+
+    New-UDRow {
+        
+        #Rechtefehler
+		New-UDColumn -size 6 -Content {
+			New-UdGrid -Title "Rechtefehler" -Headers @("Stufe", "Datum", "Beschreibung") -Properties @("step", "date", "descr") -AutoRefresh -RefreshInterval 60 -Endpoint {
+				$ArrAL_RF | Select step,date,descr | Out-UDGridData
+			}
+		}
+
 		#Status 
         New-UDColumn -size 6 -Content {
             New-UdGrid -Title "Status" -Headers @("Beschreibung", "Anzahl") -Properties @("descr", "count") -AutoRefresh -RefreshInterval 60 -Endpoint {
@@ -136,10 +185,151 @@ $PageALDashboard = New-UDPage -Name "Abteilungsleiter" -Content {
 	}
 }
 
+#Sysadmin Dashboard
+$PageSADashboard = New-UDPage -Name "System Admin" -AuthorizedRole @("WRADadmin","Sysadmin") -Content {
+    New-UDHeading -Content {
+		#New-UDCard -Endpoint { $User }
+        New-UDButton -Text "Dashboard"
+        New-UDButton -Text "Benutzer / Gruppen"
+        New-UDButton -Text "Reports"
+	}
+
+    New-UDRow {
+        #Rechtefehler
+		New-UDColumn -size 6 -Content {
+			New-UdGrid -Title "Rechtefehler" -Headers @("Stufe", "Datum", "Beschreibung") -Properties @("step", "date", "descr") -AutoRefresh -RefreshInterval 60 -Endpoint {
+				$ArrAL_RF | Select step,date,descr | Out-UDGridData
+			}
+		}
+
+        #Letzte anderungen
+		New-UDColumn -size 6 -Content {
+			New-UdGrid -Title "Letzte Aenderungen" -Headers @("Stufe", "Datum", "Benutzer", "Beschreibung") -Properties @("step", "date", "usr", "descr") -AutoRefresh -RefreshInterval 60 -Endpoint {
+				$ArrSA_LC | Select step,date,usr,descr | Out-UDGridData
+			}
+		}
+	}
+    
+	New-UDRow {
+		#Fehler pro Monat
+		New-UDColumn -size 6 -Content {
+			New-UDChart -Title "Fehler pro Monat" -Type bar -RefreshInterval 5 -Endpoint { 
+				$ArrAL_FpM | Out-UDChartData -LabelProperty "month" -Dataset @(
+                    New-UDChartDataset -DataProperty "count" -Label "Fehler" -BackgroundColor $FpMBckgrn -HoverBackgroundColor $FpMBckgrnHvr
+                )
+			}
+		}
+
+		#Status 
+        New-UDColumn -size 6 -Content {
+            New-UdGrid -Title "Status" -Headers @("Beschreibung", "Anzahl") -Properties @("descr", "count") -AutoRefresh -RefreshInterval 60 -Endpoint {
+				$ADUserActivity | Select descr,count | Out-UDGridData
+			}
+        }
+    }
+}
+
+#Applicatin Owner Dashboard
+$PageAODashboard = New-UDPage -Name "Application Owner" -AuthorizedRole @("WRADadmin","AppOwner") -Content {
+    New-UDHeading -Content {
+        New-UDButton -Text "Dashboard"
+        New-UDButton -Text "Reports"
+        New-UDButton -Text "Logs"
+        New-UDButton -Text "Einstellungen"
+	}
+    
+    New-UDRow {
+        #Letzte anderungen WRAD
+		New-UDColumn -size 6 -Content {
+			New-UdGrid -Title "Letzte Aenderungen in WRAD" -Headers @("Stufe", "Datum", "Benutzer", "Beschreibung") -Properties @("step", "date", "usr", "descr") -AutoRefresh -RefreshInterval 60 -Endpoint {
+				$ArrSA_LC | Select step,date,usr,descr | Out-UDGridData
+			}
+		}
+        #Letzte anderungen AD
+		New-UDColumn -size 6 -Content {
+			New-UdGrid -Title "Letzte Aenderungen in der AD" -Headers @("Stufe", "Datum", "Benutzer", "Beschreibung") -Properties @("step", "date", "usr", "descr") -AutoRefresh -RefreshInterval 60 -Endpoint {
+				$ArrAO_LCAD | Select step,date,usr,descr | Out-UDGridData
+			}
+		}
+    }
+
+    New-UDRow {
+        #Syslog
+		New-UDColumn -size 6 -Content {
+			New-UdGrid -Title "Letzte Aenderungen in der AD" -Headers @("Datum", "Benutzer", "Beschreibung") -Properties @("date", "usr", "descr") -AutoRefresh -RefreshInterval 60 -Endpoint {
+				$ArrAO_SysLog | Select date,usr,descr | Out-UDGridData
+			}
+		}
+    }
+}
+
+#Authentifizierungsstelle Dashboard
+$PageASDashboard = New-UDPage -Name "Authentifizierungsstelle" -AuthorizedRole @("WRADadmin","AuthStelle") -Content {
+    New-UDHeading -Content {
+        New-UDButton -Text "Dashboard"
+        New-UDButton -Text "Benutzer / Gruppen"
+        New-UDButton -Text "Reports"
+	}
+    
+    New-UDRow {
+		#Fehler pro Monat
+		New-UDColumn -size 6 -Content {
+			New-UDChart -Title "Fehler pro Monat" -Type bar -RefreshInterval 5 -Endpoint { 
+				$ArrAL_FpM | Out-UDChartData -LabelProperty "month" -Dataset @(
+                    New-UDChartDataset -DataProperty "count" -Label "Fehler" -BackgroundColor $FpMBckgrn -HoverBackgroundColor $FpMBckgrnHvr
+                )
+			}
+		}
+    }
+
+    New-UDRow {
+        #Rechtefehler
+		New-UDColumn -size 6 -Content {
+			New-UdGrid -Title "Rechtefehler" -Headers @("Stufe", "Datum", "Beschreibung") -Properties @("step", "date", "descr") -AutoRefresh -RefreshInterval 60 -Endpoint {
+				$ArrAL_RF | Select step,date,descr | Out-UDGridData
+			}
+		}
+
+        #Letzte anderungen WRAD
+		New-UDColumn -size 6 -Content {
+			New-UdGrid -Title "Letzte Aenderungen in WRAD" -Headers @("Stufe", "Datum", "Benutzer", "Beschreibung") -Properties @("step", "date", "usr", "descr") -AutoRefresh -RefreshInterval 60 -Endpoint {
+				$ArrSA_LC | Select step,date,usr,descr | Out-UDGridData
+			}
+		}
+    }
+}
+
+$UsrAGrp = New-UDPage -Name "UserUndGruppen" -AuthorizedRole @("Auditor") -Content {
+    New-UDRow {
+        #Alle User
+		New-UDColumn -size 6 -Content {
+			New-UdGrid -Title "Alle User" -Headers @("Benutzername", "Vorname", "Nachname", "Mitgliedschaften") -Properties @("username", "prename", "name", "mmbrships") -AutoRefresh -RefreshInterval 60 -Endpoint {
+				$AllUsr | Select username,prename,name,mmbrships | Out-UDGridData
+			}
+		}
+        #Alle gruppen
+		New-UDColumn -size 6 -Content {
+			New-UdGrid -Title "Alle Gruppen" -Headers @("Name", "Mitgliederanzahl") -Properties @("name", "mmbrcnt") -AutoRefresh -RefreshInterval 60 -Endpoint {
+				$AllGrp | Select name,mmbrcnt | Out-UDGridData
+			}
+		}
+    }
+}
+
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 Get-UDDashboard | Stop-UDDashboard
 
-Start-UDDashboard -Port 10000 -AllowHttpForLogin -Content {
+#Themes Azure,Blue,Default,Earth,Green,Red
+#$theme = Get-UDTheme -Name "Azure"
+$theme = New-UDTheme -Name "AzureChngBtn" -Definition @{
+    'UDButton' = @{
+        'BackgroundColor' = '#A1220C'
+    }
+} -Parent Azure
 
-    New-UdDashboard -Login $login -Pages @($PageALDashboard) -Title "Mock up Dashboards" -Color 'Black'
+Start-UDDashboard -Port 10000 -AllowHttpForLogin -Content {
+    
+    New-UdDashboard -Login $login -Pages @($PageALDashboard, $PageAtDashboard, $PageSADashboard, $PageAODashboard, $PageASDashboard, $UsrAGrp) -Title "Mock up Dashboards" -Color 'Black' -Theme $theme
 
 } -Verbose -debug
