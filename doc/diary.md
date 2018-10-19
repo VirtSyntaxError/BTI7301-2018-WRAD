@@ -1,26 +1,6 @@
 # Meetings
 
-## 2018-10-17
-### Attendees
-* Beat Schärz (pidu2)
-* Dario Furigo (VirtSyntaxError)
-* Philipp Köfer (kofep1)
-* Nicola Michaelis (michn2)
-* Christof Jungo
-
-### Agenda
-* Database Design SOLL, ObjectGUID needed?
-* IST/SOLL only checks for Group Membership or also for OU changes and other things?
-
-### Decisions
-
-### ToDo
-* Dario -> DB 
-* Beat -> Auditing
-* Nicola -> GUI, Roles
-* Philipp -> IST
-
-## 2018-10-12
+## 2018-10-19
 ### Attendees
 * Beat Schärz (pidu2)
 * Dario Furigo (VirtSyntaxError)
