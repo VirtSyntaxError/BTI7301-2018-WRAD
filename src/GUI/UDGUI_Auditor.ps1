@@ -335,8 +335,8 @@ $Settings = New-UDPage -Name "Einstellungen" -AuthorizedRole @("Auditor") -Conte
 		New-UDColumn -size 6 -Content {
 			New-UDInput -Title "Settings 1" -Id "Form" -Content {
 				New-UDInputField -Type 'checkbox' -Name 'Setting1' -Placeholder 'Setting 1.'
-				New-UDInputField -Type 'select' -Name 'Sprache' -Placeholder 'Favorite Programming Language' -Values @("Deutsch", "Englisch")
-				New-UDInputField -Type 'select' -Name 'Theme' -Placeholder 'Favorite Programming Language' -Values @("Azure", "Default")
+				New-UDInputField -Type 'select' -Name 'Sprache' -Placeholder 'Sprache' -Values @("Deutsch", "Englisch")
+				New-UDInputField -Type 'select' -Name 'Theme' -Placeholder 'Theme' -Values @("Azure", "Default")
 			} -Endpoint {
 				param($Setting1, $Sprache, $Theme)
 				
