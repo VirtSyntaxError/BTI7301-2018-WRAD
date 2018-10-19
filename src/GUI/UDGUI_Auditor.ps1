@@ -128,17 +128,26 @@ $PageALDashboard = New-UDPage -Name "Abteilungsleiter" -AuthorizedRole @("WRADad
 	
 	New-UDRow {
 		#Letzte Anmeldung
-		New-UDColumn -size 6 -Content {
+		New-UDColumn -size 4 -Content {
 			New-UDChart -Title "Letzte Anmledung" -Type Doughnut -RefreshInterval 5 -Endpoint { 
                 $ADUserActivity | Out-UDChartData -LabelProperty "descr" -Dataset @(
-				    New-UDChartDataset -DataProperty "count"  -BackgroundColor "#9055AAFF" -HoverBackgroundColor "bckgrnd" -Label "Users" 
+				    New-UDChartDataset -DataProperty "count"  -BackgroundColor "#9055AAFF" -HoverBackgroundColor $_.bckgrnd -Label "Users" 
                )
                 
 			}
 		}
 		
+        #Letzte Anmeldung
+		New-UDColumn -size 4 -Content {
+			New-UDChart -Title "Letzte Anmledung" -Type Doughnut -RefreshInterval 5 -Endpoint { 
+                $ADUserActivity | Out-UDChartData -LabelProperty "descr" -Dataset @(
+				    New-UDDoughnutChartDataset -DataProperty "count"  -BackgroundColor "#9055AAFF" -HoverBackgroundColor "bckgrnd" -Label "Users" 
+               )
+			}
+		}
+
 		#Fehler pro Monat
-		New-UDColumn -size 6 -Content {
+		New-UDColumn -size 4 -Content {
 			New-UDChart -Title "Fehler pro Monat" -Type bar -RefreshInterval 5 -Endpoint { 
 				$ArrAL_FpM | Out-UDChartData -LabelProperty "month" -Dataset @(
                     New-UDChartDataset -DataProperty "count" -Label "Fehler" -BackgroundColor $FpMBckgrn -HoverBackgroundColor $FpMBckgrnHvr
