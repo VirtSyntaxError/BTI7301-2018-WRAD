@@ -1001,19 +1001,32 @@ function Remove-WRADGroup {
 }
 
 function Get-WRADGroupOfUser {
+    [CmdletBinding(DefaultParameterSetName="ACTUAL")]
     Param
 	(
+        [Parameter(ParameterSetName="REFERENCE")]
+		[ValidateNotNullOrEmpty()]
+		[Switch]$Reference,
+
+        [Parameter(ParameterSetName="ACTUAL")]
+        [Parameter(ParameterSetName="REFERENCE")]
         [Parameter(Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[string]$UserObjectGUID,
 
+        [Parameter(ParameterSetName="ACTUAL")]
+        [Parameter(ParameterSetName="REFERENCE")]
         [Parameter(Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[string]$GroupObjectGUID
 	)
 	begin
 	{
-        $Query = 'SELECT * FROM WRADUserGroup WHERE `UserObjectGUID` = "'+$UserObjectGUID+'"';	
+        $Table = 'WRADUserGroup'
+        if($Reference){
+            $Table = 'WRADRefUserGroup'
+        }
+        $Query = 'SELECT * FROM '+$Table+' WHERE `UserObjectGUID` = "'+$UserObjectGUID+'"';	
         
         if($GroupObjectGUID){
             $Query += ' AND `GroupObjectGUID` = "'+$GroupObjectGUID+'"'
@@ -1024,7 +1037,7 @@ function Get-WRADGroupOfUser {
 	{
 		try
 		{
-			Write-Verbose "Invoking SELECT SQL Query on table WRADUserGroup";
+			Write-Verbose "Invoking SELECT SQL Query on table $Table";
 			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
 		}
 		catch
@@ -1427,12 +1440,70 @@ function Get-WRADSetting {
 	}
 }
 
-Connect-WRADDatabase
+function Get-WRADLog {
+    Param
+	(
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[Int]$LogSeverity
+	)
+	begin
+	{
+        $Query = 'SELECT * FROM WRADLog';	
+	}
+	Process
+	{
+		try
+		{
+			Write-Verbose "Invoking SELECT SQL Query on table WRADLog";
+			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
+		}
+		catch
+		{
+			Write-Error -Message $_.Exception.Message
+			break
+		}
+	}
+	End
+	{
+	}
+}
 
-#Export-ModuleMember Get-*
-#Export-ModuleMember Update-*
-#Export-ModuleMember New-*
-#Export-ModuleMember Remove-*
+function New-WRADLog {
+    Param
+	(
+        [Parameter(Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[Int]$LogSeverity,
+
+        [Parameter(Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$LogText
+
+	)
+	begin
+	{
+        $Query = 'INSERT INTO WRADLog (`LogSeverity`, `LogText`, `LogTimestamp`) VALUES ('+$LogSeverity+', "'+$LogText+'", UTC_TIMESTAMP())';	
+	}
+	Process
+	{
+		try
+		{
+			Write-Verbose "Invoking INSERT SQL Query on table WRADLog";
+			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
+		}
+		catch
+		{
+			Write-Error -Message $_.Exception.Message
+			break
+		}
+	}
+	End
+	{
+	}
+}
+
+Connect-WRADDatabase
 
 #Get-WRADUser -Disabled -Verbose | foreach { write-host $_.DisplayName }
 
