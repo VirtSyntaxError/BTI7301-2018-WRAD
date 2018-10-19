@@ -131,7 +131,7 @@ $PageALDashboard = New-UDPage -Name "Abteilungsleiter" -AuthorizedRole @("WRADad
 		New-UDColumn -size 4 -Content {
 			New-UDChart -Title "Letzte Anmledung" -Type Doughnut -RefreshInterval 5 -Endpoint { 
                 $ADUserActivity | Out-UDChartData -LabelProperty "descr" -Dataset @(
-				    New-UDChartDataset -DataProperty "count"  -BackgroundColor "#9055AAFF" -HoverBackgroundColor $_.bckgrnd -Label "Users" 
+				    New-UDChartDataset -DataProperty "count"  -BackgroundColor "#9055AAFF" -HoverBackgroundColor bckgrnd -Label "Users" 
                )
                 
 			}
@@ -140,8 +140,8 @@ $PageALDashboard = New-UDPage -Name "Abteilungsleiter" -AuthorizedRole @("WRADad
         #Letzte Anmeldung
 		New-UDColumn -size 4 -Content {
 			New-UDChart -Title "Letzte Anmledung" -Type Doughnut -RefreshInterval 5 -Endpoint { 
-                $ADUserActivity | Out-UDChartData -LabelProperty "descr" -Dataset @(
-				    New-UDDoughnutChartDataset -DataProperty "count"  -BackgroundColor "#9055AAFF" -HoverBackgroundColor "bckgrnd" -Label "Users" 
+                $ADUserActivity | Out-UDChartData -LabelProperty "descr" -Dataset @( 
+				    New-UDDoughnutChartDataset -DataProperty "count"  -BackgroundColor "#9055AAFF" -HoverBackgroundColor $_.bckgrnd -Label "Users" 
                )
 			}
 		}
@@ -156,6 +156,10 @@ $PageALDashboard = New-UDPage -Name "Abteilungsleiter" -AuthorizedRole @("WRADad
 		}
 	}
 }
+
+#Unable to index into an object of type System.Management.Automation.PSMemberInfoIntegratingCollection`1[System.Management.Automation.PSPropertyInfo].
+
+
 
 #Auditor Dashboard
 $PageAtDashboard = New-UDPage -Name "Auditor" -AuthorizedRole @("WRADadmin","Auditor") -Content {
