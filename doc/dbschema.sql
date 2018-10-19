@@ -33,6 +33,28 @@ CREATE TABLE WRADUser
   PRIMARY KEY (ObjectGUID)
 );
 
+CREATE TABLE WRADRefUser
+(
+  ObjectGUID VARCHAR(36) NOT NULL,
+  Username VARCHAR(1024) NOT NULL,
+  DisplayName VARCHAR(256) NOT NULL,
+  CreatedDate TIMESTAMP,
+  LastModifiedDate TIMESTAMP,
+  Enabled BOOLEAN NOT NULL,
+  PRIMARY KEY (ObjectGUID)
+);
+
+CREATE TABLE WRADRefNewUser
+(
+  NewUserID INT NOT NULL AUTO_INCREMENT,
+  Username VARCHAR(1024) NOT NULL,
+  DisplayName VARCHAR(256) NOT NULL,
+  CreatedDate TIMESTAMP,
+  LastModifiedDate TIMESTAMP,
+  Enabled BOOLEAN NOT NULL,
+  PRIMARY KEY (NewUserID)
+);
+
 CREATE TABLE WRADUserArchive
 (
   ArchiveID INT NOT NULL AUTO_INCREMENT,
@@ -64,6 +86,28 @@ CREATE TABLE WRADGroup
   PRIMARY KEY (ObjectGUID)
 );
 
+CREATE TABLE WRADRefGroup
+(
+  ObjectGUID VARCHAR(36) NOT NULL,
+  CreatedDate TIMESTAMP,
+  LastModifiedDate TIMESTAMP,
+  GroupType ENUM('ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP','ADS_GROUP_TYPE_UNIVERSAL_GROUP') NOT NULL,
+  GroupTypeSecurity ENUM('Security','Distribution') NOT NULL,
+  CommonName VARCHAR(256) NOT NULL,
+  PRIMARY KEY (ObjectGUID)
+);
+
+CREATE TABLE WRADRefNewGroup
+(
+  NewGroupID INT NOT NULL AUTO_INCREMENT,
+  CreatedDate TIMESTAMP,
+  LastModifiedDate TIMESTAMP,
+  GroupType ENUM('ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP','ADS_GROUP_TYPE_UNIVERSAL_GROUP') NOT NULL,
+  GroupTypeSecurity ENUM('Security','Distribution') NOT NULL,
+  CommonName VARCHAR(256) NOT NULL,
+  PRIMARY KEY (NewGroupID)
+);
+
 CREATE TABLE WRADUserGroup
 (
   CreatedDate TIMESTAMP,
@@ -74,6 +118,24 @@ CREATE TABLE WRADUserGroup
   CONSTRAINT `FK_Group` FOREIGN KEY (GroupObjectGUID) REFERENCES WRADGroup(ObjectGUID)
 );
 
+CREATE TABLE WRADRefUserGroup
+(
+  CreatedDate TIMESTAMP,
+  UserObjectGUID VARCHAR(36) NOT NULL,
+  GroupObjectGUID VARCHAR(36) NOT NULL,
+  PRIMARY KEY (UserObjectGUID, GroupObjectGUID),
+  CONSTRAINT `FK_RefUser` FOREIGN KEY (UserObjectGUID) REFERENCES WRADRefUser(ObjectGUID),
+  CONSTRAINT `FK_RefGroup` FOREIGN KEY (GroupObjectGUID) REFERENCES WRADRefGroup(ObjectGUID)
+);
+
+CREATE TABLE WRADRefNewUserGroup
+(
+  CreatedDate TIMESTAMP,
+  Username VARCHAR(1024) NOT NULL,
+  Groupname VARCHAR(256) NOT NULL,
+  PRIMARY KEY (Username, Groupname),
+);
+
 CREATE TABLE WRADGroupGroup
 (
   CreatedDate TIMESTAMP,
@@ -82,6 +144,24 @@ CREATE TABLE WRADGroupGroup
   PRIMARY KEY (ChildGroupObjectGUID, ParentGroupObjectGUID),
   CONSTRAINT `FK_ChildGroup` FOREIGN KEY (ChildGroupObjectGUID) REFERENCES WRADGroup(ObjectGUID),
   CONSTRAINT `FK_ParentGroup` FOREIGN KEY (ParentGroupObjectGUID) REFERENCES WRADGroup(ObjectGUID)
+);
+
+CREATE TABLE WRADRefGroupGroup
+(
+  CreatedDate TIMESTAMP,
+  ChildGroupObjectGUID VARCHAR(36) NOT NULL,
+  ParentGroupObjectGUID VARCHAR(36) NOT NULL,
+  PRIMARY KEY (ChildGroupObjectGUID, ParentGroupObjectGUID),
+  CONSTRAINT `FK_RefChildGroup` FOREIGN KEY (ChildGroupObjectGUID) REFERENCES WRADRefGroup(ObjectGUID),
+  CONSTRAINT `FK_RefParentGroup` FOREIGN KEY (ParentGroupObjectGUID) REFERENCES WRADRefGroup(ObjectGUID)
+);
+
+CREATE TABLE WRADRefNewUserGroup
+(
+  CreatedDate TIMESTAMP,
+  ChildGroup VARCHAR(256) NOT NULL,
+  ParentGroup VARCHAR(256) NOT NULL,
+  PRIMARY KEY (ChildGroup, ParentGroup),
 );
 
 CREATE TABLE WRADUserGroupArchive
@@ -155,6 +235,8 @@ CREATE TABLE WRADLog
   LogText TEXT NOT NULL,
   PRIMARY KEY (LogID)
 );
+
+#ObjectGUID, Username, Enabled
 
 DELIMITER //
 
