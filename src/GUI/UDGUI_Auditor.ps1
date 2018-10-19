@@ -99,9 +99,7 @@ $login = new-UDLoginPage -AuthenticationMethod $auth -WelcomeText "Welcome to WR
 #Abteilungsleiter Dashboard
 $PageALDashboard = New-UDPage -Name "Abteilungsleiter" -AuthorizedRole @("WRADadmin","Abteilungsleiter") -Content {
     New-UDHeading -Content {
-        New-UDButton -Text "Dashboard"
-        New-UDButton -Text "Benutzer / Gruppen"
-        New-UDButton -Text "Reports"
+
 	}
     
 	New-UDRow {
@@ -164,9 +162,7 @@ $PageALDashboard = New-UDPage -Name "Abteilungsleiter" -AuthorizedRole @("WRADad
 #Auditor Dashboard
 $PageAtDashboard = New-UDPage -Name "Auditor" -AuthorizedRole @("WRADadmin","Auditor") -Content {
     New-UDHeading -Content {
-        New-UDButton -Text "Dashboard"
-        New-UDButton -Text "Benutzer / Gruppen"
-        New-UDButton -Text "Reports"
+
 	}
     
 	New-UDRow {
@@ -202,9 +198,7 @@ $PageAtDashboard = New-UDPage -Name "Auditor" -AuthorizedRole @("WRADadmin","Aud
 $PageSADashboard = New-UDPage -Name "System Admin" -AuthorizedRole @("WRADadmin","Sysadmin") -Content {
     New-UDHeading -Content {
 		#New-UDCard -Endpoint { $User }
-        New-UDButton -Text "Dashboard"
-        New-UDButton -Text "Benutzer / Gruppen"
-        New-UDButton -Text "Reports"
+        #New-UDButton -Text "Dashboard"
 	}
 
     New-UDRow {
@@ -245,10 +239,7 @@ $PageSADashboard = New-UDPage -Name "System Admin" -AuthorizedRole @("WRADadmin"
 #Applicatin Owner Dashboard
 $PageAODashboard = New-UDPage -Name "Application Owner" -AuthorizedRole @("WRADadmin","AppOwner") -Content {
     New-UDHeading -Content {
-        New-UDButton -Text "Dashboard"
-        New-UDButton -Text "Reports"
-        New-UDButton -Text "Logs"
-        New-UDButton -Text "Einstellungen"
+
 	}
     
     New-UDRow {
@@ -279,9 +270,7 @@ $PageAODashboard = New-UDPage -Name "Application Owner" -AuthorizedRole @("WRADa
 #Authentifizierungsstelle Dashboard
 $PageASDashboard = New-UDPage -Name "Authentifizierungsstelle" -AuthorizedRole @("WRADadmin","AuthStelle") -Content {
     New-UDHeading -Content {
-        New-UDButton -Text "Dashboard"
-        New-UDButton -Text "Benutzer / Gruppen"
-        New-UDButton -Text "Reports"
+
 	}
     
     New-UDRow {
