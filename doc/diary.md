@@ -1,24 +1,43 @@
 # Meetings
 
-## 2018-10-17
+## 2018-10-19
 ### Attendees
 * Beat Schärz (pidu2)
 * Dario Furigo (VirtSyntaxError)
 * Philipp Köfer (kofep1)
 * Nicola Michaelis (michn2)
-* Christof Jungo
 
 ### Agenda
-* Database Design SOLL, ObjectGUID needed?
-* IST/SOLL only checks for Group Membership or also for OU changes and other things?
+* Database Design (SOLL, Events)
+* Mapping SOLL-IST
+* GUI Design
+* Roles
+* Timeplan
 
 ### Decisions
+* SOLL-IST Comparison 
+ * based on ObjectGUID
+ * CSV upload does not need ObjectGUID (based on Username)
+ * New SOLL Account is also based on Username because there is no IST association (New table withoud Object GUID)
+* Logging
+ * Logging goes to additional table (File and Syslog is optional)
+* Events
+ * User is not in Group in IST
+ * User is not in Group in SOLL
+ * Group is not in Group in IST
+ * Group is not in Group in SOLL
+ * Wrong Username
+ * User not in SOLL
+ * User not in IST
+ * Group not in SOLL
+ * Group not in IST
 
 ### ToDo
-* Dario -> DB 
-* Beat -> Auditing
-* Nicola -> GUI, Roles
-* Philipp -> IST
+* Dario -> DB (SOLL, Events)
+* Beat -> Logging (DB), SOLL-IST comparison
+* Nicola -> GUI
+* Philipp -> IST, SOLL
+
 
 ## 2018-10-12
 ### Attendees
@@ -39,7 +58,7 @@
 
 ### ToDo
 * Dario -> DB 
-* Beat -> Auditing
+* Beat -> Logging
 * Nicola -> GUI, Roles
 * Philipp -> IST
 

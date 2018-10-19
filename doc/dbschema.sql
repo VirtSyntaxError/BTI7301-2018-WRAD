@@ -128,7 +128,7 @@ CREATE TABLE WRADSetting
   PRIMARY KEY (SettingID)
 );
 
-INSERT INTO WRADSetting (SettingName,SettingValue) VALUES ("ADRoleDepartmentLead",""),("ADRoleAuditor",""),("ADRoleSysAdmin",""),("ADRoleApplOwner",""),("LogToFile","true"),("LogFilePath",""),("LogSyslogServer",""),("LogSyslogServerProtocol","udp");
+INSERT INTO WRADSetting (SettingName,SettingValue) VALUES ("ADRoleDepartmentLead",""),("ADRoleAuditor",""),("ADRoleSysAdmin",""),("ADRoleApplOwner",""),("LogExternal","none"),("LogFilePath",""),("LogSyslogServer",""),("LogSyslogServerProtocol","udp"),("SearchBase","");
 
 CREATE TABLE WRADExcludeUser
 (
@@ -145,6 +145,15 @@ CREATE TABLE WRADExcludeGroup
   ObjectGUID VARCHAR(36) NOT NULL,
   PRIMARY KEY (ExcludeID),
   CONSTRAINT `FK_ExcludeGroup` FOREIGN KEY (ObjectGUID) REFERENCES WRADGroup(ObjectGUID) ON DELETE CASCADE	
+);
+
+CREATE TABLE WRADLog
+(
+  LogID INT NOT NULL AUTO_INCREMENT,
+  LogTimestamp TIMESTAMP NOT NULL,
+  LogSeverity INT NOT NULL,
+  LogText TEXT NOT NULL,
+  PRIMARY KEY (LogID)
 );
 
 DELIMITER //
