@@ -1,9 +1,22 @@
 if(!(get-module UniversalDashboard)){
 	Import-Module UniversalDashboard
 }
-$SearchBase = (Get-ADDomain).DistinguishedName
 
+if(!(get-module WRADDBCommands)){
+    Import-Module ..\modules\WRADDBCommands.psm1
+}
 
+if((Get-WRADUser).Count = 0) {
+    New-WRADUser -ObjectGUID 01 -SAMAccountName mmu -DistinguishedName mmu -UserPrincipalName "m.mustermann" -DisplayName "M. Mustermann" -Description "Max Mustermann" 
+    New-WRADUser -ObjectGUID 02 -SAMAccountName sac -DistinguishedName sac -UserPrincipalName "s.achter" -DisplayName "S. Achter" -Description "Simon Achter"    
+    New-WRADUser -ObjectGUID 03 -SAMAccountName aow -DistinguishedName aow -UserPrincipalName "a.owsen" -DisplayName "A. Owsen" -Description "Albert Owsen"
+    New-WRADUser -ObjectGUID 04 -SAMAccountName ast -DistinguishedName ast -UserPrincipalName "a.stadler" -DisplayName "A. Stadler" -Description "Alexa Stadler"
+
+    New-WRADGroup -ObjectGUID 05 -SAMAccountName Auditor -CommonName Auditor -DistinguishedName Auditor -GroupType ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP -GroupTypeSecurity Security -Description "Auditoren Gruppe"
+    New-WRADGroup -ObjectGUID 06 -SAMAccountName Auditor -CommonName Auditor -DistinguishedName Auditor -GroupType ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP -GroupTypeSecurity Security -Description "Auditoren Gruppe"
+
+    New-WRADGroupOfUser -UserObjectGUID 01 -GroupObjectGUID 05
+}
 # Dashboard Daten
 
 $FpMBckgrn = "#95cc0000"
@@ -30,17 +43,10 @@ $ArrAL_FpM = @(
 	New-Object PSObject	-Property @{month="Juni"; count=11}
 )
 
-#Last logon older than 90 Days
-$ADUserLLOt90 = (Search-ADAccount -AccountInactive -UsersOnly -TimeSpan 90 |measure ).count
-#Last logon between 30 and 90 Days
-$ADUserLLb30a90 = (Search-ADAccount -AccountInactive -UsersOnly -TimeSpan 30 |measure ).count - $ADUserLLOt90
-#Active User
-$ADUserActive = (Search-ADAccount -AccountInactive -UsersOnly -TimeSpan 0 |measure ).count - $ADUserLLb30a90
-
 $ADUserActivity = @(
-    New-Object PSObject	-Property @{descr="Aelter als 90 Tage"; count=3; bckgrnd="#ff0000"}
-    New-Object PSObject	-Property @{descr="Zwischen 30 und 90 Tagen"; count=10; bckgrnd="#ffff00"}
-    New-Object PSObject	-Property @{descr="Aktive Benutzer"; count=87; bckgrnd="#00ff00"}
+    New-Object PSObject	-Property @{descr="Aelter als 90 Tage"; count=3; bg="#90ff0000"}
+    New-Object PSObject	-Property @{descr="Zwischen 30 und 90 Tagen"; count=10; bg="#90ffff00"}
+    New-Object PSObject	-Property @{descr="Aktive Benutzer"; count=87; bg="#9000ff00"}
 )
 
 $ArrSA_LC = @(
@@ -129,7 +135,7 @@ $PageALDashboard = New-UDPage -Name "Abteilungsleiter" -AuthorizedRole @("WRADad
 		New-UDColumn -size 4 -Content {
 			New-UDChart -Title "Letzte Anmledung" -Type Doughnut -RefreshInterval 5 -Endpoint { 
                 $ADUserActivity | Out-UDChartData -LabelProperty "descr" -Dataset @(
-				    New-UDChartDataset -DataProperty "count"  -BackgroundColor "#9055AAFF" -HoverBackgroundColor bckgrnd -Label "Users" 
+				    New-UDChartDataset -DataProperty "count"  -BackgroundColor "#9055AAFF" -HoverBackgroundColor "bg" -Label "Users" 
                )
                 
 			}
@@ -139,9 +145,13 @@ $PageALDashboard = New-UDPage -Name "Abteilungsleiter" -AuthorizedRole @("WRADad
 		New-UDColumn -size 4 -Content {
 			New-UDChart -Title "Letzte Anmledung" -Type Doughnut -RefreshInterval 5 -Endpoint { 
                 $ADUserActivity | Out-UDChartData -LabelProperty "descr" -Dataset @( 
-				    New-UDDoughnutChartDataset -DataProperty "count"  -BackgroundColor "#9055AAFF" -HoverBackgroundColor $_.bckgrnd -Label "Users" 
+                    $test = "#90ff0000"
+                    #Write-Debug bckgrnd
+				    New-UDDoughnutChartDataset -DataProperty "count"  -BackgroundColor "#9055AAFF" -HoverBackgroundColor "#90FF0000" -Label "Users" 
                )
 			}
+            #Unable to index into an object of type System.Management.Automation.PSMemberInfoIntegratingCollection`1[System.Management.Automation.PSPropertyInfo].
+
 		}
 
 		#Fehler pro Monat
