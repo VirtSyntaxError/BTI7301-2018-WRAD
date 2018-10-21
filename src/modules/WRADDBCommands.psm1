@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 
 $null = [System.Reflection.Assembly]::LoadWithPartialName('MySql.Data')
-$BuiltinParameters = @("ErrorAction","WarningAction","Verbose","ErrorVariable","WarningVariable","OutVariable","OutBuffer","Debug","Reference")
+$BuiltinParameters = @("ErrorAction","WarningAction","Verbose","ErrorVariable","WarningVariable","OutVariable","OutBuffer","Debug","Reference","NewReference")
 
 function Connect-WRADDatabase {
     begin
@@ -140,6 +140,10 @@ function Get-WRADUser {
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
 
+        [Parameter(ParameterSetName="NEWREFERENCE")]
+		[ValidateNotNullOrEmpty()]
+		[Switch]$NewReference,
+
         [Parameter(ParameterSetName="REFERENCE")]
 		[ValidateNotNullOrEmpty()]
 		[String]$Username,
@@ -158,6 +162,7 @@ function Get-WRADUser {
 		[string]$DisplayName,
 
         [Parameter(ParameterSetName="ACTUAL")]
+        [Parameter(ParameterSetName="REFERENCE")]
 		[ValidateNotNullOrEmpty()]
 		[string]$ObjectGUID,
 
@@ -175,34 +180,38 @@ function Get-WRADUser {
 	begin
 	{
         $Table = 'WRADUser'
+        $QueryEnd = ''
         if($Reference){
             $Table = 'WRADRefUser'
+            $QueryEnd = ' UNION SELECT "n/a",Username,DisplayName,CreatedDate,Enabled FROM `WRADRefNewUser`'
+        } elseif($NewReference){
+            $Table = 'WRADRefNewUser'
         }
         $Query = 'SELECT * FROM '+$Table;
 
         $FirstParameter = $true;
 
         $PSBoundParameters.Keys | ForEach {
-        if ($BuiltinParameters -notcontains $_) {
-            $Value = Get-Variable -Name $_ -ErrorAction Stop | Select-Object -ExpandProperty Value -ErrorAction Stop
+            if ($BuiltinParameters -notcontains $_) {
+                $Value = (Get-Variable -Name $_ ).Value
 
-            if($_ -eq "Disabled"){ 
-                $Value = 0 
-                $_ = "Enabled"
-             }
-            elseif($_ -eq "Expired"){ 
-                $Value = 1
-            }
+                if($_ -eq "Disabled"){ 
+                    $Value = 0 
+                    $_ = "Enabled"
+                 }
+                elseif($_ -eq "Expired"){ 
+                    $Value = 1
+                }
         
-            if($FirstParameter){
-                $Query += ' WHERE `'+$_+'` = "'+$Value+'" '
-                $FirstParameter = $false
-            } else {
-                $Query += ' AND `'+$_+'` = "'+$Value+'" '
+                if($FirstParameter){
+                    $Query += ' WHERE `'+$_+'` = "'+$Value+'" '
+                    $FirstParameter = $false
+                } else {
+                    $Query += ' AND `'+$_+'` = "'+$Value+'" '
+                }
             }
         }
-}
-		
+		$Query += $QueryEnd
 	}
 	Process
 	{
@@ -226,10 +235,13 @@ function Get-WRADUser {
 
     Gets all users which actually exist in the database. These are the fetched users from the Active Directory.
     The Output does not conaint any deleted users.
-    It is possible to load all refernce users with the -Reference Switch.
+    It is possible to load all reference users with the -Reference switch or all new reference users with -NewReference.
 
     .PARAMETER Reference
-    Specifies if the reference user table should be used instead of the actual one.
+    Specifies if all reference users should be shown instead of the actual one (including the new reference users).
+
+    .PARAMETER NewReference
+    Specifies if the new reference user table should be used instead of the actual or the reference one.
 
     .PARAMETER SAMAccountName
     Specifies the SAMAccountName of an user. Only usable with actual users.
@@ -244,7 +256,7 @@ function Get-WRADUser {
     Specifies the DisplayName of an user.
 
     .PARAMETER ObjectGUID
-    Specifies the Globally Unique Identifier of an user. Only usable with actual users.
+    Specifies the Globally Unique Identifier of an user.
 
     .PARAMETER Disabled
     Specifies if an user is disabled.
@@ -298,6 +310,16 @@ function Get-WRADUser {
     Enabled            : False
     Description        : Pidus User
     Expired            : True
+
+    .EXAMPLE
+    
+    C:\PS> Get-WRADUser -New
+    NewUserID   : 1
+    Username    : testuser2
+    DisplayName : testuser2
+    CreatedDate : 21.10.2018 19:22:51
+    Enabled     : False
+
     #>
 
 }
@@ -487,50 +509,37 @@ function Update-WRADUser {
 	)
 	begin
 	{
-        $Query = 'UPDATE WRADUser SET '
+        $Table = 'WRADUser'
+        $Query = 'UPDATE '+$Table+' SET '
         $QueryEnd = ' WHERE `ObjectGUID` = "'+$ObjectGUID+'"'
         $QueryValue = @()
-
-        if($PSBoundParameters.ContainsKey('Enabled')){
-            if($Enabled -eq $true ){
-                $QueryValue += '`Enabled` = 1'
-            } else {
-                $QueryValue += '`Enabled` = 0'
-            }
-        }
-
-        if($PSBoundParameters.ContainsKey('Expired')){
-            if($Expired -eq $true ){
-                $QueryValue += '`Expired` = 1'
-            } else {
-                $QueryValue += '`Expired` = 0'
-            }
-        }
-
-        if($LastLogonTimestamp){
-            $Timestamp = $LastLogonTimestamp.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss")
-            $QueryValue += '`LastLogonTimestamp` = "'+$Timestamp+'"'
-        }
-
-        if($Description){
-            $QueryValue += '`Description` = "'+$Description.Replace('"','\"')+'"'
-		}
-
         if($DistinguishedName){
-            $QueryValue += '`DistinguishedName` = "'+$DistinguishedName.Replace('"','\"')+'"'
-		}
+            $DistinguishedName = $DistinguishedName.Replace('"','&DQ&')
+        }
+        if($Description){
+            $Description = $Description.Replace('"','&DQ&')
+        }
+        if($LastLogonTimestamp){
+            [String]$LastLogonTimestamp = $LastLogonTimestamp.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss")
+        }
 
-        if($SAMAccountName){
-            $QueryValue += '`SAMAccountName` = "'+$SAMAccountName+'"'
-		}
+        $PSBoundParameters.Keys | ForEach {
+            if ($BuiltinParameters -notcontains $_ -and $_ -ne "ObjectGUID") {
+                [String]$Value = (Get-Variable -Name $_).Value
 
-        if($UserPrincipalName){
-            $QueryValue += '`UserPrincipalName` = "'+$UserPrincipalName+'"'
-		}
+                if($_ -eq "Expired" -or $_ -eq "Enabled"){
+                    if($Value -eq $true ){
+                        [Int]$Value = 1
+                    } else {
+                        [Int]$Value = 0
+                    }
+                } elseif ($_ -ne "LastLogonTimestamp"){
+                    $Value = $Value.Replace('&DQ&','\"')
+                }
 
-        if($DisplayName){
-            $QueryValue += '`DisplayName` = "'+$DisplayName+'"'
-		}
+                $QueryValue += ' `'+$_+'` = "'+$Value+'" '
+            }
+        }
 
         $Query += ($QueryValue -join ", ")
         $Query += $QueryEnd
@@ -552,7 +561,7 @@ function Update-WRADUser {
                 throw($CustomError) 
             }
             
-			Write-Verbose "Invoking Update SQL Query on table WRADUser";
+			Write-Verbose "Invoking Update SQL Query on table $Table";
 			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
 		}
 		catch
@@ -655,6 +664,10 @@ function Get-WRADGroup {
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
 
+        [Parameter(ParameterSetName="NEWREFERENCE")]
+		[ValidateNotNullOrEmpty()]
+		[Switch]$NewReference,
+
         [Parameter(ParameterSetName="ACTUAL")]
 		[ValidateNotNullOrEmpty()]
 		[string]$SAMAccountName,
@@ -669,6 +682,7 @@ function Get-WRADGroup {
 		[string]$GroupType,
 
         [Parameter(ParameterSetName="ACTUAL")]
+        [Parameter(ParameterSetName="REFERENCE")]
 		[ValidateNotNullOrEmpty()]
 		[string]$ObjectGUID,
         
@@ -680,8 +694,12 @@ function Get-WRADGroup {
 	begin
 	{
         $Table = 'WRADGroup'
+        $QueryEnd = ''
         if($Reference){
             $Table = 'WRADRefGroup'
+            $QueryEnd = ' UNION SELECT "n/a",CreatedDate,GroupType,GroupTypeSecurity,CommonName FROM `WRADRefNewGroup`'
+        } elseif ($NewReference){
+            $Table = 'WRADRefNewGroup'
         }
         $Query = 'SELECT * FROM '+$Table;
 
@@ -689,7 +707,7 @@ function Get-WRADGroup {
 
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
-                $Value = Get-Variable -Name $_ -ErrorAction Stop | Select-Object -ExpandProperty Value -ErrorAction Stop
+                $Value = (Get-Variable -Name $_).Value
 
                 if($FirstParameter){
                     $Query += ' WHERE `'+$_+'` = "'+$Value+'" '
@@ -698,7 +716,8 @@ function Get-WRADGroup {
                     $Query += ' AND `'+$_+'` = "'+$Value+'" '
                 }
             }
-        }		
+        }	
+        $Query += $QueryEnd	
 	}
 	Process
 	{
@@ -863,33 +882,23 @@ function Update-WRADGroup {
 	)
 	begin
 	{
-        $Query = 'UPDATE WRADGroup SET '
+        $Table = 'WRADGroup'
+        $Query = 'UPDATE '+$Table+' SET '
         $QueryEnd = ' WHERE `ObjectGUID` = "'+$ObjectGUID+'"'
         $QueryValue = @()
-
-        if($Description){
-            $QueryValue += '`Description` = "'+$Description.Replace('"','\"')+'"'
-		}
-
         if($DistinguishedName){
-            $QueryValue += '`DistinguishedName` = "'+$DistinguishedName.Replace('"','\"')+'"'
-		}
+            $DistinguishedName = $DistinguishedName.Replace('"','&DQ&')
+        }
+        if($Description){
+            $Description = $Description.Replace('"','&DQ&')
+        }
 
-        if($SAMAccountName){
-            $QueryValue += '`SAMAccountName` = "'+$SAMAccountName+'"'
-		}
-
-        if($CommonName){
-            $QueryValue += '`CommonName` = "'+$CommonName+'"'
-		}
-
-        if($GroupType){
-            $QueryValue += '`GroupType` = "'+$GroupType+'"'
-		}
-
-        if($GroupTypeSecurity){
-            $QueryValue += '`GroupTypeSecurity` = "'+$GroupTypeSecurity+'"'
-		}
+        $PSBoundParameters.Keys | ForEach {
+            if ($BuiltinParameters -notcontains $_ -and $_ -ne "ObjectGUID") {
+                $Value = (Get-Variable -Name $_).Value
+                $QueryValue += ' `'+$_+'` = "'+$Value.Replace('&DQ&','\"')+'" '
+            }
+        }
 
         $Query += ($QueryValue -join ", ")
         $Query += $QueryEnd
@@ -911,7 +920,7 @@ function Update-WRADGroup {
                 throw($CustomError) 
             }
             
-			Write-Verbose "Invoking Update SQL Query on table WRADGroup";
+			Write-Verbose "Invoking Update SQL Query on table $Table";
 			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
 		}
 		catch
@@ -1427,6 +1436,90 @@ function Get-WRADSetting {
 		try
 		{
 			Write-Verbose "Invoking SELECT SQL Query on table WRADSetting";
+			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
+		}
+		catch
+		{
+			Write-Error -Message $_.Exception.Message
+			break
+		}
+	}
+	End
+	{
+	}
+}
+
+function Update-WRADSetting {
+    Param
+	(
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$ADRoleDepartmentLead,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$ADRoleAuditor,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$ADRoleSysAdmin,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$ADRoleApplOwner,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateSet('none','syslog','file')]
+		[String]$LogExternal,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$LogFilePath,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$LogSyslogServer,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateSet('udp','tcp')]
+		[String]$LogSyslogServerProtocol,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$SearchBase
+	)
+	begin
+	{
+        $Table = 'WRADSetting'
+        $Query = 'UPDATE '+$Table+' SET `SettingValue` = CASE ';
+        $Settings = @()
+        if($SearchBase){
+            $SearchBase = $SearchBase.Replace('"','&DQ&')
+        }
+        if($LogFilePath){
+            $LogFilePath = $LogFilePath.Replace('\','&BS&')
+        }
+
+        $PSBoundParameters.Keys | ForEach {
+            if ($BuiltinParameters -notcontains $_) {
+                $Value = (Get-Variable -Name $_).Value
+
+                $Query += ' WHEN `SettingName` = "'+$_+'" THEN "'+$Value.Replace('&DQ&','\"').Replace('&BS&','\\')+'" '
+                $Settings += '"'+$_+'"'
+            }
+        }		
+        $Query += ' END WHERE `SettingName` IN ('+($Settings -join ", ")+' )'
+	}
+	Process
+	{
+		try
+		{
+            Write-Verbose "Checking if at least one parameter is set";
+            if($Settings.Count -eq 0){
+                $CustomError = "At least one parameter should be specififed!"
+                throw($CustomError) 
+            }
+			Write-Verbose "Invoking Update SQL Query on table $Table";
 			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
 		}
 		catch
