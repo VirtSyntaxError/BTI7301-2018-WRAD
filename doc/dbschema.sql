@@ -34,8 +34,8 @@ CREATE TABLE WRADUser
   LastLogonTimestamp TIMESTAMP NULL,
   userPrincipalName VARCHAR(1024) NOT NULL,
   DisplayName VARCHAR(256) NOT NULL,
-  CreatedDate TIMESTAMP,
-  LastModifiedDate TIMESTAMP,
+  CreatedDate TIMESTAMP NULL,
+  LastModifiedDate TIMESTAMP NULL,
   Enabled BOOLEAN NOT NULL,
   Description TEXT NOT NULL,
   Expired BOOLEAN NOT NULL,
@@ -47,8 +47,8 @@ CREATE TABLE WRADRefUser
   ObjectGUID VARCHAR(36) NOT NULL,
   Username VARCHAR(1024) NOT NULL,
   DisplayName VARCHAR(256) NOT NULL,
-  CreatedDate TIMESTAMP,
-  LastModifiedDate TIMESTAMP,
+  CreatedDate TIMESTAMP NULL,
+  LastModifiedDate TIMESTAMP NULL,
   Enabled BOOLEAN NOT NULL,
   PRIMARY KEY (ObjectGUID)
 );
@@ -58,8 +58,8 @@ CREATE TABLE WRADRefNewUser
   NewUserID INT NOT NULL AUTO_INCREMENT,
   Username VARCHAR(1024) NOT NULL,
   DisplayName VARCHAR(256) NOT NULL,
-  CreatedDate TIMESTAMP,
-  LastModifiedDate TIMESTAMP,
+  CreatedDate TIMESTAMP NULL,
+  LastModifiedDate TIMESTAMP NULL,
   Enabled BOOLEAN NOT NULL,
   PRIMARY KEY (NewUserID)
 );
@@ -72,8 +72,8 @@ CREATE TABLE WRADUserArchive
   DistinguishedName VARCHAR(2048) NOT NULL,
   ObjectGUID VARCHAR(36) NOT NULL,
   OperationType ENUM('u','d'),
-  VersionStartTime TIMESTAMP,
-  VersionEndTime TIMESTAMP,
+  VersionStartTime TIMESTAMP NULL,
+  VersionEndTime TIMESTAMP NULL,
   DisplayName VARCHAR(256) NOT NULL,
   Description TEXT NOT NULL,
   Enabled BOOLEAN NOT NULL,
@@ -84,8 +84,8 @@ CREATE TABLE WRADUserArchive
 CREATE TABLE WRADGroup
 (
   ObjectGUID VARCHAR(36) NOT NULL,
-  CreatedDate TIMESTAMP,
-  LastModifiedDate TIMESTAMP,
+  CreatedDate TIMESTAMP NULL,
+  LastModifiedDate TIMESTAMP NULL,
   SAMAccountName VARCHAR(104) NOT NULL,
   GroupType ENUM('ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP','ADS_GROUP_TYPE_UNIVERSAL_GROUP') NOT NULL,
   GroupTypeSecurity ENUM('Security','Distribution') NOT NULL,
@@ -98,8 +98,8 @@ CREATE TABLE WRADGroup
 CREATE TABLE WRADRefGroup
 (
   ObjectGUID VARCHAR(36) NOT NULL,
-  CreatedDate TIMESTAMP,
-  LastModifiedDate TIMESTAMP,
+  CreatedDate TIMESTAMP NULL,
+  LastModifiedDate TIMESTAMP NULL,
   GroupType ENUM('ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP','ADS_GROUP_TYPE_UNIVERSAL_GROUP') NOT NULL,
   GroupTypeSecurity ENUM('Security','Distribution') NOT NULL,
   CommonName VARCHAR(256) NOT NULL,
@@ -109,8 +109,8 @@ CREATE TABLE WRADRefGroup
 CREATE TABLE WRADRefNewGroup
 (
   NewGroupID INT NOT NULL AUTO_INCREMENT,
-  CreatedDate TIMESTAMP,
-  LastModifiedDate TIMESTAMP,
+  CreatedDate TIMESTAMP NULL,
+  LastModifiedDate TIMESTAMP NULL,
   GroupType ENUM('ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP','ADS_GROUP_TYPE_UNIVERSAL_GROUP') NOT NULL,
   GroupTypeSecurity ENUM('Security','Distribution') NOT NULL,
   CommonName VARCHAR(256) NOT NULL,
@@ -119,7 +119,7 @@ CREATE TABLE WRADRefNewGroup
 
 CREATE TABLE WRADUserGroup
 (
-  CreatedDate TIMESTAMP,
+  CreatedDate TIMESTAMP NULL,
   UserObjectGUID VARCHAR(36) NOT NULL,
   GroupObjectGUID VARCHAR(36) NOT NULL,
   PRIMARY KEY (UserObjectGUID, GroupObjectGUID),
@@ -129,7 +129,7 @@ CREATE TABLE WRADUserGroup
 
 CREATE TABLE WRADRefUserGroup
 (
-  CreatedDate TIMESTAMP,
+  CreatedDate TIMESTAMP NULL,
   UserObjectGUID VARCHAR(36) NOT NULL,
   GroupObjectGUID VARCHAR(36) NOT NULL,
   PRIMARY KEY (UserObjectGUID, GroupObjectGUID),
@@ -140,7 +140,7 @@ CREATE TABLE WRADRefUserGroup
 CREATE TABLE WRADRefNewUserGroup
 (
   RefNewUserGroupID INT NOT NULL AUTO_INCREMENT,
-  CreatedDate TIMESTAMP,
+  CreatedDate TIMESTAMP NULL,
   Username VARCHAR(1024) NOT NULL,
   Groupname VARCHAR(256) NOT NULL,
   PRIMARY KEY (RefNewUserGroupID)
@@ -148,7 +148,7 @@ CREATE TABLE WRADRefNewUserGroup
 
 CREATE TABLE WRADGroupGroup
 (
-  CreatedDate TIMESTAMP,
+  CreatedDate TIMESTAMP NULL,
   ChildGroupObjectGUID VARCHAR(36) NOT NULL,
   ParentGroupObjectGUID VARCHAR(36) NOT NULL,
   PRIMARY KEY (ChildGroupObjectGUID, ParentGroupObjectGUID),
@@ -158,7 +158,7 @@ CREATE TABLE WRADGroupGroup
 
 CREATE TABLE WRADRefGroupGroup
 (
-  CreatedDate TIMESTAMP,
+  CreatedDate TIMESTAMP NULL,
   ChildGroupObjectGUID VARCHAR(36) NOT NULL,
   ParentGroupObjectGUID VARCHAR(36) NOT NULL,
   PRIMARY KEY (ChildGroupObjectGUID, ParentGroupObjectGUID),
@@ -169,7 +169,7 @@ CREATE TABLE WRADRefGroupGroup
 CREATE TABLE WRADRefNewGroupGroup
 (
   RefNewGroupGroupID INT NOT NULL AUTO_INCREMENT,
-  CreatedDate TIMESTAMP,
+  CreatedDate TIMESTAMP NULL,
   ChildGroup VARCHAR(256) NOT NULL,
   ParentGroup VARCHAR(256) NOT NULL,
   PRIMARY KEY (RefNewGroupGroupID)
@@ -179,8 +179,8 @@ CREATE TABLE WRADUserGroupArchive
 (
   UserObjectGUID VARCHAR(36) NOT NULL,
   GroupObjectGUID VARCHAR(36) NOT NULL,
-  VersionStartTime TIMESTAMP,
-  VersionEndTime TIMESTAMP,
+  VersionStartTime TIMESTAMP NULL,
+  VersionEndTime TIMESTAMP NULL,
   ArchiveID INT NOT NULL AUTO_INCREMENT,
   PRIMARY KEY (ArchiveID)
 );
@@ -193,9 +193,9 @@ CREATE TABLE WRADGroupArchive
   SAMAccountName VARCHAR(104) NOT NULL,
   GroupType ENUM('ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP','ADS_GROUP_TYPE_UNIVERSAL_GROUP') NOT NULL,
   GroupTypeSecurity ENUM('Security','Distribution') NOT NULL,
-  VersionStartTime TIMESTAMP,
+  VersionStartTime TIMESTAMP NULL,
   OperationType ENUM('u','d'),
-  VersionEndTime TIMESTAMP,
+  VersionEndTime TIMESTAMP NULL,
   DistinguishedName VARCHAR(2048) NOT NULL,
   Description TEXT NOT NULL,
   PRIMARY KEY (ArchiveID)
@@ -206,8 +206,8 @@ CREATE TABLE WRADGroupGroupArchive
   ArchiveID INT NOT NULL AUTO_INCREMENT,
   ParentGroupObjectGUID VARCHAR(36) NOT NULL,
   ChildGroupObjectGUID VARCHAR(36) NOT NULL,
-  VersionStartTime TIMESTAMP,
-  VersionEndTime TIMESTAMP,
+  VersionStartTime TIMESTAMP NULL,
+  VersionEndTime TIMESTAMP NULL,
   PRIMARY KEY (ArchiveID)
 );
 
@@ -241,7 +241,7 @@ CREATE TABLE WRADExcludeGroup
 CREATE TABLE WRADLog
 (
   LogID INT NOT NULL AUTO_INCREMENT,
-  LogTimestamp TIMESTAMP NOT NULL,
+  LogTimestamp TIMESTAMP NULL,
   LogSeverity INT NOT NULL,
   LogText TEXT NOT NULL,
   PRIMARY KEY (LogID)
