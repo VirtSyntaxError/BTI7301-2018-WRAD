@@ -420,7 +420,7 @@ CREATE TRIGGER RefGroupGroupInsert
 CREATE TRIGGER RefNewGroupGroupInsert
   BEFORE INSERT ON WRADRefNewGroupGroup
   FOR EACH ROW BEGIN
-	SET NEW.CreatedDate = UTC_TIMESTAMP(),NEW.LastModifiedDate = UTC_TIMESTAMP();
+	SET NEW.CreatedDate = UTC_TIMESTAMP();
  END
 //
 
