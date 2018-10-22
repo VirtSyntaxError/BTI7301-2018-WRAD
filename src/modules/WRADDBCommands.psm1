@@ -136,11 +136,11 @@ function Get-WRADUser {
     [CmdletBinding(DefaultParameterSetName="ACTUAL")]
     Param
 	(
-        [Parameter(ParameterSetName="REFERENCE")]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
 
-        [Parameter(ParameterSetName="NEWREFERENCE")]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[Switch]$NewReference,
 
@@ -329,11 +329,11 @@ function New-WRADUser {
     [CmdletBinding(DefaultParameterSetName="ACTUAL")]
     Param
 	(
-        [Parameter(ParameterSetName="REFERENCE")]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
 
-        [Parameter(ParameterSetName="NEWREFERENCE")]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[Switch]$NewReference,
 
@@ -434,7 +434,6 @@ function New-WRADUser {
         $Query += $QueryMiddle
         $Query += ($QueryValue -join ", ")
         $Query += $QueryEnd
-        write-host $Query
 	}
 	Process
 	{
@@ -471,6 +470,12 @@ function New-WRADUser {
 
     Creates new user in the database.
 
+    .PARAMETER Reference
+    Specifies if a reference user should be created instead of an actual one.
+
+    .PARAMETER NewReference
+    Specifies if a new reference user should be created instead of an actual or a reference one.
+
     .PARAMETER SAMAccountName
     Specifies the SAMAccountName of the user.
 
@@ -490,7 +495,7 @@ function New-WRADUser {
     Specifies the Globally Unique Identifier of the user.
 
     .PARAMETER Enabled
-    Specifies if the user is disabled.
+    Specifies if the user is enabled.
 
     .PARAMETER Expired
     Specifies if the user is expired.
@@ -626,7 +631,11 @@ function Update-WRADUser {
 
             Write-Verbose "Checking if at least one parameter is set";
             if($QueryValue.Count -eq 0){
-                $CustomError = "No parameter is set for user with ObjectGUID "+$ObjectGUID
+                if ($NewReference){
+                    $CustomError = "No parameter is set for user with Username "+$Username
+                } else {
+                    $CustomError = "No parameter is set for user with ObjectGUID "+$ObjectGUID
+                }
                 throw($CustomError) 
             }
 
@@ -709,27 +718,64 @@ function Update-WRADUser {
 }
 
 function Remove-WRADUser {
+    [CmdletBinding(DefaultParameterSetName="ACTUAL")]
     Param
 	(
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[string]$ObjectGUID
+		[Switch]$NewReference,
+
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[Switch]$Reference,
+        
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$Username,
+
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$ObjectGUID
 	)
 	begin
 	{
-        $Query = 'DELETE FROM WRADUser WHERE `ObjectGUID` = "'+$ObjectGUID+'"'
+        $Table = ''
+        $QueryEnd = ' WHERE `ObjectGUID` = "'+$ObjectGUID+'"'
+        if($Reference){
+            $Table = 'WRADRefUser'
+        } elseif($NewReference){
+            $Table = 'WRADRefNewUser'
+            $QueryEnd = ' WHERE `Username` = "'+$Username+'"'
+        } else {
+            $Table = 'WRADUser'
+        }
+        $Query = 'DELETE FROM '+$Table+' '
+        $Query += $QueryEnd
 	}
 	Process
 	{
 		try
 		{
-            Write-Verbose "Checking is user exists";
-            if((Get-WRADUser -ObjectGUID $ObjectGUID) -eq $null){
-                $CustomError = "User $ObjectGUID does not exist"
-                throw($CustomError) 
+            Write-Verbose "Checking if user exists";
+            if($Reference) {
+                if((Get-WRADUser -Reference -ObjectGUID $ObjectGUID) -eq $null){
+                    $CustomError = "No entry for ObjectGUID "+$ObjectGUID
+                    throw($CustomError) 
+                }
+            } elseif ($NewReference) {
+                 if((Get-WRADUser -NewReference -Username $Username) -eq $null){
+                    $CustomError = "No entry for Username "+$Username
+                    throw($CustomError) 
+                }           
+            } else {
+                if((Get-WRADUser -ObjectGUID $ObjectGUID) -eq $null){
+                    $CustomError = "No entry for ObjectGUID "+$ObjectGUID
+                    throw($CustomError) 
+                }
             }
 
-			Write-Verbose "Invoking DELETE SQL Query on table WRADUser";
+			Write-Verbose "Invoking DELETE SQL Query on table $Table";
 			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
 		}
 		catch
@@ -747,33 +793,37 @@ function Get-WRADGroup {
     [CmdletBinding(DefaultParameterSetName="ACTUAL")]
     Param
     (
-        [Parameter(ParameterSetName="REFERENCE")]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
 
-        [Parameter(ParameterSetName="NEWREFERENCE")]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[Switch]$NewReference,
 
-        [Parameter(ParameterSetName="ACTUAL")]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[string]$SAMAccountName,
 
-        [Parameter(ParameterSetName="ACTUAL")]
-        [Parameter(ParameterSetName="REFERENCE")]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[string]$CommonName,
 
-        [Parameter(ParameterSetName="ACTUAL")]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
         [ValidateSet('ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP','ADS_GROUP_TYPE_UNIVERSAL_GROUP')]
 		[string]$GroupType,
 
-        [Parameter(ParameterSetName="ACTUAL")]
-        [Parameter(ParameterSetName="REFERENCE")]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[string]$ObjectGUID,
         
-        [Parameter(ParameterSetName="ACTUAL")]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
 		[ValidateSet('Security','Distribution')]
 		[String]$GroupTypeSecurity
 
@@ -784,7 +834,6 @@ function Get-WRADGroup {
         $QueryEnd = ''
         if($Reference){
             $Table = 'WRADRefGroup'
-            $QueryEnd = ' UNION SELECT "n/a",CreatedDate,GroupType,GroupTypeSecurity,CommonName FROM `WRADRefNewGroup`'
         } elseif ($NewReference){
             $Table = 'WRADRefNewGroup'
         }
@@ -825,62 +874,106 @@ function Get-WRADGroup {
 }
 
 function New-WRADGroup {
+    [CmdletBinding(DefaultParameterSetName="ACTUAL")]
     Param
 	(
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[string]$ObjectGUID,
+		[Switch]$Reference,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[string]$SAMAccountName,
+		[Switch]$NewReference,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[string]$CommonName,
+		[String]$ObjectGUID,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$SAMAccountName,
+
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$CommonName,
+
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[String]$DistinguishedName,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
         [ValidateSet('ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP','ADS_GROUP_TYPE_UNIVERSAL_GROUP')]
-		[string]$GroupType,
+		[String]$GroupType,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[String]$Description,
         
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateSet('Security','Distribution')]
-		[string]$GroupTypeSecurity
+		[String]$GroupTypeSecurity
 
 	)
 	begin
 	{
-        $Query = 'INSERT INTO WRADGroup (`ObjectGUID`, `SAMAccountName`, `DistinguishedName`, `CommonName`'
-        $QueryValue = ') VALUES("'+$ObjectGUID+'", "'+$SAMAccountName+'", "'+$DistinguishedName.Replace('"','\"')+'", "'+$CommonName+'"'
-        $QueryEnd = ')'
+        $Table = ''
+        $QueryEnd = ') '
+        $QueryMiddle = ' ) VALUES ('
+        if($Reference){
+            $Table = 'WRADRefGroup'
+        } elseif($NewReference){
+            $Table = 'WRADRefNewGroup'
+        } else {
+            $Table = 'WRADGroup'
+            if($DistinguishedName){
+                $DistinguishedName = $DistinguishedName.Replace('"','&DQ&')
+            }
+            if($Description){
+                $Description = $Description.Replace('"','&DQ&')
+            }
+        }
+        $Query = 'INSERT INTO '+$Table+' ('
+        $QueryValue = @()
+        $QueryVariable = @()
 
-        if($Description){
-            $Query += ', `Description`'
-            $QueryValue += ', "'+$Description.Replace('"','\"')+'"'
-		}
+        $PSBoundParameters.Keys | ForEach {
+            if ($BuiltinParameters -notcontains $_) {
+                [String]$Value = (Get-Variable -Name $_).Value
+                $QueryVariable += '`'+$_+'`'
+                $QueryValue += ' "'+$Value+'"'
+            }
+        }
 
-        $Query += $QueryValue
-        $Query += $QueryEnd		
+        $Query += ($QueryVariable -join ", ")
+        $Query += $QueryMiddle
+        $Query += ($QueryValue -join ", ")
+        $Query += $QueryEnd	
 	}
 	Process
 	{
 		try
 		{
             Write-Verbose "Checking for already existent group";
-            if((Get-WRADGroup -ObjectGUID $ObjectGUID) -ne $null){
-                $CustomError = "Duplicate entry for ObjectGUID "+$ObjectGUID
-                throw($CustomError) 
+            if($Reference -or $NewReference) {
+                if((Get-WRADGroup -Reference -CommonName $CommonName) -ne $null -or (Get-WRADGroup -NewReference -CommonName $CommonName) -ne $null){
+                    $CustomError = "Duplicate entry for group "+$CommonName
+                    throw($CustomError) 
+                }
+            } else {
+                if((Get-WRADGroup -ObjectGUID $ObjectGUID) -ne $null){
+                    $CustomError = "Duplicate entry for ObjectGUID "+$ObjectGUID
+                    throw($CustomError) 
+                }
             }
 
-			Write-Verbose "Invoking INSERT SQL Query on table WRADGroup";
+			Write-Verbose "Invoking INSERT SQL Query on table $Table";
 			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
 		}
 		catch
@@ -897,6 +990,13 @@ function New-WRADGroup {
     .DESCRIPTION
 
     Creates a new group in the database with the given parameters.
+
+    
+    .PARAMETER Reference
+    Specifies if a reference group should be created instead of an actual one.
+
+    .PARAMETER NewReference
+    Specifies if a new reference group should be created instead of an actual or a reference one.
 
     .PARAMETER SAMAccountName
     Specifies the SAMAccountName of the group.
@@ -935,55 +1035,79 @@ function New-WRADGroup {
 }
 
 function Update-WRADGroup {
+    [CmdletBinding(DefaultParameterSetName="ACTUAL")]
     Param
 	(
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[string]$ObjectGUID,
+		[Switch]$Reference,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[string]$SAMAccountName,
+		[Switch]$NewReference,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[string]$CommonName,
+		[String]$ObjectGUID,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$SAMAccountName,
+
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$CommonName,
+
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[String]$DistinguishedName,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
         [ValidateSet('ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP','ADS_GROUP_TYPE_UNIVERSAL_GROUP')]
-		[string]$GroupType,
+		[String]$GroupType,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[String]$Description,
         
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
 		[ValidateSet('Security','Distribution')]
-		[string]$GroupTypeSecurity
+		[String]$GroupTypeSecurity
 
 
 	)
 	begin
 	{
-        $Table = 'WRADGroup'
-        $Query = 'UPDATE '+$Table+' SET '
+        $Table = ''
         $QueryEnd = ' WHERE `ObjectGUID` = "'+$ObjectGUID+'"'
+        if($Reference){
+            $Table = 'WRADRefGroup'
+        } elseif($NewReference){
+            $Table = 'WRADRefNewGroup'
+            $QueryEnd = ' WHERE `CommonName` = "'+$CommonName+'"'
+        } else {
+            $Table = 'WRADGroup'
+            if($DistinguishedName){
+                $DistinguishedName = $DistinguishedName.Replace('"','&DQ&')
+            }
+            if($Description){
+                $Description = $Description.Replace('"','&DQ&')
+            }
+        }
+        $Query = 'UPDATE '+$Table+' SET '
         $QueryValue = @()
-        if($DistinguishedName){
-            $DistinguishedName = $DistinguishedName.Replace('"','&DQ&')
-        }
-        if($Description){
-            $Description = $Description.Replace('"','&DQ&')
-        }
 
         $PSBoundParameters.Keys | ForEach {
-            if ($BuiltinParameters -notcontains $_ -and $_ -ne "ObjectGUID") {
-                $Value = (Get-Variable -Name $_).Value
-                $QueryValue += ' `'+$_+'` = "'+$Value.Replace('&DQ&','\"')+'" '
+            if ($BuiltinParameters -notcontains $_ -and $_ -ne "ObjectGUID" -and $_ -ne "CommonName") {
+                [String]$Value = (Get-Variable -Name $_).Value
+                $QueryValue += ' `'+$_+'` = "'+$Value+'" '
             }
         }
 
@@ -997,14 +1121,30 @@ function Update-WRADGroup {
 
             Write-Verbose "Checking if at least one parameter is set";
             if($QueryValue.Count -eq 0){
-                $CustomError = "No parameter is set for group with ObjectGUID "+$ObjectGUID
+                if ($NewReference){
+                    $CustomError = "No parameter is set for group with CommonName "+$CommonName
+                } else {
+                    $CustomError = "No parameter is set for group with ObjectGUID "+$ObjectGUID
+                }
                 throw($CustomError) 
             }
 
-            Write-Verbose "Checking is group exists";
-            if((Get-WRADGroup -ObjectGUID $ObjectGUID) -eq $null){
-                $CustomError = "Group $ObjectGUID does not exist"
-                throw($CustomError) 
+            Write-Verbose "Checking for already existent group";
+            if($Reference) {
+                if((Get-WRADGroup -Reference -ObjectGUID $ObjectGUID) -eq $null){
+                    $CustomError = "No entry for ObjectGUID "+$ObjectGUID
+                    throw($CustomError) 
+                }
+            } elseif ($NewReference) {
+                 if((Get-WRADGroup -NewReference -CommonName $CommonName) -eq $null){
+                    $CustomError = "No entry for CommonName "+$CommonName
+                    throw($CustomError) 
+                }           
+            } else {
+                if((Get-WRADGroup -ObjectGUID $ObjectGUID) -eq $null){
+                    $CustomError = "No entry for ObjectGUID "+$ObjectGUID
+                    throw($CustomError) 
+                }
             }
             
 			Write-Verbose "Invoking Update SQL Query on table $Table";
@@ -1062,27 +1202,64 @@ function Update-WRADGroup {
 }
 
 function Remove-WRADGroup {
+    [CmdletBinding(DefaultParameterSetName="ACTUAL")]
     Param
 	(
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[string]$ObjectGUID
+		[Switch]$NewReference,
+
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[Switch]$Reference,
+        
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$CommonName,
+
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$ObjectGUID
 	)
 	begin
 	{
-        $Query = 'DELETE FROM WRADGroup WHERE `ObjectGUID` = "'+$ObjectGUID+'"'
+        $Table = ''
+        $QueryEnd = ' WHERE `ObjectGUID` = "'+$ObjectGUID+'"'
+        if($Reference){
+            $Table = 'WRADRefGroup'
+        } elseif($NewReference){
+            $Table = 'WRADRefNewGroup'
+            $QueryEnd = ' WHERE `CommonName` = "'+$CommonName+'"'
+        } else {
+            $Table = 'WRADGroup'
+        }
+        $Query = 'DELETE FROM '+$Table+' '
+        $Query += $QueryEnd
 	}
 	Process
 	{
 		try
 		{
-            Write-Verbose "Checking is group exists";
-            if((Get-WRADGroup -ObjectGUID $ObjectGUID) -eq $null){
-                $CustomError = "Group $ObjectGUID does not exist"
-                throw($CustomError) 
+            Write-Verbose "Checking if group exists";
+            if($Reference) {
+                if((Get-WRADGroup -Reference -ObjectGUID $ObjectGUID) -eq $null){
+                    $CustomError = "No entry for ObjectGUID "+$ObjectGUID
+                    throw($CustomError) 
+                }
+            } elseif ($NewReference) {
+                 if((Get-WRADGroup -NewReference -CommonName $CommonName) -eq $null){
+                    $CustomError = "No entry for CommonName "+$CommonName
+                    throw($CustomError) 
+                }           
+            } else {
+                if((Get-WRADGroup -ObjectGUID $ObjectGUID) -eq $null){
+                    $CustomError = "Group $ObjectGUID does not exist"
+                    throw($CustomError) 
+                }
             }
 
-			Write-Verbose "Invoking DELETE SQL Query on table WRADGroup";
+			Write-Verbose "Invoking DELETE SQL Query on table $Table";
 			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
 		}
 		catch
@@ -1100,34 +1277,56 @@ function Get-WRADGroupOfUser {
     [CmdletBinding(DefaultParameterSetName="ACTUAL")]
     Param
 	(
-        [Parameter(ParameterSetName="REFERENCE")]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
 
-        [Parameter(ParameterSetName="ACTUAL")]
-        [Parameter(ParameterSetName="REFERENCE")]
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[string]$UserObjectGUID,
+		[Switch]$NewReference,
 
-        [Parameter(ParameterSetName="ACTUAL")]
-        [Parameter(ParameterSetName="REFERENCE")]
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
-		[string]$GroupObjectGUID
+		[int]$NewUserID,
+
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[int]$NewGroupID,
+
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$UserObjectGUID,
+
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$GroupObjectGUID
 	)
 	begin
 	{
         $Table = 'WRADUserGroup'
         if($Reference){
             $Table = 'WRADRefUserGroup'
+        } elseif($NewReference){
+            $Table = 'WRADRefNewUserGroup'
         }
-        $Query = 'SELECT * FROM '+$Table+' WHERE `UserObjectGUID` = "'+$UserObjectGUID+'"';	
+        $Query = 'SELECT * FROM '+$Table;
+
+        $FirstParameter = $true;
+
+        $PSBoundParameters.Keys | ForEach {
+            if ($BuiltinParameters -notcontains $_) {
+                $Value = (Get-Variable -Name $_ ).Value
         
-        if($GroupObjectGUID){
-            $Query += ' AND `GroupObjectGUID` = "'+$GroupObjectGUID+'"'
-		}
-        	
+                if($FirstParameter){
+                    $Query += ' WHERE `'+$_+'` = "'+$Value+'" '
+                    $FirstParameter = $false
+                } else {
+                    $Query += ' AND `'+$_+'` = "'+$Value+'" '
+                }
+            }
+        }       	
 	}
 	Process
 	{
@@ -1148,32 +1347,89 @@ function Get-WRADGroupOfUser {
 }
 
 function New-WRADGroupOfUser {
+    [CmdletBinding(DefaultParameterSetName="ACTUAL")]
     Param
 	(
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[string]$UserObjectGUID,
+		[Switch]$Reference,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[string]$GroupObjectGUID
+		[Switch]$NewReference,
+
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[int]$NewUserID,
+
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[int]$NewGroupID,
+
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$UserObjectGUID,
+
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$GroupObjectGUID
 
 	)
 	begin
 	{
-        $Query = 'INSERT INTO WRADUserGroup (`UserObjectGUID`, `GroupObjectGUID`) VALUES ("'+$UserObjectGUID+'", "'+$GroupObjectGUID+'")'
+        $Table = ''
+        $QueryEnd = ') '
+        $QueryMiddle = ' ) VALUES ('
+        if($Reference){
+            $Table = 'WRADRefUserGroup'
+        } elseif($NewReference){
+            $Table = 'WRADRefNewUserGroup'
+        } else {
+            $Table = 'WRADUserGroup'
+        }
+        $Query = 'INSERT INTO '+$Table+' ('
+        $QueryValue = @()
+        $QueryVariable = @()
+
+        $PSBoundParameters.Keys | ForEach {
+            if ($BuiltinParameters -notcontains $_) {
+                [String]$Value = (Get-Variable -Name $_).Value
+                $QueryVariable += '`'+$_+'`'
+                $QueryValue += ' "'+$Value+'"'
+            }
+        }
+
+        $Query += ($QueryVariable -join ", ")
+        $Query += $QueryMiddle
+        $Query += ($QueryValue -join ", ")
+        $Query += $QueryEnd
 	}
 	Process
 	{
 		try
 		{
+            #Check for new reference in both tables (ref and refnew) should be performed!!
             Write-Verbose "Checking for already existent user to group mapping";
-            if((Get-WRADGroupOfUser -UserObjectGUID $UserObjectGUID -GroupObjectGUID $GroupObjectGUID) -ne $null){
-                $CustomError = "Duplicate entry for UserObjectGUID "+$UserObjectGUID+" and GroupObjectGUID "+$GroupObjectGUID
-                throw($CustomError) 
+            if($NewReference) {
+                if((Get-WRADGroupOfUser -NewReference -NewUserID $NewUserID -NewGroupID $NewGroupID) -ne $null){
+                    $CustomError = "Duplicate entry for NewUserID "+$NewUserID+" and NewGroupID "+$NewGroupID
+                    throw($CustomError) 
+                }
+            } elseif ($Reference) {  
+                if ((Get-WRADGroupOfUser -Reference -UserObjectGUID $UserObjectGUID -GroupObjectGUID $GroupObjectGUID) -ne $null){
+                    $CustomError = "Duplicate entry for NewUserID "+$NewUserID+" and NewGroupID "+$NewGroupID
+                    throw($CustomError)
+                }
+            } else {
+                if((Get-WRADGroupOfUser -UserObjectGUID $UserObjectGUID -GroupObjectGUID $GroupObjectGUID) -ne $null){
+                    $CustomError = "Duplicate entry for UserObjectGUID "+$UserObjectGUID+" and GroupObjectGUID "+$GroupObjectGUID
+                    throw($CustomError) 
+                }
             }
 
-			Write-Verbose "Invoking INSERT SQL Query on table WRADUserGroup";
+			Write-Verbose "Invoking INSERT SQL Query on table $Table";
 			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
 		}
 		catch
@@ -1227,29 +1483,65 @@ function Remove-WRADGroupOfUser {
 }
 
 function Get-WRADGroupOfGroup {
+    [CmdletBinding(DefaultParameterSetName="ACTUAL")]
     Param
 	(
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[string]$ChildGroupObjectGUID,
+		[Switch]$Reference,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[string]$ParentGroupObjectGUID
+		[Switch]$NewReference,
+
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[int]$NewChildGroupID,
+
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[int]$NewParentGroupID,
+
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$ChildGroupObjectGUID,
+
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$ParentGroupObjectGUID
 	)
 	begin
 	{
-        $Query = 'SELECT * FROM WRADGroupGroup WHERE `ChildGroupObjectGUID` = "'+$ChildGroupObjectGUID+'"';		
+        $Table = 'WRADGroupGroup'
+        if($Reference){
+            $Table = 'WRADRefGroupGroup'
+        } elseif($NewReference){
+            $Table = 'WRADRefNewGroupGroup'
+        }
+        $Query = 'SELECT * FROM '+$Table;
 
-        if($ParentGroupObjectGUID){
-            $Query += ' AND `ParentGroupObjectGUID` = "'+$ParentGroupObjectGUID+'"'
-		}
+        $FirstParameter = $true;
+
+        $PSBoundParameters.Keys | ForEach {
+            if ($BuiltinParameters -notcontains $_) {
+                $Value = (Get-Variable -Name $_ ).Value
+        
+                if($FirstParameter){
+                    $Query += ' WHERE `'+$_+'` = "'+$Value+'" '
+                    $FirstParameter = $false
+                } else {
+                    $Query += ' AND `'+$_+'` = "'+$Value+'" '
+                }
+            }
+        }       	
 	}
 	Process
 	{
 		try
 		{
-			Write-Verbose "Invoking INSERT SQL Query on table WRADGroupGroup";
+			Write-Verbose "Invoking SELECT SQL Query on table $Table";
 			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
 		}
 		catch
@@ -1264,32 +1556,88 @@ function Get-WRADGroupOfGroup {
 }
 
 function New-WRADGroupOfGroup {
+    [CmdletBinding(DefaultParameterSetName="ACTUAL")]
     Param
 	(
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[string]$ChildGroupObjectGUID,
+		[Switch]$Reference,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[string]$ParentGroupObjectGUID
+		[Switch]$NewReference,
 
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[int]$NewChildGroupID,
+
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[int]$NewParentGroupID,
+
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$ChildGroupObjectGUID,
+
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$ParentGroupObjectGUID
 	)
 	begin
 	{
-        $Query = 'INSERT INTO WRADGroupGroup (`ChildGroupObjectGUID`, `ParentGroupObjectGUID`) VALUES ("'+$ChildGroupObjectGUID+'", "'+$ParentGroupObjectGUID+'")'
+        $Table = ''
+        $QueryEnd = ') '
+        $QueryMiddle = ' ) VALUES ('
+        if($Reference){
+            $Table = 'WRADRefGroupGroup'
+        } elseif($NewReference){
+            $Table = 'WRADRefNewGroupGroup'
+        } else {
+            $Table = 'WRADGroupGroup'
+        }
+        $Query = 'INSERT INTO '+$Table+' ('
+        $QueryValue = @()
+        $QueryVariable = @()
+
+        $PSBoundParameters.Keys | ForEach {
+            if ($BuiltinParameters -notcontains $_) {
+                [String]$Value = (Get-Variable -Name $_).Value
+                $QueryVariable += '`'+$_+'`'
+                $QueryValue += ' "'+$Value+'"'
+            }
+        }
+
+        $Query += ($QueryVariable -join ", ")
+        $Query += $QueryMiddle
+        $Query += ($QueryValue -join ", ")
+        $Query += $QueryEnd
 	}
 	Process
 	{
 		try
 		{
+            #Check for new reference in both tables (ref and refnew) should be performed!!
             Write-Verbose "Checking for already existent group to group mapping";
-            if((Get-WRADGroupOfGroup -ChildGroupObjectGUID $ChildGroupObjectGUID -ParentGroupObjectGUID $ParentGroupObjectGUID) -ne $null){
-                $CustomError = "Duplicate entry for UserObjectGUID "+$ChildGroupObjectGUID+" and GroupObjectGUID "+$ParentGroupObjectGUID
-                throw($CustomError) 
+            if($NewReference) {
+                if((Get-WRADGroupOfGroup -NewReference -NewChildGroupID $NewChildGroupID -NewParentGroupID $NewParentGroupID) -ne $null){
+                    $CustomError = "Duplicate entry for NewChildGroupID "+$NewChildGroupID+" and NewParentGroupID "+$NewParentGroupID
+                    throw($CustomError) 
+                }
+            } elseif ($Reference) {  
+                if ((Get-WRADGroupOfGroup -Reference -ChildGroupObjectGUID $ChildGroupObjectGUID -ParentGroupObjectGUID $ParentGroupObjectGUID) -ne $null){
+                    $CustomError = "Duplicate entry for ChildGroupObjectGUID "+$ChildGroupObjectGUID+" and ParentGroupObjectGUID "+$ParentGroupObjectGUID
+                    throw($CustomError)
+                }
+            } else {
+                if((Get-WRADGroupOfGroup -ChildGroupObjectGUID $ChildGroupObjectGUID -ParentGroupObjectGUID $ParentGroupObjectGUID) -ne $null){
+                    $CustomError = "Duplicate entry for ChildGroupObjectGUID "+$ChildGroupObjectGUID+" and ParentGroupObjectGUID "+$ParentGroupObjectGUID
+                    throw($CustomError) 
+                }
             }
 
-			Write-Verbose "Invoking INSERT SQL Query on table WRADGroupGroup";
+			Write-Verbose "Invoking INSERT SQL Query on table $Table";
 			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
 		}
 		catch
