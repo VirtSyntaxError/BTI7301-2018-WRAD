@@ -137,9 +137,11 @@ CREATE TABLE WRADRefNewUserGroup
 (
   RefNewUserGroupID INT NOT NULL AUTO_INCREMENT,
   CreatedDate TIMESTAMP NULL,
-  Username VARCHAR(1024) NOT NULL,
-  Groupname VARCHAR(256) NOT NULL,
-  PRIMARY KEY (RefNewUserGroupID)
+  NewUserID INT NOT NULL,
+  NewGroupID INT NOT NULL,
+  PRIMARY KEY (RefNewUserGroupID),
+  CONSTRAINT `FK_RefNewUser` FOREIGN KEY (NewUserID) REFERENCES WRADRefNewUser(NewUserID),
+  CONSTRAINT `FK_RefNewGroup` FOREIGN KEY (NewGroupID) REFERENCES WRADRefNewGroup(NewGroupID)
 );
 
 CREATE TABLE WRADGroupGroup
@@ -166,9 +168,11 @@ CREATE TABLE WRADRefNewGroupGroup
 (
   RefNewGroupGroupID INT NOT NULL AUTO_INCREMENT,
   CreatedDate TIMESTAMP NULL,
-  ChildGroup VARCHAR(256) NOT NULL,
-  ParentGroup VARCHAR(256) NOT NULL,
-  PRIMARY KEY (RefNewGroupGroupID)
+  NewChildGroupID INT NOT NULL,
+  NewParentGroupID INT NOT NULL,
+  PRIMARY KEY (RefNewGroupGroupID),
+  CONSTRAINT `FK_RefNewChildGroup` FOREIGN KEY (NewChildGroupID) REFERENCES WRADRefNewGroup(NewGroupID),
+  CONSTRAINT `FK_RefNewParentGroup` FOREIGN KEY (NewParentGroupID) REFERENCES WRADRefNewGroup(NewGroupID)
 );
 
 CREATE TABLE WRADUserGroupArchive
