@@ -145,6 +145,7 @@ function Get-WRADUser {
 		[Switch]$NewReference,
 
         [Parameter(ParameterSetName="REFERENCE")]
+        [Parameter(ParameterSetName="NEWREFERENCE")]
 		[ValidateNotNullOrEmpty()]
 		[String]$Username,
 
@@ -158,6 +159,7 @@ function Get-WRADUser {
 
         [Parameter(ParameterSetName="ACTUAL")]
         [Parameter(ParameterSetName="REFERENCE")]
+        [Parameter(ParameterSetName="NEWREFERENCE")]
 		[ValidateNotNullOrEmpty()]
 		[string]$DisplayName,
 
@@ -168,6 +170,7 @@ function Get-WRADUser {
 
         [Parameter(ParameterSetName="ACTUAL")]
         [Parameter(ParameterSetName="REFERENCE")]
+        [Parameter(ParameterSetName="NEWREFERENCE")]
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Disabled,
 
@@ -180,10 +183,8 @@ function Get-WRADUser {
 	begin
 	{
         $Table = 'WRADUser'
-        $QueryEnd = ''
         if($Reference){
             $Table = 'WRADRefUser'
-            $QueryEnd = ' UNION SELECT "n/a",Username,DisplayName,CreatedDate,Enabled FROM `WRADRefNewUser`'
         } elseif($NewReference){
             $Table = 'WRADRefNewUser'
         }
@@ -211,7 +212,7 @@ function Get-WRADUser {
                 }
             }
         }
-		$Query += $QueryEnd
+    
 	}
 	Process
 	{
@@ -235,10 +236,10 @@ function Get-WRADUser {
 
     Gets all users which actually exist in the database. These are the fetched users from the Active Directory.
     The Output does not conaint any deleted users.
-    It is possible to load all reference users with the -Reference switch or all new reference users with -NewReference.
+    It is possible to load reference users with the -Reference switch or all new reference users with -NewReference.
 
     .PARAMETER Reference
-    Specifies if all reference users should be shown instead of the actual one (including the new reference users).
+    Specifies if all reference users should be shown instead of the actual one.
 
     .PARAMETER NewReference
     Specifies if the new reference user table should be used instead of the actual or the reference one.
@@ -325,41 +326,60 @@ function Get-WRADUser {
 }
 
 function New-WRADUser {
+    [CmdletBinding(DefaultParameterSetName="ACTUAL")]
     Param
 	(
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE")]
+		[ValidateNotNullOrEmpty()]
+		[Switch]$Reference,
+
+        [Parameter(ParameterSetName="NEWREFERENCE")]
+		[ValidateNotNullOrEmpty()]
+		[Switch]$NewReference,
+
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[String]$ObjectGUID,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[String]$SAMAccountName,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[String]$DistinguishedName,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[DateTime]$LastLogonTimestamp,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[String]$UserPrincipalName,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[String]$DisplayName,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[Switch]$Disabled,
+		[String]$Username,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[Bool]$Enabled,
+
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[String]$Description,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Expired
 
@@ -367,46 +387,73 @@ function New-WRADUser {
 	)
 	begin
 	{
-        if($Disabled){
-            $EnabledValue = 0
+        $Table = ''
+        $QueryEnd = ') '
+        $QueryMiddle = ' ) VALUES ('
+        if($Reference){
+            $Table = 'WRADRefUser'
+        } elseif($NewReference){
+            $Table = 'WRADRefNewUser'
         } else {
-            $EnabledValue = 1
+            $Table = 'WRADUser'
+            if($DistinguishedName){
+                $DistinguishedName = $DistinguishedName.Replace('"','&DQ&')
+            }
+            if($Description){
+                $Description = $Description.Replace('"','&DQ&')
+            }
+
+            if($LastLogonTimestamp){
+                [String]$LastLogonTimestamp = $LastLogonTimestamp.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss")
+            }
+        }
+        $Query = 'INSERT INTO '+$Table+' ('
+        $QueryValue = @()
+        $QueryVariable = @()
+
+        $PSBoundParameters.Keys | ForEach {
+            if ($BuiltinParameters -notcontains $_) {
+                [String]$Value = (Get-Variable -Name $_).Value
+
+                if($_ -eq "Expired" -or $_ -eq "Enabled"){
+                    if($Value -eq $true ){
+                        [Int]$Value = 1
+                    } else {
+                        [Int]$Value = 0
+                    }
+                } elseif ($_ -ne "LastLogonTimestamp"){
+                    $Value = $Value.Replace('&DQ&','\"')
+                }
+
+                $QueryVariable += '`'+$_+'`'
+                $QueryValue += ' "'+$Value+'"'
+            }
         }
 
-        if($Expired){
-            $ExpiredValue = 1
-        } else {
-            $ExpiredValue = 0
-        }
-    
-        $Query = 'INSERT INTO WRADUser (`ObjectGUID`, `SAMAccountName`, `DistinguishedName`, `userPrincipalName`, `DisplayName`, `Enabled`, `Expired`'
-        $QueryValue = ') VALUES("'+$ObjectGUID+'", "'+$SAMAccountName+'", "'+$DistinguishedName.Replace('"','\"')+'", "'+$UserPrincipalName+'", "'+$DisplayName+'", '+$EnabledValue+', '+$ExpiredValue
-        $QueryEnd = ')'
-
-        if($LastLogonTimestamp){
-            $Timestamp = $LastLogonTimestamp.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss")
-            $Query += ', `LastLogonTimestamp`'
-            $QueryValue += ', "'+$Timestamp+'"'
-        }
-        if($Description){
-            $Query += ', `Description`'
-            $QueryValue += ', "'+$Description.Replace('"','\"')+'"'
-		}
-
-        $Query += $QueryValue
+        $Query += ($QueryVariable -join ", ")
+        $Query += $QueryMiddle
+        $Query += ($QueryValue -join ", ")
         $Query += $QueryEnd
+        write-host $Query
 	}
 	Process
 	{
 		try
 		{
             Write-Verbose "Checking for already existent user";
-            if((Get-WRADUser -ObjectGUID $ObjectGUID) -ne $null){
-                $CustomError = "Duplicate entry for ObjectGUID "+$ObjectGUID
-                throw($CustomError) 
+            if($Reference -or $NewReference) {
+                if((Get-WRADUser -Reference -Username $Username) -ne $null -or (Get-WRADUser -NewReference -Username $Username) -ne $null){
+                    $CustomError = "Duplicate entry for Username "+$Username
+                    throw($CustomError) 
+                }
+            } else {
+                if((Get-WRADUser -ObjectGUID $ObjectGUID) -ne $null){
+                    $CustomError = "Duplicate entry for ObjectGUID "+$ObjectGUID
+                    throw($CustomError) 
+                }
             }
             
-			Write-Verbose "Invoking INSERT SQL Query on table WRADUser";
+			Write-Verbose "Invoking INSERT SQL Query on table $Table";
 			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
 		}
 		catch
@@ -442,7 +489,7 @@ function New-WRADUser {
     .PARAMETER ObjectGUID
     Specifies the Globally Unique Identifier of the user.
 
-    .PARAMETER Disabled
+    .PARAMETER Enabled
     Specifies if the user is disabled.
 
     .PARAMETER Expired
@@ -467,41 +514,60 @@ function New-WRADUser {
 }
 
 function Update-WRADUser {
+    [CmdletBinding(DefaultParameterSetName="ACTUAL")]
     Param
 	(
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[Switch]$NewReference,
+
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[Switch]$Reference,
+
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[String]$ObjectGUID,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[String]$SAMAccountName,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$Username,
+
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[String]$DistinguishedName,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[DateTime]$LastLogonTimestamp,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[String]$UserPrincipalName,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[String]$DisplayName,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[Bool]$Enabled,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[String]$Description,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[Bool]$Expired
 
@@ -509,22 +575,31 @@ function Update-WRADUser {
 	)
 	begin
 	{
-        $Table = 'WRADUser'
-        $Query = 'UPDATE '+$Table+' SET '
+        $Table = ''
         $QueryEnd = ' WHERE `ObjectGUID` = "'+$ObjectGUID+'"'
+        if($Reference){
+            $Table = 'WRADRefUser'
+        } elseif($NewReference){
+            $Table = 'WRADRefNewUser'
+            $QueryEnd = ' WHERE `Username` = "'+$Username+'"'
+        } else {
+            $Table = 'WRADUser'
+            if($DistinguishedName){
+                $DistinguishedName = $DistinguishedName.Replace('"','&DQ&')
+            }
+            if($Description){
+                $Description = $Description.Replace('"','&DQ&')
+            }
+
+            if($LastLogonTimestamp){
+                [String]$LastLogonTimestamp = $LastLogonTimestamp.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss")
+            }
+        }
+        $Query = 'UPDATE '+$Table+' SET '
         $QueryValue = @()
-        if($DistinguishedName){
-            $DistinguishedName = $DistinguishedName.Replace('"','&DQ&')
-        }
-        if($Description){
-            $Description = $Description.Replace('"','&DQ&')
-        }
-        if($LastLogonTimestamp){
-            [String]$LastLogonTimestamp = $LastLogonTimestamp.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss")
-        }
 
         $PSBoundParameters.Keys | ForEach {
-            if ($BuiltinParameters -notcontains $_ -and $_ -ne "ObjectGUID") {
+            if ($BuiltinParameters -notcontains $_ -and $_ -ne "ObjectGUID" -and $_ -ne "Username") {
                 [String]$Value = (Get-Variable -Name $_).Value
 
                 if($_ -eq "Expired" -or $_ -eq "Enabled"){
@@ -555,12 +630,24 @@ function Update-WRADUser {
                 throw($CustomError) 
             }
 
-            Write-Verbose "Checking is user exists";
-            if((Get-WRADUser -ObjectGUID $ObjectGUID) -eq $null){
-                $CustomError = "User $ObjectGUID does not exist"
-                throw($CustomError) 
+            Write-Verbose "Checking for already existent user";
+            if($Reference) {
+                if((Get-WRADUser -Reference -ObjectGUID $ObjectGUID) -eq $null){
+                    $CustomError = "No entry for ObjectGUID "+$ObjectGUID
+                    throw($CustomError) 
+                }
+            } elseif ($NewReference) {
+                 if((Get-WRADUser -NewReference -Username $Username) -eq $null){
+                    $CustomError = "No entry for Username "+$Username
+                    throw($CustomError) 
+                }           
+            } else {
+                if((Get-WRADUser -ObjectGUID $ObjectGUID) -eq $null){
+                    $CustomError = "No entry for ObjectGUID "+$ObjectGUID
+                    throw($CustomError) 
+                }
             }
-            
+
 			Write-Verbose "Invoking Update SQL Query on table $Table";
 			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
 		}
