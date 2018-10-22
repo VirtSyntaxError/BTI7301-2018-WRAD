@@ -1287,11 +1287,11 @@ function Get-WRADGroupOfUser {
 
         [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
-		[int]$NewUserID,
+		[String]$Username,
 
         [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
-		[int]$NewGroupID,
+		[String]$Groupname,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
@@ -1306,27 +1306,41 @@ function Get-WRADGroupOfUser {
 	begin
 	{
         $Table = 'WRADUserGroup'
+        $QueryEnd = ''
+        $Query = 'SELECT * FROM '+$Table;
         if($Reference){
             $Table = 'WRADRefUserGroup'
+            $QueryEnd = ' INNER JOIN WRADRefUser ON WRADRefUserGroup.UserObjectGUID = WRADRefUser.ObjectGUID INNER JOIN WRADRefGroup ON WRADRefUserGroup.GroupObjectGUID = WRADRefGroup.ObjectGUID'
+            $Query = 'SELECT WRADRefUser.Username,WRADRefGroup.CommonName,WRADRefUserGroup.CreatedDate FROM '+$Table;
         } elseif($NewReference){
             $Table = 'WRADRefNewUserGroup'
+            $QueryEnd = ' INNER JOIN WRADRefNewUser ON WRADRefNewUserGroup.NewUserID = WRADRefNewUser.NewUserID INNER JOIN WRADRefNewGroup ON WRADRefNewUserGroup.NewGroupID = WRADRefNewGroup.NewGroupID'
+            $Query = 'SELECT WRADRefNewUser.Username,WRADRefNewGroup.CommonName,WRADRefNewUserGroup.CreatedDate FROM '+$Table;
         }
-        $Query = 'SELECT * FROM '+$Table;
 
         $FirstParameter = $true;
 
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
                 $Value = (Get-Variable -Name $_ ).Value
-        
+
                 if($FirstParameter){
-                    $Query += ' WHERE `'+$_+'` = "'+$Value+'" '
+                    $QueryEnd += ' WHERE '
                     $FirstParameter = $false
                 } else {
-                    $Query += ' AND `'+$_+'` = "'+$Value+'" '
+                    $QueryEnd += ' AND '
+                }
+
+                if($_ -eq "Username"){
+                    $QueryEnd += ' `WRADRefNewUser`.`Username` = "'+$Value+'" '
+                } elseif($_ -eq "Groupname") {
+                    $QueryEnd += ' `WRADRefNewGroup`.`CommonName` = "'+$Value+'" '
+                } else {
+                    $QueryEnd += ' `'+$_+'` = "'+$Value+'" '
                 }
             }
-        }       	
+        } 
+        $Query += $QueryEnd	
 	}
 	Process
 	{
@@ -1496,11 +1510,11 @@ function Get-WRADGroupOfGroup {
 
         [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
-		[int]$NewChildGroupID,
+		[String]$ChildGroup,
 
         [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
-		[int]$NewParentGroupID,
+		[String]$ParentGroup,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
@@ -1515,13 +1529,18 @@ function Get-WRADGroupOfGroup {
 	begin
 	{
         $Table = 'WRADGroupGroup'
+        $QueryEnd = ''
+        $Query = 'SELECT * FROM '+$Table;
         if($Reference){
             $Table = 'WRADRefGroupGroup'
+            $QueryEnd = ' INNER JOIN WRADRefGroup ON WRADRefGroupGroup.ChildGroupObjectGUID = WRADRefGroup.ObjectGUID INNER JOIN WRADRefGroup ON WRADRefGroupGroup.ParentGroupObjectGUID = WRADRefGroup.ObjectGUID'
+            $Query = 'SELECT WRADRefGroup.CommonName,WRADRefGroup.CommonName,WRADRefGroupGroup.CreatedDate FROM '+$Table;
         } elseif($NewReference){
             $Table = 'WRADRefNewGroupGroup'
+            $QueryEnd = ' INNER JOIN WRADRefNewGroup cg ON WRADRefNewGroupGroup.NewChildGroupID = cg.NewGroupID INNER JOIN WRADRefNewGroup pg ON WRADRefNewGroupGroup.NewParentGroupID = pg.NewGroupID'
+            $Query = 'SELECT cg.CommonName AS ChildGroup,pg.CommonName AS ParentGroup,WRADRefNewGroupGroup.CreatedDate FROM '+$Table;
         }
-        $Query = 'SELECT * FROM '+$Table;
-
+        
         $FirstParameter = $true;
 
         $PSBoundParameters.Keys | ForEach {
@@ -1529,13 +1548,22 @@ function Get-WRADGroupOfGroup {
                 $Value = (Get-Variable -Name $_ ).Value
         
                 if($FirstParameter){
-                    $Query += ' WHERE `'+$_+'` = "'+$Value+'" '
+                    $QueryEnd += ' WHERE '
                     $FirstParameter = $false
                 } else {
-                    $Query += ' AND `'+$_+'` = "'+$Value+'" '
+                    $QueryEnd += ' AND '
+                }
+
+                if($_ -eq "ChildGroup") {
+                    $QueryEnd += ' `cg`.`CommonName` = "'+$Value+'" '
+                } elseif ($_ -eq "ParentGroup") {
+                    $QueryEnd += ' `pg`.`CommonName` = "'+$Value+'" '
+                } else {
+                    $QueryEnd += ' `'+$_+'` = "'+$Value+'" '
                 }
             }
-        }       	
+        } 
+        $Query += $QueryEnd	
 	}
 	Process
 	{
