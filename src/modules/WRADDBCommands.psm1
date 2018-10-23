@@ -147,7 +147,7 @@ function Get-WRADUser {
         [Parameter(ParameterSetName="REFERENCE")]
         [Parameter(ParameterSetName="NEWREFERENCE")]
 		[ValidateNotNullOrEmpty()]
-		[String]$Username,
+		[String]$UserName,
 
         [Parameter(ParameterSetName="ACTUAL")]
 		[ValidateNotNullOrEmpty()]
@@ -807,6 +807,7 @@ function Get-WRADGroup {
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[string]$CommonName,
 
@@ -818,6 +819,7 @@ function Get-WRADGroup {
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[string]$ObjectGUID,
         
@@ -1287,11 +1289,11 @@ function Get-WRADGroupOfUser {
 
         [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
-		[String]$Username,
+		[String]$UserName,
 
         [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
-		[String]$Groupname,
+		[String]$GroupName,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
@@ -1331,9 +1333,9 @@ function Get-WRADGroupOfUser {
                     $QueryEnd += ' AND '
                 }
 
-                if($_ -eq "Username"){
+                if($_ -eq "UserName"){
                     $QueryEnd += ' `WRADRefNewUser`.`Username` = "'+$Value+'" '
-                } elseif($_ -eq "Groupname") {
+                } elseif($_ -eq "GroupName") {
                     $QueryEnd += ' `WRADRefNewGroup`.`CommonName` = "'+$Value+'" '
                 } else {
                     $QueryEnd += ' `'+$_+'` = "'+$Value+'" '
@@ -1374,11 +1376,11 @@ function New-WRADGroupOfUser {
 
         [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[int]$NewUserID,
+		[String]$UserName,
 
         [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[int]$NewGroupID,
+		[String]$GroupName,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
@@ -1409,9 +1411,17 @@ function New-WRADGroupOfUser {
 
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
-                [String]$Value = (Get-Variable -Name $_).Value
-                $QueryVariable += '`'+$_+'`'
-                $QueryValue += ' "'+$Value+'"'
+                if($_ -eq "UserName"){
+                    $QueryVariable += '`NewUserID`'
+                    $QueryValue += '%UID%'
+                } elseif($_ -eq "GroupName"){
+                    $QueryVariable += '`NewGroupID`'
+                    $QueryValue += '%GID%'
+                } else {
+                    [String]$Value = (Get-Variable -Name $_).Value
+                    $QueryVariable += '`'+$_+'`'
+                    $QueryValue += ' "'+$Value+'"'
+                }
             }
         }
 
@@ -1425,12 +1435,24 @@ function New-WRADGroupOfUser {
 		try
 		{
             #Check for new reference in both tables (ref and refnew) should be performed!!
-            Write-Verbose "Checking for already existent user to group mapping";
+            Write-Verbose "Checking for already existent user to group mapping and if user and group exist";
             if($NewReference) {
-                if((Get-WRADGroupOfUser -NewReference -NewUserID $NewUserID -NewGroupID $NewGroupID) -ne $null){
-                    $CustomError = "Duplicate entry for NewUserID "+$NewUserID+" and NewGroupID "+$NewGroupID
+                $NewUser = (Get-WRADUser -NewReference -UserName $UserName)
+                $NewGroup = (Get-WRADGroup -NewReference -CommonName $GroupName)
+                if($NewUser -eq $null -or $NewGroup -eq $null){
+                    $CustomError = "Either Group "+$GroupName+" or User "+$UserName+"does not exist"
                     throw($CustomError) 
                 }
+                $NewUserID = $NewUser.NewUserID
+                $NewGroupID = $NewGroup.NewGroupID
+                if((Get-WRADGroupOfUser -NewReference -UserName $UserName -GroupName $GroupName) -ne $null){
+                    $CustomError = "Duplicate entry for User "+$UserName+" and Group "+$GroupName
+                    throw($CustomError) 
+                }
+
+                $Query = $Query.Replace("%UID%",$NewUserID)
+                $Query = $Query.Replace("%GID%",$NewGroupID)
+
             } elseif ($Reference) {  
                 if ((Get-WRADGroupOfUser -Reference -UserObjectGUID $UserObjectGUID -GroupObjectGUID $GroupObjectGUID) -ne $null){
                     $CustomError = "Duplicate entry for NewUserID "+$NewUserID+" and NewGroupID "+$NewGroupID
@@ -1443,7 +1465,7 @@ function New-WRADGroupOfUser {
                 }
             }
 
-			Write-Verbose "Invoking INSERT SQL Query on table $Table";
+            Write-Verbose "Invoking INSERT SQL Query on table $Table";
 			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
 		}
 		catch
@@ -1597,11 +1619,11 @@ function New-WRADGroupOfGroup {
 
         [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[int]$NewChildGroupID,
+		[String]$ChildGroup,
 
         [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[int]$NewParentGroupID,
+		[ValidateScript({if($ChildGroup -ne $_ ){ $true } else { throw("ChildGroup cannot be the same as ParentGroup")}})]
+		[String]$ParentGroup,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
@@ -1631,9 +1653,17 @@ function New-WRADGroupOfGroup {
 
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
-                [String]$Value = (Get-Variable -Name $_).Value
-                $QueryVariable += '`'+$_+'`'
-                $QueryValue += ' "'+$Value+'"'
+                if($_ -eq "ChildGroup"){
+                    $QueryVariable += '`NewChildGroupID`'
+                    $QueryValue += '%CGID%'
+                } elseif($_ -eq "ParentGroup"){
+                    $QueryVariable += '`NewParentGroupID`'
+                    $QueryValue += '%PGID%'
+                } else {
+                    [String]$Value = (Get-Variable -Name $_).Value
+                    $QueryVariable += '`'+$_+'`'
+                    $QueryValue += ' "'+$Value+'"'
+                }
             }
         }
 
@@ -1647,12 +1677,24 @@ function New-WRADGroupOfGroup {
 		try
 		{
             #Check for new reference in both tables (ref and refnew) should be performed!!
-            Write-Verbose "Checking for already existent group to group mapping";
+            Write-Verbose "Checking for already existent group to group mapping and if groups exist";
             if($NewReference) {
-                if((Get-WRADGroupOfGroup -NewReference -NewChildGroupID $NewChildGroupID -NewParentGroupID $NewParentGroupID) -ne $null){
-                    $CustomError = "Duplicate entry for NewChildGroupID "+$NewChildGroupID+" and NewParentGroupID "+$NewParentGroupID
+                $NewChildGroup = (Get-WRADGroup -NewReference -CommonName $ChildGroup)
+                $NewParentGroup = (Get-WRADGroup -NewReference -CommonName $ParentGroup)
+                if($NewChildGroup -eq $null -or $NewParentGroup -eq $null){
+                    $CustomError = "Either ChildGroup "+$ChildGroup+" or ParentGroup "+$ParentGroup+"does not exist"
                     throw($CustomError) 
                 }
+                $NewChildGroupID = $NewChildGroup.NewGroupID
+                $NewParentGroupID = $NewParentGroup.NewGroupID
+                if((Get-WRADGroupOfGroup -NewReference -ChildGroup $ChildGroup -ParentGroup $ParentGroup) -ne $null){
+                    $CustomError = "Duplicate entry for ChildGroup "+$ChildGroup+" and ParentGroup "+$ParentGroup
+                    throw($CustomError) 
+                }
+
+                $Query = $Query.Replace("%CGID%",$NewChildGroupID)
+                $Query = $Query.Replace("%PGID%",$NewParentGroupID)
+
             } elseif ($Reference) {  
                 if ((Get-WRADGroupOfGroup -Reference -ChildGroupObjectGUID $ChildGroupObjectGUID -ParentGroupObjectGUID $ParentGroupObjectGUID) -ne $null){
                     $CustomError = "Duplicate entry for ChildGroupObjectGUID "+$ChildGroupObjectGUID+" and ParentGroupObjectGUID "+$ParentGroupObjectGUID
