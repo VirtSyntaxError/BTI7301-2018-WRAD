@@ -1440,7 +1440,7 @@ function New-WRADGroupOfUser {
                 $NewUser = (Get-WRADUser -NewReference -UserName $UserName)
                 $NewGroup = (Get-WRADGroup -NewReference -CommonName $GroupName)
                 if($NewUser -eq $null -or $NewGroup -eq $null){
-                    $CustomError = "Either Group "+$GroupName+" or User "+$UserName+"does not exist"
+                    $CustomError = "Either Group "+$GroupName+" or User "+$UserName+" does not exist"
                     throw($CustomError) 
                 }
                 $NewUserID = $NewUser.NewUserID
@@ -1454,11 +1454,21 @@ function New-WRADGroupOfUser {
                 $Query = $Query.Replace("%GID%",$NewGroupID)
 
             } elseif ($Reference) {  
+                if((Get-WRADUser -Reference -ObjectGUID $UserObjectGUID) -eq $null -or (Get-WRADGroup -Reference -ObjectGUID $GroupObjectGUID) -eq $null){
+                    $CustomError = "Either UserObjectGUID "+$UserObjectGUID+" or GroupObjectGUID "+$GroupObjectGUID+" does not exist"
+                    throw($CustomError) 
+                }
+
                 if ((Get-WRADGroupOfUser -Reference -UserObjectGUID $UserObjectGUID -GroupObjectGUID $GroupObjectGUID) -ne $null){
                     $CustomError = "Duplicate entry for NewUserID "+$NewUserID+" and NewGroupID "+$NewGroupID
                     throw($CustomError)
                 }
             } else {
+                if((Get-WRADUser -ObjectGUID $UserObjectGUID) -eq $null -or (Get-WRADGroup -ObjectGUID $GroupObjectGUID) -eq $null){
+                    $CustomError = "Either UserObjectGUID "+$UserObjectGUID+" or GroupObjectGUID "+$GroupObjectGUID+" does not exist"
+                    throw($CustomError) 
+                }
+
                 if((Get-WRADGroupOfUser -UserObjectGUID $UserObjectGUID -GroupObjectGUID $GroupObjectGUID) -ne $null){
                     $CustomError = "Duplicate entry for UserObjectGUID "+$UserObjectGUID+" and GroupObjectGUID "+$GroupObjectGUID
                     throw($CustomError) 
@@ -1480,31 +1490,89 @@ function New-WRADGroupOfUser {
 }
 
 function Remove-WRADGroupOfUser {
+    [CmdletBinding(DefaultParameterSetName="ACTUAL")]
     Param
 	(
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[string]$UserObjectGUID,
+		[Switch]$Reference,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[string]$GroupObjectGUID
+		[Switch]$NewReference,
+
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$UserName,
+
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$GroupName,
+
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$UserObjectGUID,
+
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$GroupObjectGUID
 	)
 	begin
 	{
-        $Query = 'DELETE FROM WRADUserGroup WHERE `UserObjectGUID` = "'+$UserObjectGUID+'" AND `GroupObjectGUID` = "'+$GroupObjectGUID+'"'
+        $Table = ''
+        if($Reference){
+            $Table = 'WRADRefUserGroup'
+        } elseif($NewReference){
+            $Table = 'WRADRefNewUserGroup'
+        } else {
+            $Table = 'WRADUserGroup'
+        }
+        $Query = 'DELETE FROM '+$Table+' WHERE '
+        $QueryValue = @()
+
+        $PSBoundParameters.Keys | ForEach {
+            if ($BuiltinParameters -notcontains $_) {
+                if($_ -eq "UserName"){
+                    $QueryValue += '`NewUserID` = %UID%'
+                } elseif($_ -eq "GroupName"){
+                    $QueryValue += '`NewGroupID` = %GID%'
+                } else {
+                    [String]$Value = (Get-Variable -Name $_).Value
+                    $QueryValue += '`'+$_+'` = "'+$Value+'"'
+                }
+            }
+        }
+
+        $Query += ($QueryValue -join " AND ")
 	}
 	Process
 	{
 		try
 		{
             Write-Verbose "Checking if user is in group";
-            if((Get-WRADGroupOfUser -UserObjectGUID $UserObjectGUID -GroupObjectGUID $GroupObjectGUID ) -eq $null){
-                $CustomError = "User $UserObjectGUID and Group $GroupObjectGUID connection does not exist"
-                throw($CustomError) 
+            if($NewReference) {
+                if((Get-WRADGroupOfUser -NewReference -UserName $UserName -GroupName $GroupName) -eq $null){
+                    $CustomError = "User "+$UserName+" does not belong to Group "+$GroupName
+                    throw($CustomError) 
+                }
+                $Query = $Query.Replace("%UID%",(Get-WRADUser -NewReference -UserName $UserName).NewUserID)
+                $Query = $Query.Replace("%GID%",(Get-WRADGroup -NewReference -CommonName $GroupName).NewGroupID)
+
+            } elseif ($Reference) {  
+                if ((Get-WRADGroupOfUser -Reference -UserObjectGUID $UserObjectGUID -GroupObjectGUID $GroupObjectGUID) -eq $null){
+                    $CustomError = "User with ID "+$UserObjectGUID+" does not belong to Group with ID "+$GroupObjectGUID
+                    throw($CustomError)
+                }
+            } else {
+                if((Get-WRADGroupOfUser -UserObjectGUID $UserObjectGUID -GroupObjectGUID $GroupObjectGUID) -eq $null){
+                    $CustomError = "User with ID "+$UserObjectGUID+" does not belong to Group with ID "+$GroupObjectGUID
+                    throw($CustomError) 
+                }
             }
 
-			Write-Verbose "Invoking DELETE SQL Query on table WRADUserGroup";
+			Write-Verbose "Invoking DELETE SQL Query on table $Table";
 			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
 		}
 		catch
@@ -1555,11 +1623,11 @@ function Get-WRADGroupOfGroup {
         $Query = 'SELECT * FROM '+$Table;
         if($Reference){
             $Table = 'WRADRefGroupGroup'
-            $QueryEnd = ' INNER JOIN WRADRefGroup ON WRADRefGroupGroup.ChildGroupObjectGUID = WRADRefGroup.ObjectGUID INNER JOIN WRADRefGroup ON WRADRefGroupGroup.ParentGroupObjectGUID = WRADRefGroup.ObjectGUID'
-            $Query = 'SELECT WRADRefGroup.CommonName,WRADRefGroup.CommonName,WRADRefGroupGroup.CreatedDate FROM '+$Table;
+            $QueryEnd = ' INNER JOIN WRADRefGroup AS cg ON WRADRefGroupGroup.ChildGroupObjectGUID = cg.ObjectGUID INNER JOIN WRADRefGroup AS pg ON WRADRefGroupGroup.ParentGroupObjectGUID = pg.ObjectGUID'
+            $Query = 'SELECT cg.CommonName AS ChildGroup,pg.CommonName AS ParentGroup,WRADRefGroupGroup.CreatedDate FROM '+$Table;
         } elseif($NewReference){
             $Table = 'WRADRefNewGroupGroup'
-            $QueryEnd = ' INNER JOIN WRADRefNewGroup cg ON WRADRefNewGroupGroup.NewChildGroupID = cg.NewGroupID INNER JOIN WRADRefNewGroup pg ON WRADRefNewGroupGroup.NewParentGroupID = pg.NewGroupID'
+            $QueryEnd = ' INNER JOIN WRADRefNewGroup cg ON WRADRefNewGroupGroup.NewChildGroupID = cg.NewGroupID INNER JOIN WRADRefNewGroup AS pg ON WRADRefNewGroupGroup.NewParentGroupID = pg.NewGroupID'
             $Query = 'SELECT cg.CommonName AS ChildGroup,pg.CommonName AS ParentGroup,WRADRefNewGroupGroup.CreatedDate FROM '+$Table;
         }
         
@@ -1682,7 +1750,7 @@ function New-WRADGroupOfGroup {
                 $NewChildGroup = (Get-WRADGroup -NewReference -CommonName $ChildGroup)
                 $NewParentGroup = (Get-WRADGroup -NewReference -CommonName $ParentGroup)
                 if($NewChildGroup -eq $null -or $NewParentGroup -eq $null){
-                    $CustomError = "Either ChildGroup "+$ChildGroup+" or ParentGroup "+$ParentGroup+"does not exist"
+                    $CustomError = "Either ChildGroup "+$ChildGroup+" or ParentGroup "+$ParentGroup+" does not exist"
                     throw($CustomError) 
                 }
                 $NewChildGroupID = $NewChildGroup.NewGroupID
@@ -1695,18 +1763,28 @@ function New-WRADGroupOfGroup {
                 $Query = $Query.Replace("%CGID%",$NewChildGroupID)
                 $Query = $Query.Replace("%PGID%",$NewParentGroupID)
 
-            } elseif ($Reference) {  
+            } elseif ($Reference) { 
+                 if((Get-WRADGroup -Reference -ObjectGUID $ChildGroupObjectGUID) -eq $null -or (Get-WRADGroup -Reference -ObjectGUID $ParentGroupObjectGUID) -eq $null){
+                    $CustomError = "Either ChildGroupObjectGUID "+$ChildGroupObjectGUID+" or ParentGroupObjectGUID "+$ParentGroupObjectGUID+" does not exist"
+                    throw($CustomError) 
+                }
+             
                 if ((Get-WRADGroupOfGroup -Reference -ChildGroupObjectGUID $ChildGroupObjectGUID -ParentGroupObjectGUID $ParentGroupObjectGUID) -ne $null){
                     $CustomError = "Duplicate entry for ChildGroupObjectGUID "+$ChildGroupObjectGUID+" and ParentGroupObjectGUID "+$ParentGroupObjectGUID
                     throw($CustomError)
                 }
             } else {
+                if((Get-WRADGroup -ObjectGUID $ChildGroupObjectGUID) -eq $null -or (Get-WRADGroup -ObjectGUID $ParentGroupObjectGUID) -eq $null){
+                    $CustomError = "Either ChildGroupObjectGUID "+$ChildGroupObjectGUID+" or ParentGroupObjectGUID "+$ParentGroupObjectGUID+" does not exist"
+                    throw($CustomError) 
+                }
+
                 if((Get-WRADGroupOfGroup -ChildGroupObjectGUID $ChildGroupObjectGUID -ParentGroupObjectGUID $ParentGroupObjectGUID) -ne $null){
                     $CustomError = "Duplicate entry for ChildGroupObjectGUID "+$ChildGroupObjectGUID+" and ParentGroupObjectGUID "+$ParentGroupObjectGUID
                     throw($CustomError) 
                 }
             }
-
+            
 			Write-Verbose "Invoking INSERT SQL Query on table $Table";
 			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
 		}
@@ -1722,31 +1800,89 @@ function New-WRADGroupOfGroup {
 }
 
 function Remove-WRADGroupOfGroup {
+    [CmdletBinding(DefaultParameterSetName="ACTUAL")]
     Param
 	(
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[string]$ChildGroupObjectGUID,
+		[Switch]$Reference,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
-		[string]$ParentGroupObjectGUID
+		[Switch]$NewReference,
+
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$ChildGroup,
+
+        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
+		[ValidateScript({if($ChildGroup -ne $_ ){ $true } else { throw("ChildGroup cannot be the same as ParentGroup")}})]
+		[String]$ParentGroup,
+
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$ChildGroupObjectGUID,
+
+        [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$ParentGroupObjectGUID
 	)
 	begin
 	{
-        $Query = 'DELETE FROM WRADGroupGroup WHERE `ChildGroupObjectGUID` = "'+$ChildGroupObjectGUID+'" AND `ParentGroupObjectGUID` = "'+$ParentGroupObjectGUID+'"'
+        $Table = ''
+        if($Reference){
+            $Table = 'WRADRefGroupGroup'
+        } elseif($NewReference){
+            $Table = 'WRADRefNewGroupGroup'
+        } else {
+            $Table = 'WRADGroupGroup'
+        }
+        $Query = 'DELETE FROM '+$Table+' WHERE '
+        $QueryValue = @()
+
+        $PSBoundParameters.Keys | ForEach {
+            if ($BuiltinParameters -notcontains $_) {
+                if($_ -eq "ChildGroup"){
+                    $QueryValue += '`NewChildGroupID` = %CGID%'
+                } elseif($_ -eq "ParentGroup"){
+                    $QueryValue += '`NewParentGroupID` = %PGID%'
+                } else {
+                    [String]$Value = (Get-Variable -Name $_).Value
+                    $QueryValue += '`'+$_+'` = "'+$Value+'"'
+                }
+            }
+        }
+
+        $Query += ($QueryValue -join " AND ")
 	}
 	Process
 	{
 		try
 		{
             Write-Verbose "Checking if group is in group";
-            if((Get-WRADGroupOfGroup -ChildGroupObjectGUID $ChildGroupObjectGUID -ParentGroupObjectGUID $ParentGroupObjectGUID) -eq $null){
-                $CustomError = "Group $ChildGroupObjectGUID and Group $ParentGroupObjectGUID connection does not exist"
-                throw($CustomError) 
+            if($NewReference) {
+                if((Get-WRADGroupOfGroup -NewReference -ChildGroup $ChildGroup -ParentGroup $ParentGroup) -eq $null){
+                    $CustomError = "Group "+$ChildGroup+" does not belong to Group "+$ParentGroup
+                    throw($CustomError) 
+                }
+                $Query = $Query.Replace("%CGID%",(Get-WRADGroup -NewReference -CommonName $ChildGroup).NewGroupID)
+                $Query = $Query.Replace("%PGID%",(Get-WRADGroup -NewReference -CommonName $ParentGroup).NewGroupID)
+
+            } elseif ($Reference) {  
+                if ((Get-WRADGroupOfGroup -Reference -ChildGroupObjectGUID $ChildGroupObjectGUID -ParentGroupObjectGUID $ParentGroupObjectGUID) -eq $null){
+                    $CustomError = "Group with ID "+$ChildGroupObjectGUID+" does not belong to Group with ID "+$ParentGroupObjectGUID
+                    throw($CustomError)
+                }
+            } else {
+                if((Get-WRADGroupOfGroup -ChildGroupObjectGUID $ChildGroupObjectGUID -ParentGroupObjectGUID $ParentGroupObjectGUID) -eq $null){
+                    $CustomError = "Group with ID "+$ChildGroupObjectGUID+" does not belong to Group with ID "+$ParentGroupObjectGUID
+                    throw($CustomError) 
+                }
             }
 
-			Write-Verbose "Invoking DELETE SQL Query on table WRADGroupGroup";
+			Write-Verbose "Invoking DELETE SQL Query on table $Table";
 			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
 		}
 		catch
