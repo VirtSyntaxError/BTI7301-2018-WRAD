@@ -814,7 +814,7 @@ function Get-WRADGroup {
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
         [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
-        [ValidateSet('ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP','ADS_GROUP_TYPE_UNIVERSAL_GROUP')]
+        [ValidateSet('Domain local','Global','Universal')]
 		[string]$GroupType,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
@@ -909,7 +909,7 @@ function New-WRADGroup {
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
         [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-        [ValidateSet('ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP','ADS_GROUP_TYPE_UNIVERSAL_GROUP')]
+        [ValidateSet('Domain local','Global','Universal')]
 		[String]$GroupType,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
@@ -1010,7 +1010,7 @@ function New-WRADGroup {
     Specifies the DistinguishedName of the group. Like CN="testgroup",CN="example",CN="local"
 
     .PARAMETER GroupType
-    Specifies the GroupType of the group. This should be 'ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP' or 'ADS_GROUP_TYPE_UNIVERSAL_GROUP'.
+    Specifies the GroupType of the group. This should be 'Domain local','Global' or 'Universal'.
     
     .PARAMETER GroupTypeSecurity
     Specifies the GroupTypeSecurity of the group. This should be either Security' or 'Distribution'.
@@ -1031,7 +1031,7 @@ function New-WRADGroup {
 
     .EXAMPLE
 
-    C:\PS> New-WRADGroup -ObjectGUID d9dl998-03jlasd6-lasd11 -SAMAccountName "Domain Powerusers" -CommonName "Domain Powerusers" -DistinguishedName 'CN="Domain Powerusers",CN="example",CN="local"' -GroupTypeSecurity Security -GroupType ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP
+    C:\PS> New-WRADGroup -ObjectGUID d9dl998-03jlasd6-lasd11 -SAMAccountName "Domain Powerusers" -CommonName "Domain Powerusers" -DistinguishedName 'CN="Domain Powerusers",CN="example",CN="local"' -GroupTypeSecurity Security -GroupType Domain local
 
     #>
 }
@@ -1070,7 +1070,7 @@ function Update-WRADGroup {
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
         [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
-        [ValidateSet('ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP','ADS_GROUP_TYPE_UNIVERSAL_GROUP')]
+        [ValidateSet('Domain local','Global','Universal')]
 		[String]$GroupType,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
@@ -1177,7 +1177,7 @@ function Update-WRADGroup {
     Specifies the DistinguishedName of the group. Like CN="testgroup",CN="example",CN="local"
 
     .PARAMETER GroupType
-    Specifies the GroupType of the group. This should be 'ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP' or 'ADS_GROUP_TYPE_UNIVERSAL_GROUP'.
+    Specifies the GroupType of the group. This should be 'Domain local','Global' or 'Universal'.
     
     .PARAMETER GroupTypeSecurity
     Specifies the GroupTypeSecurity of the group. This should be either Security' or 'Distribution'.
@@ -2140,6 +2140,18 @@ function Update-WRADSetting {
         if($LogFilePath){
             $LogFilePath = $LogFilePath.Replace('\','&BS&')
         }
+        if($ADRoleDepartmentLead){
+            $ADRoleDepartmentLead = $ADRoleDepartmentLead.Replace('"','&DQ&')
+        }
+        if($ADRoleAuditor){
+            $ADRoleAuditor = $ADRoleAuditor.Replace('\','&BS&')
+        }
+        if($ADRoleSysAdmin){
+            $ADRoleSysAdmin = $ADRoleSysAdmin.Replace('"','&DQ&')
+        }
+        if($ADRoleApplOwner){
+            $ADRoleApplOwner = $ADRoleApplOwner.Replace('\','&BS&')
+        }
 
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
@@ -2237,11 +2249,189 @@ function New-WRADLog {
 	}
 }
 
+function Get-WRADExcludedUser {
+    Param
+	(
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[string]$ObjectGUID
+	)
+	begin
+	{
+        $Table = 'WRADExcludeUser'
+        $Query = 'SELECT * FROM '+$Table
+        
+        if($ObjectGUID) {
+            $Query += ' WHERE `ObjectGUID` = "'+$ObjectGUID+'"';    
+        }
+	}
+	Process
+	{
+		try
+		{
+			Write-Verbose "Invoking SELECT SQL Query on table $Table";
+			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
+		}
+		catch
+		{
+            Write-Error -Message $_.Exception.Message
+			break
+		}
+	}
+}
+
+function New-WRADExcludedUser {
+    Param
+	(
+        [Parameter(Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$ObjectGUID
+	)
+	begin
+	{
+        $Table = 'WRADExcludeUser'
+        $QueryEnd = ') '
+        $QueryMiddle = ' ) VALUES ('
+        $Query = 'INSERT INTO '+$Table+' ('
+        $QueryValue = @()
+        $QueryVariable = @()
+
+        $PSBoundParameters.Keys | ForEach {
+            if ($BuiltinParameters -notcontains $_) {
+                [String]$Value = (Get-Variable -Name $_).Value
+                $QueryVariable += '`'+$_+'`'
+                $QueryValue += ' "'+$Value+'"'
+            }
+        }
+
+        $Query += ($QueryVariable -join ", ")
+        $Query += $QueryMiddle
+        $Query += ($QueryValue -join ", ")
+        $Query += $QueryEnd
+	}
+	Process
+	{
+		try
+		{
+            Write-Verbose "Checking for existent user";
+            if((Get-WRADUser -ObjectGUID $ObjectGUID) -eq $null){
+                $CustomError = "User with ObjectGUID "+$ObjectGUID+" does not exist"
+                throw($CustomError) 
+            }
+
+            if ((Get-WRADExcludedUser -ObjectGUID $ObjectGUID) -ne $null){
+                $CustomError = "Duplicate entry for user with ObjectGUID "+$ObjectGUID
+                throw($CustomError)
+            }
+
+            Write-Verbose "Invoking INSERT SQL Query on table $Table";
+			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
+		}
+		catch
+		{
+			Write-Error -Message $_.Exception.Message
+			break
+		}
+	}
+	End
+	{
+	}
+}
+
+function Get-WRADExcludedGroup {
+    Param
+	(
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[string]$ObjectGUID
+	)
+	begin
+	{
+        $Table = 'WRADExcludeGroup'
+        $Query = 'SELECT * FROM '+$Table
+        
+        if($ObjectGUID){
+            $Query += ' WHERE `ObjectGUID` = "'+$ObjectGUID+'"';
+        }   
+	}
+	Process
+	{
+		try
+		{
+			Write-Verbose "Invoking SELECT SQL Query on table $Table";
+			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
+		}
+		catch
+		{
+            Write-Error -Message $_.Exception.Message
+			break
+		}
+	}
+}
+
+function New-WRADExcludedGroup {
+    Param
+	(
+        [Parameter(Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[String]$ObjectGUID
+	)
+	begin
+	{
+        $Table = 'WRADExcludeGroup'
+        $QueryEnd = ') '
+        $QueryMiddle = ' ) VALUES ('
+        $Query = 'INSERT INTO '+$Table+' ('
+        $QueryValue = @()
+        $QueryVariable = @()
+
+        $PSBoundParameters.Keys | ForEach {
+            if ($BuiltinParameters -notcontains $_) {
+                [String]$Value = (Get-Variable -Name $_).Value
+                $QueryVariable += '`'+$_+'`'
+                $QueryValue += ' "'+$Value+'"'
+            }
+        }
+
+        $Query += ($QueryVariable -join ", ")
+        $Query += $QueryMiddle
+        $Query += ($QueryValue -join ", ")
+        $Query += $QueryEnd
+	}
+	Process
+	{
+		try
+		{
+            Write-Verbose "Checking for existent group";
+            if((Get-WRADGroup -ObjectGUID $ObjectGUID) -eq $null){
+                $CustomError = "Group with ObjectGUID "+$ObjectGUID+" does not exist"
+                throw($CustomError) 
+            }
+
+            if ((Get-WRADExcludedGroup -ObjectGUID $ObjectGUID) -ne $null){
+                $CustomError = "Duplicate entry for group with ObjectGUID "+$ObjectGUID
+                throw($CustomError)
+            }
+
+            Write-Verbose "Invoking INSERT SQL Query on table $Table";
+			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
+		}
+		catch
+		{
+			Write-Error -Message $_.Exception.Message
+			break
+		}
+	}
+	End
+	{
+	}
+}
+
 Connect-WRADDatabase
 
 #Get-WRADUser -Disabled -Verbose | foreach { write-host $_.DisplayName }
 
-#Get-WRADGroup -GroupType ADS_GROUP_TYPE_GLOBAL_GROUP -GroupTypeSecurity Security -Verbose
+#Get-WRADGroup -GroupType Global -GroupTypeSecurity Security -Verbose
 
 #Get-WRADGroupOfUser -ObjectGUID testid -Verbose | foreach { get-wradgroup -ObjectGUID $_.GroupObjectGUID }
 
@@ -2276,7 +2466,7 @@ Connect-WRADDatabase
 #New-WRADUser -ObjectGUID testid10 -SAMAccountName philipp -DistinguishedName "CN=philipp,CN=example,CN=local" -UserPrincipalName phillip.koefer -DisplayName "Phillip Köfer" -Expired -Description "Phillip Testuser" -LastLogonTimestamp $timestamp -Verbose
 
 #write-host -ForegroundColor red "Create new group Domain Powerusers"
-#New-WRADGroup -ObjectGUID testid20 -SAMAccountName "Domain Powerusers" -CommonName "Domain Powerusers" -DistinguishedName 'CN="Domain Powerusers",CN="example",CN="local"' -GroupTypeSecurity Security -GroupType ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP -Verbose
+#New-WRADGroup -ObjectGUID testid20 -SAMAccountName "Domain Powerusers" -CommonName "Domain Powerusers" -DistinguishedName 'CN="Domain Powerusers",CN="example",CN="local"' -GroupTypeSecurity Security -GroupType Domain local -Verbose
 
 #write-host -ForegroundColor red "Attach group testid20 to user testid10"
 #New-WRADGroupOfUser -UserObjectGUID testid10 -GroupObjectGUID testid20 -Verbose
