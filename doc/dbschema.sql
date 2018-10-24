@@ -85,7 +85,7 @@ CREATE TABLE WRADGroup
   CreatedDate TIMESTAMP NULL,
   LastModifiedDate TIMESTAMP NULL,
   SAMAccountName VARCHAR(104) NOT NULL,
-  GroupType ENUM('ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP','ADS_GROUP_TYPE_UNIVERSAL_GROUP') NOT NULL,
+  GroupType ENUM('Domain local','Global','Universal') NOT NULL,
   GroupTypeSecurity ENUM('Security','Distribution') NOT NULL,
   CommonName VARCHAR(256) NOT NULL,
   DistinguishedName VARCHAR(2048) NOT NULL,
@@ -97,7 +97,7 @@ CREATE TABLE WRADRefGroup
 (
   ObjectGUID VARCHAR(36) NOT NULL,
   CreatedDate TIMESTAMP NULL,
-  GroupType ENUM('ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP','ADS_GROUP_TYPE_UNIVERSAL_GROUP') NOT NULL,
+  GroupType ENUM('Domain local','Global','Universal') NOT NULL,
   GroupTypeSecurity ENUM('Security','Distribution') NOT NULL,
   CommonName VARCHAR(256) NOT NULL,
   PRIMARY KEY (ObjectGUID)
@@ -107,7 +107,7 @@ CREATE TABLE WRADRefNewGroup
 (
   NewGroupID INT NOT NULL AUTO_INCREMENT,
   CreatedDate TIMESTAMP NULL,
-  GroupType ENUM('ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP','ADS_GROUP_TYPE_GLOBAL_GROUP','ADS_GROUP_TYPE_UNIVERSAL_GROUP') NOT NULL,
+  GroupType ENUM('Domain local','Global','Universal') NOT NULL,
   GroupTypeSecurity ENUM('Security','Distribution') NOT NULL,
   CommonName VARCHAR(256) NOT NULL,
   PRIMARY KEY (NewGroupID)
