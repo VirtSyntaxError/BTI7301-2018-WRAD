@@ -66,15 +66,14 @@ function Write-WRADLog{
 
     1. Logtext
     2. Log-Severity (0=INFO, 1=WARNING, 2=ERROR)
-    3. Path to Directory (Optional, default = C:\TEMP\WRAD)
 
     .OUTPUTS
 
-    Writes Log to file
+    Writes Logs to file/database
 
     .EXAMPLE
 
-    C:\PS> Write-WRADLog 'This is a testentry with severity WARNING' 1 C:\PATH\to\dir
+    C:\PS> Write-WRADLog 'This is a testentry with severity WARNING' 1
     
     #>
 }
