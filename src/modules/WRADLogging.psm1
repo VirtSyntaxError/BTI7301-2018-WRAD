@@ -1,58 +1,101 @@
 ﻿# create filename (UTC)
 $date = (get-date).ToUniversalTime().toString("yyyy-MM-dd")
-$file = ("WRAD_LOG_" + $date + ".log")
 
-# pass logtext, loglevel (0=INFO, 1=WARNING, 2=ERROR) and optionally a path
+# pass logtext and loglevel (0=INFO, 1=WARNING, 2=ERROR)
 function Write-WRADLog{
     Param (
-    [Parameter(Mandatory=$true)]
-    [ValidateNotNullOrEmpty()]
-    [string]$logtext,
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$logtext,
 
-    [ValidateNotNullOrEmpty()]
-    [int]$level=0, 
-
-    [ValidateScript({[System.IO.Path]::IsPathRooted($_)})]
-    [string]$path='C:\TEMP\WRAD'
+        [ValidateNotNullOrEmpty()]
+        [int]$level=0
     )
-    # create path if not exists
-    try{
-        $null = New-Item -ItemType Directory -Force -Path $path
-    }
-    catch{
-        $path='C:\TEMP\WRAD'
-    }
-    # get logentry date (UTC)
-	$logdate = (get-date).ToUniversalTime().toString("yyyy-MM-dd HH:mm:ss")
-    $logfile = $path + "\" + $file
-	if($level -eq 0)
-	{
-		$logtext = "[INFO] " + $logtext
-		$text = "["+$logdate+"] - " + $logtext
-		Write-Verbose $text
-	}
-	if($level -eq 1)
-	{
-		$logtext = "[WARNING] " + $logtext
-		$text = "["+$logdate+"] - " + $logtext
-		Write-Verbose $text
-	}
-	if($level -eq 2)
-	{
-		$logtext = "[ERROR] " + $logtext
-		$text = "["+$logdate+"] - " + $logtext
-		Write-Verbose $text
-	}
+
+    # import DB module
     try
+	{
+		Write-Verbose "Loading PS Module WRADDBCommands"
+		Import-Module .\WRADDBCommands.psd1
+	}
+	catch 
+	{
+		Write-Error -Message $_.Exception.Message
+	}
+
+    # get log settings
+    # $settings = Get-WRADSetting | Select-Object S
+    # $external = 
+    # $filepath = 
+    # $syslogserver = 
+    # $syslogprotocol = 
+
+    if ($external -eq "syslog")
     {
-        # write to file
-        $text >> $logfile
+        $sev = "Warning"
+        if($level -eq 0)
+	    {
+		    $sev = "Informational"
+	    }
+	    if($level -eq 1)
+	    {
+		    $sev = "Warning"
+	    }
+	    if($level -eq 2)
+	    {
+		    $sev = "Critical"
+		}		
+        Send-SyslogMessage -Server $syslogserver -Message $logtext -Severity $sev -Facility local0
     }
-    catch
+    elseif ($external -eq "file")
     {
-    	Write-Error -Message $_.Exception.Message
-        break
+        $path = ""
+        # create path if not exists
+        try{
+            $path = $filepath
+            $parent = Split-Path -Path $filepath
+            $null = New-Item -ItemType Directory -Force -Path $parent
+        }
+        catch{
+            $path='C:\TEMP\WRAD\WRAD_'+$date
+            Write-Verbose 'Path does not exist. Use C:\TEMP\WRAD\ instead'
+        }
+
+        # get logentry date (UTC)
+        $logdate = (get-date).ToUniversalTime().toString("yyyy-MM-dd HH:mm:ss")
+
+        if($level -eq 0)
+	    {
+		    $logtext = "[INFO] " + $logtext
+		    $text = "["+$logdate+"] - " + $logtext
+		    Write-Verbose $text
+	    }
+        if($level -eq 1)
+	    {
+		    $logtext = "[WARNING] " + $logtext
+		    $text = "["+$logdate+"] - " + $logtext
+		    Write-Verbose $text
+	    }
+        if($level -eq 2)
+	    {
+		    $logtext = "[ERROR] " + $logtext
+		    $text = "["+$logdate+"] - " + $logtext
+		    Write-Verbose $text
+	    }
+
+        try
+        {
+            # write to file
+               $text >> $path
+        }
+        catch
+        {
+            Write-Error -Message $_.Exception.Message
+        }
     }
+
+    Write-WRADLog -logtext $logtext -level $level
+
     <#
     .SYNOPSIS
 
