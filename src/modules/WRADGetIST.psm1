@@ -12,7 +12,7 @@
 
 	try
 	{
-		Get-ADUser -Filter:$filter -SearchBase:$searchbase -Properties:* |  Select-Object ObjectGUID,DisplayName,SaMAccountName,UserPrincipalName,DistinguishedName,Description,Enabled,createTimeStamp,Modified,LastLogonDate,MemberOf
+		Get-ADUser -Filter:$filter -SearchBase:$searchbase -Properties:* |  Select-Object ObjectGUID,DisplayName,SaMAccountName,UserPrincipalName,DistinguishedName,Description,Enabled,LastLogonDate,MemberOf
 	}
 	catch
 	{
@@ -90,8 +90,8 @@ function Write-WRADISTtoDB
 		Write-Error -Message $_.Exception.Message
 	}
 
-	$searchbase = "OU=WRAD,DC=WRAD,DC=local"  #t.d. Setting aus DB auslesen
-	$filter = *  #t.d. Setting aus DB auslesen
+	$searchbase = "OU=WRAD,DC=WRAD,DC=local"  # WRADDBCommands.Get-WRADSetting | Where 'SettingName -eq "SearchBase"' | $_.SettingValue   #t.d. Setting aus DB auslesen
+	$filter = *  #nicht nötig aus DB zu holen, einfach alle Rohdaten auslesen, filtering wird später gemacht
 	$ADusers = Get-WRADADUsers -filter:$filter -searchbase:$searchbase 
 	$ADgroups = Get-WRADADGroups -searchbase:$searchbase
 
@@ -100,6 +100,7 @@ function Write-WRADISTtoDB
 
 	try
 	{
+		### Write Users from AD to DB
 		ForEach($user in $ADusers){
 			if($DBusers.ObjectGUID -contains $user.ObjectGUID){
 				WRADDBCommands.Update-WRADUser -ObjectGUID $user.ObjectGUID -SAMAccountName $user.SamAccountName -DistinguishedName $user.DistinguishedName -UserPrincipalName $user.UserPrincipalName -DisplayName $user.DisplayName -Description $user.Description -LastLogonTimestamp $user.LastLogonDate -Enabled $user.Enabled
@@ -108,6 +109,7 @@ function Write-WRADISTtoDB
 				WRADDBCommands.New-WRADUser -ObjectGUID $user.ObjectGUID -SAMAccountName $user.SamAccountName -DistinguishedName $user.DistinguishedName -UserPrincipalName $user.UserPrincipalName -DisplayName $user.DisplayName -Description $user.Description -LastLogonTimestamp $user.LastLogonDate -Enabled $user.Enabled
 			}
 		}
+		### Write Groups from AD to DB
 		ForEach($group in $ADgroups){
 			if($DBgroups.ObjectGUID -contains $group.ObjectGUID){
 				WRADDBCommands.Update-WRADGroup -ObjectGUID $group.ObjectGUID -SAMAccountName $group.SamAccountName -CommonName $group.Name -DistinguishedName $group.DistinguishedName -GroupTypeSecurity $group.GroupScope -GroupType $group.GroupCategory -Description $group.Description
@@ -116,6 +118,15 @@ function Write-WRADISTtoDB
 				WRADDBCommands.New-WRADGroup -ObjectGUID $group.ObjectGUID -SAMAccountName $group.SamAccountName -CommonName $group.Name -DistinguishedName $group.DistinguishedName -GroupTypeSecurity $group.GroupScope -GroupType $group.GroupCategory -Description $group.Description
 			}
 		}
+		### Write Group in Group Membership to DB
+		ForEach($group in $ADgroups){
+			$ParentObjectGUIDs = $group.MemberOf | Get-ADGroup | Select ObjectGUID
+			foreach($parentObjectGUID in $ParentObjectGUIDs){
+				WRADDBCommands.New-WRADGroupOfGroup -ChildGroupObjectGUID $group.ObjectGUID -ParentGroupObjectGUID $parentObjectGUID
+			}
+			
+		}
+
 		# next step tbd. write User-Group Memberships to DB
 	}
 	catch 
