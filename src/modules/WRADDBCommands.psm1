@@ -376,7 +376,7 @@ function New-WRADUser {
 		[Bool]$Enabled,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+		[AllowEmptyString()]
 		[String]$Description,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
@@ -569,7 +569,7 @@ function Update-WRADUser {
 		[Bool]$Enabled,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+		[AllowEmptyString()]
 		[String]$Description,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
@@ -913,7 +913,7 @@ function New-WRADGroup {
 		[String]$GroupType,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+		[AllowEmptyString()]
 		[String]$Description,
         
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
@@ -1074,7 +1074,7 @@ function Update-WRADGroup {
 		[String]$GroupType,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+		[AllowEmptyString()]
 		[String]$Description,
         
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
