@@ -21,6 +21,15 @@ if(!(get-module WRADDBCommands)){
 
 #$WRADSettings = Get-WRADSetting
 
+#Logfile
+$Logfile = ".\gui.log"
+Function LogWrite
+{
+   Param ([string]$logstring)
+
+   Add-content $Logfile -value $logstring
+}
+
 $FpMBckgrn = "#95cc0000"
 $FpMBckgrnHvr = "#A1220C"
 
@@ -89,13 +98,15 @@ $AllGrp = @(
 $auth = New-UDAuthenticationMethod -Endpoint {
 	param([PSCredential]$Credentials)
 
-	Import-Module ADAuth
+	#Import-Module ADAuth
 
 	$AuthorizedGroup = 'Administrators'
 
-	if ($Credentials | ? {$_ | Test-ADCredential} | Test-ADGroupMembership -TargetGroup $AuthorizedGroup) {
-		New-UDAuthenticationResult -Success -UserName $Credentials.UserName -Role "WRADadmin"
-	} elseif ($Credentials.UserName -eq "Auditor" -and $Credentials.GetNetworkCredential().Password -eq "Auditor") {
+	#if ($Credentials | ? {$_ | Test-ADCredential} | Test-ADGroupMembership -TargetGroup $AuthorizedGroup) {
+	#	New-UDAuthenticationResult -Success -UserName $Credentials.UserName -Role "WRADadmin"
+	#} else
+
+    if ($Credentials.UserName -eq "Auditor" -and $Credentials.GetNetworkCredential().Password -eq "Auditor") {
 		New-UDAuthenticationResult -Success -UserName $Credentials.UserName -Role "Auditor"
     }
 
@@ -341,7 +352,10 @@ $Settings = New-UDPage -Name "Einstellungen" -AuthorizedRole @("WRADadmin","Audi
 			} -Endpoint {
 				param($Setting1, $Sprache, $Theme)
 				
-				$theme = $Theme
+                LogWrite "Test"
+                LogWrite $Sprache
+                LogWrite $Setting1
+                LogWrite $Theme
 			}
 		}
         #Alle gruppen
@@ -365,6 +379,6 @@ $theme = New-UDTheme -Name "AzureChngBtn" -Definition @{
 
 Start-UDDashboard -Port 10000 -AllowHttpForLogin -Content {
     
-    New-UdDashboard -Login $login -Pages @($PageALDashboard, $PageAtDashboard, $PageSADashboard, $PageAODashboard, $PageASDashboard, $UsrAGrp) -Title "Mock up Dashboards" -Color 'Black' -Theme $theme
+    New-UdDashboard -Login $login -Pages @($PageALDashboard, $PageAtDashboard, $PageSADashboard, $PageAODashboard, $PageASDashboard, $UsrAGrp, $Settings) -Title "Mock up Dashboards" -Color 'Black' -Theme $theme
 
 } -Verbose -debug
