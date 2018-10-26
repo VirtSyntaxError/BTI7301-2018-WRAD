@@ -6,7 +6,7 @@ $BuiltinParameters = @("ErrorAction","WarningAction","Verbose","ErrorVariable","
 function Connect-WRADDatabase {
     begin
 	{
-        $PasswordPlain = "ktX4xRb7qxSw6oPctx"
+        $PasswordPlain = "Project1@BFH"
         $Password = ConvertTo-SecureString -AsPlainText $PasswordPlain -Force
         $Username = "wradadmin"
         $Server = "localhost"
