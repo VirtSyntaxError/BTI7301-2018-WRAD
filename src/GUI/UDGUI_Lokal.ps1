@@ -21,6 +21,18 @@ if(!(get-module WRADDBCommands)){
 
 #$WRADSettings = Get-WRADSetting
 
+#Logfile
+$Logfile = ".\gui.log"
+Function LogWrite
+{
+   #Param ([string]$logstring)
+   Param ($logstring)
+
+   Add-content $Logfile -value $logstring
+}
+
+LogWrite "Test"
+
 $FpMBckgrn = "#95cc0000"
 $FpMBckgrnHvr = "#A1220C"
 
@@ -89,13 +101,15 @@ $AllGrp = @(
 $auth = New-UDAuthenticationMethod -Endpoint {
 	param([PSCredential]$Credentials)
 
-	Import-Module ADAuth
+	#Import-Module ADAuth
 
 	$AuthorizedGroup = 'Administrators'
 
-	if ($Credentials | ? {$_ | Test-ADCredential} | Test-ADGroupMembership -TargetGroup $AuthorizedGroup) {
-		New-UDAuthenticationResult -Success -UserName $Credentials.UserName -Role "WRADadmin"
-	} elseif ($Credentials.UserName -eq "Auditor" -and $Credentials.GetNetworkCredential().Password -eq "Auditor") {
+	#if ($Credentials | ? {$_ | Test-ADCredential} | Test-ADGroupMembership -TargetGroup $AuthorizedGroup) {
+	#	New-UDAuthenticationResult -Success -UserName $Credentials.UserName -Role "WRADadmin"
+	#} else
+
+    if ($Credentials.UserName -eq "Auditor" -and $Credentials.GetNetworkCredential().Password -eq "Auditor") {
 		New-UDAuthenticationResult -Success -UserName $Credentials.UserName -Role "Auditor"
     }
 
@@ -334,15 +348,21 @@ $Settings = New-UDPage -Name "Einstellungen" -AuthorizedRole @("WRADadmin","Audi
 	New-UDRow {
         #Alle User
 		New-UDColumn -size 6 -Content {
-			New-UDInput -Title "Settings 1" -Id "Form" -Content {
-				New-UDInputField -Type 'checkbox' -Name 'Setting1' -Placeholder 'Setting 1.'
-				New-UDInputField -Type 'select' -Name 'Sprache' -Placeholder 'Sprache' -Values @("Deutsch", "Englisch")
-				New-UDInputField -Type 'select' -Name 'Theme' -Placeholder 'Theme' -Values @("Azure", "Default")
-			} -Endpoint {
-				param($Setting1, $Sprache, $Theme)
-				
-				$theme = $Theme
-			}
+			New-UDInput -Title "Settings" -Id "Form" -Content {
+				New-UDInputField -Type 'textbox' -Name 'ADBase' -Placeholder 'AD Base'
+                New-UDInputField -Type 'textbox' -Name 'GrpDepLead' -Placeholder 'AD Gruppe: Abteilungsleiter' -DefaultValue "Text"
+                New-UDInputField -Type 'textbox' -Name 'GrpAuditor' -Placeholder 'AD Gruppe: Auditor'
+                New-UDInputField -Type 'textbox' -Name 'GrpSysAdm' -Placeholder 'AD Gruppe: System Administrator'
+                New-UDInputField -Type 'textbox' -Name 'GrpAppOwn' -Placeholder 'AD Gruppe: Application Owner'
+                New-UDInputField -Type 'checkbox' -Name 'LogExtern' -Placeholder 'Additional Notes'
+                New-UDInputField -Type 'textbox' -Name 'LogFilePath' -Placeholder 'Log-Filepath'
+                New-UDInputField -Type 'textbox' -Name 'LogSyslog' -Placeholder 'Syslog Server'
+            } -Endpoint {
+                param($ADBase, $GrpDepLead, $GrpAuditor, $GrpSysAdm, $GrpAppOwn, $LogExtern, $LogFilePath, $LogSyslog)
+
+                New-UDInputAction -Toast "ADBase: $ADBase; Grps: $GrpDepLead $GrpAuditor $GrpSysAdm $GrpAppOwn"
+
+            }
 		}
         #Alle gruppen
 		New-UDColumn -size 6 -Content {
@@ -365,6 +385,6 @@ $theme = New-UDTheme -Name "AzureChngBtn" -Definition @{
 
 Start-UDDashboard -Port 10000 -AllowHttpForLogin -Content {
     
-    New-UdDashboard -Login $login -Pages @($PageALDashboard, $PageAtDashboard, $PageSADashboard, $PageAODashboard, $PageASDashboard, $UsrAGrp) -Title "Mock up Dashboards" -Color 'Black' -Theme $theme
+    New-UdDashboard -Login $login -Pages @($PageALDashboard, $PageAtDashboard, $PageSADashboard, $PageAODashboard, $PageASDashboard, $UsrAGrp, $Settings) -Title "Mock up Dashboards" -Color 'Black' -Theme $theme
 
 } -Verbose -debug
