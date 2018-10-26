@@ -82,7 +82,7 @@ function Write-WRADISTtoDB
 
 	try 
 	{
-		Write-Verbose "Loding PS Module WRADDBCommands";
+		Write-Verbose "Loading PS Module WRADDBCommands";
 		Import-Module .\WRADDBCommands.psd1
 	}
 	catch 
@@ -100,16 +100,8 @@ function Write-WRADISTtoDB
 
 	try
 	{
-		### Write Users from AD to DB
-		ForEach($user in $ADusers){
-			if($DBusers.ObjectGUID -contains $user.ObjectGUID){
-				WRADDBCommands.Update-WRADUser -ObjectGUID $user.ObjectGUID -SAMAccountName $user.SamAccountName -DistinguishedName $user.DistinguishedName -UserPrincipalName $user.UserPrincipalName -DisplayName $user.DisplayName -Description $user.Description -LastLogonTimestamp $user.LastLogonDate -Enabled $user.Enabled
-			}
-			else{
-				WRADDBCommands.New-WRADUser -ObjectGUID $user.ObjectGUID -SAMAccountName $user.SamAccountName -DistinguishedName $user.DistinguishedName -UserPrincipalName $user.UserPrincipalName -DisplayName $user.DisplayName -Description $user.Description -LastLogonTimestamp $user.LastLogonDate -Enabled $user.Enabled
-			}
-		}
 		### Write Groups from AD to DB
+		Write-Verbose "Write Groups from AD to DB";
 		ForEach($group in $ADgroups){
 			if($DBgroups.ObjectGUID -contains $group.ObjectGUID){
 				WRADDBCommands.Update-WRADGroup -ObjectGUID $group.ObjectGUID -SAMAccountName $group.SamAccountName -CommonName $group.Name -DistinguishedName $group.DistinguishedName -GroupTypeSecurity $group.GroupScope -GroupType $group.GroupCategory -Description $group.Description
@@ -119,15 +111,30 @@ function Write-WRADISTtoDB
 			}
 		}
 		### Write Group in Group Membership to DB
+		Write-Verbose "Write Group in Group Membership to DB";
 		ForEach($group in $ADgroups){
-			$ParentObjectGUIDs = $group.MemberOf | Get-ADGroup | Select ObjectGUID
+			$ParentObjectGUIDs = $group.MemberOf | Get-ADGroup | Select-Object ObjectGUID
 			foreach($parentObjectGUID in $ParentObjectGUIDs){
 				WRADDBCommands.New-WRADGroupOfGroup -ChildGroupObjectGUID $group.ObjectGUID -ParentGroupObjectGUID $parentObjectGUID
 			}
 			
-		}
+		}	
+		### Write Users from AD to DB
+		Write-Verbose "Write Users from AD to DB";
+		ForEach($user in $ADusers){
+			if($DBusers.ObjectGUID -contains $user.ObjectGUID){
+				WRADDBCommands.Update-WRADUser -ObjectGUID $user.ObjectGUID -SAMAccountName $user.SamAccountName -DistinguishedName $user.DistinguishedName -UserPrincipalName $user.UserPrincipalName -DisplayName $user.DisplayName -Description $user.Description -LastLogonTimestamp $user.LastLogonDate -Enabled $user.Enabled
+			}
+			else{
+				WRADDBCommands.New-WRADUser -ObjectGUID $user.ObjectGUID -SAMAccountName $user.SamAccountName -DistinguishedName $user.DistinguishedName -UserPrincipalName $user.UserPrincipalName -DisplayName $user.DisplayName -Description $user.Description -LastLogonTimestamp $user.LastLogonDate -Enabled $user.Enabled
+			}
 
-		# next step tbd. write User-Group Memberships to DB
+			### Write User in Group Membership to DB
+			$GroupObjectGUIDs = $user.MemberOf | Get-ADGroup | Select-Object ObjectGUID
+			foreach($GroupObjectGUID in $GroupObjectGUIDs){
+				WRADDBCommands.New-WRADGroupOfUser -UserObjectGUID $user.ObjectGUID -GroupObjectGUID $GroupObjectGUID
+			}
+		}
 	}
 	catch 
 	{
