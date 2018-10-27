@@ -1,7 +1,4 @@
-﻿# create filename (UTC)
-$date = (get-date).ToUniversalTime().toString("yyyy-MM-dd")
-
-# pass logtext and loglevel (0=INFO, 1=WARNING, 2=ERROR)
+﻿# pass logtext and loglevel (0=INFO, 1=WARNING, 2=ERROR)
 function Write-WRADLog{
     Param (
         [Parameter(Mandatory=$true)]
@@ -16,7 +13,7 @@ function Write-WRADLog{
     try
 	{
 		Write-Verbose "Loading PS Module WRADDBCommands"
-		Import-Module .\WRADDBCommands.psd1
+		Import-Module -Name ($PSScriptRoot+"\WRADDBCommands.psd1")
 	}
 	catch 
 	{
@@ -28,7 +25,10 @@ function Write-WRADLog{
     $filepath = (Get-WRADSetting -SettingName LogFilePath).SettingValue
     $syslogserver = (Get-WRADSetting -SettingName LogSyslogServer).SettingValue
     $syslogprotocol = (Get-WRADSetting -SettingName LogSyslogServerProtocol).SettingValue
-    
+
+    # get date
+    $date = (get-date).ToUniversalTime().toString("yyyy-MM-dd")
+
     if ($external -eq "syslog")
     {
         $sev = "Warning"
@@ -93,7 +93,7 @@ function Write-WRADLog{
         }
     }
 
-    #Write-WRADLog -logtext $logtext -level $level
+    New-WRADLog -LogText $logtext -LogSeverity $level
 
     <#
     .SYNOPSIS
