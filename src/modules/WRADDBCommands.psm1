@@ -6,7 +6,7 @@ $BuiltinParameters = @("ErrorAction","WarningAction","Verbose","ErrorVariable","
 function Connect-WRADDatabase {
     begin
 	{
-        $PasswordPlain = "Project1@BFH"
+        $PasswordPlain = "ktX4xRb7qxSw6oPctx"
         $Password = ConvertTo-SecureString -AsPlainText $PasswordPlain -Force
         $Username = "wradadmin"
         $Server = "localhost"
@@ -2445,49 +2445,51 @@ function New-WRADExcludedGroup {
 	}
 }
 
+function Clear-WRADReference {
+    Param
+	(
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[Switch]$Force
+	)
+	begin
+	{
+        $Tables = @("WRADRefUserGroup","WRADRefGroupGroup","WRADRefUser","WRADRefGroup")
+        $Query = ''
+        $QueryParts = @()
+
+        $Tables | ForEach {
+                $QueryParts += "DELETE FROM $_"
+        }
+
+        $Query += ($QueryParts -join "; ")
+	}
+	Process
+	{
+		try
+		{
+            if(!$Force){
+                $Reply = Read-Host -Prompt "Are you sure to delete all reference Tables?[y/n]"
+                if ( $Reply -notmatch "[yY]" ) { 
+                    $CustomError = "Command aborted by user"
+                    throw($CustomError)
+                }
+            } else {
+                Write-Verbose "Force parameter specified";
+            }
+
+            Write-Verbose "Invoking TRUNCATE SQL Query on all reference tables";
+			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
+		}
+		catch
+		{
+			Write-Error -Message $_.Exception.Message
+			break
+		}
+	}
+	End
+	{
+	}
+}
+
 Connect-WRADDatabase
-
-#Get-WRADUser -Disabled -Verbose | foreach { write-host $_.DisplayName }
-
-#Get-WRADGroup -GroupType Global -GroupTypeSecurity Security -Verbose
-
-#Get-WRADGroupOfUser -ObjectGUID testid -Verbose | foreach { get-wradgroup -ObjectGUID $_.GroupObjectGUID }
-
-#Get-WRADGroupOfGroup -ObjectGUID testid -Verbose
-
-#Get-WRADUser | foreach { Get-WRADHistoryOfUser -ObjectGUID $_.ObjectGUID -Verbose}
-
-#Get-WRADGroup | foreach { Get-WRADHistoryOfGroup -ObjectGUID $_.ObjectGUID -Verbose }
-
-#write-host -ForegroundColor red "Get all deleted groups"
-
-#Get-WRADDeletedGroup -Verbose
-
-#write-host -ForegroundColor red "Get all deleted users"
-
-#Get-WRADDeletedUser -Verbose
-
-#write-host -ForegroundColor red "Get all deleted groups of user with GUID testid"
-
-#Get-WRADDeletedGroupOfUser -ObjectGUID testid -Verbose
-
-#write-host -ForegroundColor red "Get all deleted groups of group with GUID testid"
-
-#Get-WRADDeletedGroupOfGroup -ObjectGUID testid -Verbose
-
-#write-host -ForegroundColor red "Get all settings"
-
-#Get-WRADSetting -Verbose
-
-#write-host -ForegroundColor red "Create new user Philipp"
-#$timestamp = (get-date).AddDays(-30)
-#New-WRADUser -ObjectGUID testid10 -SAMAccountName philipp -DistinguishedName "CN=philipp,CN=example,CN=local" -UserPrincipalName phillip.koefer -DisplayName "Phillip Köfer" -Expired -Description "Phillip Testuser" -LastLogonTimestamp $timestamp -Verbose
-
-#write-host -ForegroundColor red "Create new group Domain Powerusers"
-#New-WRADGroup -ObjectGUID testid20 -SAMAccountName "Domain Powerusers" -CommonName "Domain Powerusers" -DistinguishedName 'CN="Domain Powerusers",CN="example",CN="local"' -GroupTypeSecurity Security -GroupType Domain local -Verbose
-
-#write-host -ForegroundColor red "Attach group testid20 to user testid10"
-#New-WRADGroupOfUser -UserObjectGUID testid10 -GroupObjectGUID testid20 -Verbose
-
-#write-host -ForegroundColor red "Attach group testid20 to group testid2"
-#New-WRADGroupOfGroup -ChildGroupObjectGUID testid20 -ParentGroupObjectGUID testid2 -Verbose
