@@ -376,7 +376,7 @@ function New-WRADUser {
 		[Bool]$Enabled,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+		[AllowEmptyString()]
 		[String]$Description,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
@@ -569,7 +569,7 @@ function Update-WRADUser {
 		[Bool]$Enabled,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+		[AllowEmptyString()]
 		[String]$Description,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
@@ -913,7 +913,7 @@ function New-WRADGroup {
 		[String]$GroupType,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+		[AllowEmptyString()]
 		[String]$Description,
         
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
@@ -1074,7 +1074,7 @@ function Update-WRADGroup {
 		[String]$GroupType,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+		[AllowEmptyString()]
 		[String]$Description,
         
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
@@ -2067,16 +2067,24 @@ function Get-WRADDeletedGroupOfGroup {
 function Get-WRADSetting {
     Param
 	(
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[string]$SettingName
 	)
 	begin
 	{
-        $Query = 'SELECT * FROM WRADSetting';		
+        $Table = 'WRADSetting'
+        $Query = 'SELECT * FROM '+$Table;	
+        
+        if($SettingName) {
+            $Query += ' WHERE `SettingName` = "'+$SettingName+'"'
+        }	
 	}
 	Process
 	{
 		try
 		{
-			Write-Verbose "Invoking SELECT SQL Query on table WRADSetting";
+			Write-Verbose "Invoking SELECT SQL Query on table $Table";
 			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
 		}
 		catch

@@ -73,7 +73,7 @@ CREATE TABLE WRADUserArchive
   VersionStartTime TIMESTAMP NULL,
   VersionEndTime TIMESTAMP NULL,
   DisplayName VARCHAR(256) NOT NULL,
-  Description TEXT NOT NULL,
+  Description TEXT NULL,
   Enabled BOOLEAN NOT NULL,
   Expired BOOLEAN NOT NULL,
   PRIMARY KEY (ArchiveID)
@@ -89,7 +89,7 @@ CREATE TABLE WRADGroup
   GroupTypeSecurity ENUM('Security','Distribution') NOT NULL,
   CommonName VARCHAR(256) NOT NULL,
   DistinguishedName VARCHAR(2048) NOT NULL,
-  Description TEXT NOT NULL,
+  Description TEXT NULL,
   PRIMARY KEY (ObjectGUID)
 );
 
@@ -197,7 +197,7 @@ CREATE TABLE WRADGroupArchive
   OperationType ENUM('u','d'),
   VersionEndTime TIMESTAMP NULL,
   DistinguishedName VARCHAR(2048) NOT NULL,
-  Description TEXT NOT NULL,
+  Description TEXT NULL,
   PRIMARY KEY (ArchiveID)
 );
 
