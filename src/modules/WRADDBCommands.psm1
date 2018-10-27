@@ -440,9 +440,14 @@ function New-WRADUser {
 		try
 		{
             Write-Verbose "Checking for already existent user";
-            if($Reference -or $NewReference) {
-                if((Get-WRADUser -Reference -Username $Username) -ne $null -or (Get-WRADUser -NewReference -Username $Username) -ne $null){
+            if($NewReference) {
+                if((Get-WRADUser -NewReference -Username $Username) -ne $null){
                     $CustomError = "Duplicate entry for Username "+$Username
+                    throw($CustomError) 
+                }
+            } elseif ($Reference) {
+                if((Get-WRADUser -Reference -ObjectGUID $ObjectGUID) -ne $null){
+                    $CustomError = "Duplicate entry for ObjectGUID "+$ObjectGUID
                     throw($CustomError) 
                 }
             } else {
@@ -964,8 +969,13 @@ function New-WRADGroup {
 		{
             Write-Verbose "Checking for already existent group";
             if($Reference -or $NewReference) {
-                if((Get-WRADGroup -Reference -CommonName $CommonName) -ne $null -or (Get-WRADGroup -NewReference -CommonName $CommonName) -ne $null){
+                if((Get-WRADGroup -Reference -CommonName $CommonName) -ne $null){
                     $CustomError = "Duplicate entry for group "+$CommonName
+                    throw($CustomError) 
+                }
+            } elseif($NewReference) {
+                if((Get-WRADGroup -NewReference -ObjectGUID $ObjectGUID) -ne $null){
+                    $CustomError = "Duplicate entry for ObjectGUID "+$ObjectGUID
                     throw($CustomError) 
                 }
             } else {
