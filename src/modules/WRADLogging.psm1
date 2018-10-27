@@ -22,14 +22,13 @@ function Write-WRADLog{
 	{
 		Write-Error -Message $_.Exception.Message
 	}
-
+    
     # get log settings
-    # $settings = Get-WRADSetting | Select-Object S
-    # $external = 
-    # $filepath = 
-    # $syslogserver = 
-    # $syslogprotocol = 
-
+    $external = (Get-WRADSetting -SettingName LogExternal).SettingValue
+    $filepath = (Get-WRADSetting -SettingName LogFilePath).SettingValue
+    $syslogserver = (Get-WRADSetting -SettingName LogSyslogServer).SettingValue
+    $syslogprotocol = (Get-WRADSetting -SettingName LogSyslogServerProtocol).SettingValue
+    
     if ($external -eq "syslog")
     {
         $sev = "Warning"
@@ -45,7 +44,7 @@ function Write-WRADLog{
 	    {
 		    $sev = "Critical"
 		}		
-        Send-SyslogMessage -Server $syslogserver -Message $logtext -Severity $sev -Facility local0
+        Send-SyslogMessage -Server $syslogserver -Message $logtext -Severity $sev -Facility local0 -Transport $syslogprotocol.ToUpper()
     }
     elseif ($external -eq "file")
     {
@@ -86,7 +85,7 @@ function Write-WRADLog{
         try
         {
             # write to file
-               $text >> $path
+            $text >> $path
         }
         catch
         {
@@ -94,7 +93,7 @@ function Write-WRADLog{
         }
     }
 
-    Write-WRADLog -logtext $logtext -level $level
+    #Write-WRADLog -logtext $logtext -level $level
 
     <#
     .SYNOPSIS
