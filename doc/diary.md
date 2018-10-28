@@ -18,7 +18,7 @@
 * SOLL-IST Comparison 
   * based on ObjectGUID
   * CSV upload does not need ObjectGUID (based on Username)
-  * New SOLL Account is also based on Username because there is no IST association (New table withoud Object GUID)
+  * New SOLL account is also based on Username because there is no IST association (new table without Object GUID)
 * Logging
   * Logging goes to additional table (File and Syslog is optional)
 * Events
