@@ -11,7 +11,7 @@
 	}
     
     # empty ref
-    # Clear-WRADReference -Force
+    Clear-WRADReference -Force
 
     # get data
     $users_ref_new = Get-WRADUser -NewReference
