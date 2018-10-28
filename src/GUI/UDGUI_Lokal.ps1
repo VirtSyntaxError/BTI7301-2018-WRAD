@@ -4,7 +4,7 @@ if(!(get-module UniversalDashboard)){
 }
 
 if(!(get-module WRADDBCommands)){
-    Import-Module ..\modules\WRADDBCommands.psm1
+    Import-Module $PSScriptRoot\..\modules\WRADDBCommands.psm1
     write-host "Import Module WRADCommands"
 }
 
@@ -23,18 +23,6 @@ if(!(get-module WRADDBCommands)){
 
 
 
-
-#Logfile
-$Logfile = ".\gui.log"
-Function LogWrite
-{
-   #Param ([string]$logstring)
-   Param ($logstring)
-
-   Add-content $Logfile -value $logstring
-}
-
-LogWrite "Test"
 
 $FpMBckgrn = "#95cc0000"
 $FpMBckgrnHvr = "#A1220C"
@@ -362,16 +350,7 @@ $UsrAGrp = New-UDPage -Name "UserUndGruppen" -AuthorizedRole @("Auditor") -Conte
 
 $WRADSettings = Get-WRADSetting
 
-$WRADSettings2 = @(
-    New-Object PSObject	-Property @{PlaceHolder = "AD Gruppe: Abteilungsleiter"}
-    New-Object PSObject	-Property @{PlaceHolder = "AD Gruppe: Auditoren"}
-    New-Object PSObject	-Property @{PlaceHolder = "AD Gruppe: System Administrator"}
-    New-Object PSObject	-Property @{PlaceHolder = "AD Gruppe: Application Owner"}
-    New-Object PSObject	-Property @{PlaceHolder = "Externes Logging"}
-    New-Object PSObject	-Property @{PlaceHolder = "Log-Dateipfad"}
-    New-Object PSObject	-Property @{PlaceHolder = "Syslog Server"}
-    New-Object PSObject	-Property @{PlaceHolder = "AD Basis"}
-)
+#$WRADSettingsNew = $WRADSettings | Select SettingName,SettingValue
 
 $Settings = New-UDPage -Name "Einstellungen" -AuthorizedRole @("WRADadmin","Auditor") -Content {
 	New-UDRow {
@@ -387,15 +366,20 @@ $Settings = New-UDPage -Name "Einstellungen" -AuthorizedRole @("WRADadmin","Audi
                 New-UDInputField -Type 'textbox' -Name $WRADSettings[1].Item("SettingName") -Placeholder 'AD Gruppe: Auditor' -DefaultValue $WRADSettings[1].Item("SettingValue")
                 New-UDInputField -Type 'textbox' -Name $WRADSettings[2].Item("SettingName") -Placeholder 'AD Gruppe: System Administrator' -DefaultValue $WRADSettings[2].Item("SettingValue")
                 New-UDInputField -Type 'textbox' -Name $WRADSettings[3].Item("SettingName") -Placeholder 'AD Gruppe: Application Owner' -DefaultValue $WRADSettings[3].Item("SettingValue")
-                #New-UDInputField -Type 'select' -Name $WRADSettings[4].Item("SettingName") -Placeholder 'Externes Logging' -values @("none", "File", "Server")-DefaultValue $WRADSettings[4].Item("SettingValue")
                 New-UDInputField -Type 'textbox' -Name $WRADSettings[5].Item("SettingName") -Placeholder 'Log-Dateipfad' -DefaultValue $WRADSettings[5].Item("SettingValue")
                 New-UDInputField -Type 'textbox' -Name $WRADSettings[6].Item("SettingName") -Placeholder 'Syslog Server' -DefaultValue $WRADSettings[6].Item("SettingValue")
                 New-UDInputField -Type 'textbox' -Name $WRADSettings[7].Item("SettingName") -Placeholder 'Syslog Protokoll' -DefaultValue $WRADSettings[7].Item("SettingValue")
-           
+                New-UDInputField -Type 'select' -Name $WRADSettings[4].Item("SettingName") -Placeholder 'Externes Logging' -Values @("none", "file", "syslog") -DefaultValue $WRADSettings[4].Item("SettingValue")
+                
             } -Endpoint {
-                param($ADBase, $GrpDepLead, $GrpAuditor, $GrpSysAdm, $GrpAppOwn, $LogExtern, $LogFilePath, $LogSyslog)
+                param($SearchBase, $ADRoleDepartmentLead, $ADRoleAuditor, $ADRoleSysAdmin, $ADRoleApplOwner, $LogFilePath, $LogSyslogServer, $LogSyslogServerProtocol, $LogExternal)
 
-                New-UDInputAction -Toast "ADBase: $ADBase; Grps: $GrpDepLead $GrpAuditor $GrpSysAdm $GrpAppOwn"
+                $WRADSettingsNew[0]['SettingValue'] = $ADRoleDepartmentLead
+                
+                Write-Host $WRADSettingsNew[0]['SettingValue']
+                
+                
+                New-UDInputAction -Toast "ADBase: $SearchBase; Grps: $ADRoleDepartmentLead; Syslog: $LogSyslogServerProtocol"
 
             }
 		}
