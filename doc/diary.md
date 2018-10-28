@@ -27,6 +27,7 @@
   * Group is not in Group in IST
   * Group is not in Group in SOLL
   * Wrong Username
+  * Wrong DisplayName
   * User not in SOLL
   * User not in IST
   * Group not in SOLL
