@@ -12,7 +12,7 @@
 
 	try
 	{
-		Get-ADUser -Filter:$filter -SearchBase:$searchbase -Properties:* |  Select-Object ObjectGUID,DisplayName,SaMAccountName,UserPrincipalName,DistinguishedName,Description,Enabled,LastLogonDate,MemberOf
+		Get-ADUser -Filter:$filter -SearchBase:$searchbase -Properties:* |  Select-Object ObjectGUID,DisplayName,SaMAccountName,UserPrincipalName,DistinguishedName,Description,Enabled,LastLogonDate,MemberOf,accountExpires
 	}
 	catch
 	{
@@ -71,32 +71,26 @@ Description       : blablabla
 function Write-WRADISTtoDB
 {
 	Param(
-        [Parameter(Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[String]$filter, 
-		
-		[Parameter(Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-        [String]$searchbase
 	)
 
 	try 
 	{
 		Write-Verbose "Loading PS Module WRADDBCommands";
-		Import-Module .\WRADDBCommands.psd1
+		Import-Module $PSScriptRoot\WRADDBCommands.psd1
 	}
 	catch 
 	{
 		Write-Error -Message $_.Exception.Message
 	}
 
-	$searchbase = "OU=WRAD,DC=WRAD,DC=local"  # WRADDBCommands.Get-WRADSetting | Where 'SettingName -eq "SearchBase"' | $_.SettingValue   #t.d. Setting aus DB auslesen
-	$filter = *  #nicht nötig aus DB zu holen, einfach alle Rohdaten auslesen, filtering wird später gemacht
+	$searchbase = "OU=WRAD,DC=WRAD,DC=local"  # Get-WRADSetting | Where SettingName -like "Searchbase" | Select-Object SettingValue   #t.d. Setting aus DB auslesen
+	$filter = "*"  #nicht nötig aus DB zu holen, einfach alle Rohdaten auslesen, filtering wird später gemacht
 	$ADusers = Get-WRADADUsers -filter:$filter -searchbase:$searchbase 
 	$ADgroups = Get-WRADADGroups -searchbase:$searchbase
+    $today = Get-Date
 
-	$DBusers = WRADDBCommands.Get-WRADUser
-	$DBgroups = WRADDBCommands.Get-WRADGroup
+	$DBusers = Get-WRADUser
+	$DBgroups = Get-WRADGroup
 
 	try
 	{
@@ -104,10 +98,10 @@ function Write-WRADISTtoDB
 		Write-Verbose "Write Groups from AD to DB";
 		ForEach($group in $ADgroups){
 			if($DBgroups.ObjectGUID -contains $group.ObjectGUID){
-				WRADDBCommands.Update-WRADGroup -ObjectGUID $group.ObjectGUID -SAMAccountName $group.SamAccountName -CommonName $group.Name -DistinguishedName $group.DistinguishedName -GroupTypeSecurity $group.GroupScope -GroupType $group.GroupCategory -Description $group.Description
+				Update-WRADGroup -ObjectGUID:$group.ObjectGUID -SAMAccountName:$group.SamAccountName -CommonName:$group.Name -DistinguishedName:$group.DistinguishedName -GroupTypeSecurity:$group.GroupCategory -GroupType:$group.GroupScope -Description:$group.Description
 			}
 			else{
-				WRADDBCommands.New-WRADGroup -ObjectGUID $group.ObjectGUID -SAMAccountName $group.SamAccountName -CommonName $group.Name -DistinguishedName $group.DistinguishedName -GroupTypeSecurity $group.GroupScope -GroupType $group.GroupCategory -Description $group.Description
+				New-WRADGroup -ObjectGUID:$group.ObjectGUID -SAMAccountName:$group.SamAccountName -CommonName:$group.Name -DistinguishedName:$group.DistinguishedName -GroupTypeSecurity:$group.GroupCategory -GroupType:$group.GroupScope -Description:$group.Description
 			}
 		}
 		### Write Group in Group Membership to DB
@@ -115,24 +109,37 @@ function Write-WRADISTtoDB
 		ForEach($group in $ADgroups){
 			$ParentObjectGUIDs = $group.MemberOf | Get-ADGroup | Select-Object ObjectGUID
 			foreach($parentObjectGUID in $ParentObjectGUIDs){
-				WRADDBCommands.New-WRADGroupOfGroup -ChildGroupObjectGUID $group.ObjectGUID -ParentGroupObjectGUID $parentObjectGUID
+				New-WRADGroupOfGroup -ChildGroupObjectGUID:$group.ObjectGUID -ParentGroupObjectGUID:$parentObjectGUID
 			}
 			
-		}	
+		}
 		### Write Users from AD to DB
 		Write-Verbose "Write Users from AD to DB";
 		ForEach($user in $ADusers){
+			## Set the right value for expired accounts
+            if($user.accountExpires -eq '9223372036854775807'){ ## Default Value for never expires
+                $expired = $FALSE
+            }
+            elseif($today -gt ([datetime]::FromFileTime($user.accountExpires))){
+                $expired = $TRUE
+            }
+            else{
+                $expired = $FALSE
+			}
+			
+			## Actually write/update Users to DB
 			if($DBusers.ObjectGUID -contains $user.ObjectGUID){
-				WRADDBCommands.Update-WRADUser -ObjectGUID $user.ObjectGUID -SAMAccountName $user.SamAccountName -DistinguishedName $user.DistinguishedName -UserPrincipalName $user.UserPrincipalName -DisplayName $user.DisplayName -Description $user.Description -LastLogonTimestamp $user.LastLogonDate -Enabled $user.Enabled
+				Update-WRADUser -ObjectGUID:$user.ObjectGUID -SAMAccountName:$user.SamAccountName -DistinguishedName:$user.DistinguishedName -UserPrincipalName:$user.UserPrincipalName -DisplayName:$user.DisplayName -Description:$user.Description -LastLogonTimestamp:$user.LastLogonDate -Enabled:$user.Enabled
 			}
 			else{
-				WRADDBCommands.New-WRADUser -ObjectGUID $user.ObjectGUID -SAMAccountName $user.SamAccountName -DistinguishedName $user.DistinguishedName -UserPrincipalName $user.UserPrincipalName -DisplayName $user.DisplayName -Description $user.Description -LastLogonTimestamp $user.LastLogonDate -Enabled $user.Enabled
+                
+                New-WRADUser -ObjectGUID:$user.ObjectGUID -SAMAccountName:$user.SamAccountName -DistinguishedName:$user.DistinguishedName -UserPrincipalName:$user.UserPrincipalName -DisplayName:$user.DisplayName -Description:$user.Description -LastLogonTimestamp:$user.LastLogonDate -Enabled:$user.Enabled -Expired:$expired
 			}
 
 			### Write User in Group Membership to DB
 			$GroupObjectGUIDs = $user.MemberOf | Get-ADGroup | Select-Object ObjectGUID
 			foreach($GroupObjectGUID in $GroupObjectGUIDs){
-				WRADDBCommands.New-WRADGroupOfUser -UserObjectGUID $user.ObjectGUID -GroupObjectGUID $GroupObjectGUID
+				New-WRADGroupOfUser -UserObjectGUID:$user.ObjectGUID -GroupObjectGUID:$GroupObjectGUID
 			}
 		}
 	}
@@ -146,3 +153,4 @@ function Write-WRADISTtoDB
 #Example function calls
 #Get-WRADADUsers -filter 'Name -like "*Thor*"' -searchbase "OU=WRAD,DC=WRAD,DC=local"
 #Get-WRADADGroups -searchbase "OU=WRAD,DC=WRAD,DC=local"
+#Write-WRADISTtoDB
