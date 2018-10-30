@@ -39,14 +39,11 @@ MemberOf          : {CN=Marketing Coordinator - Utah,OU=Groups,OU=WRAD,DC=WRAD,D
 function Get-WRADADGroups
 {
 	Param(
-		[Parameter(Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[String]$searchbase
 	)
 
 	try 
 	{
-		Get-ADGroup -Filter * -SearchBase:$searchbase -Properties * | Select-Object ObjectGUID,DistinguishedName,Name,SamAccountName,GroupCategory,GroupScope,Members,MemberOf,Description
+		Get-ADGroup -Filter * -SearchBase * -Properties * | Select-Object ObjectGUID,DistinguishedName,Name,SamAccountName,GroupCategory,GroupScope,Members,MemberOf,Description
 	}
 	catch 
 	{
