@@ -83,7 +83,7 @@ function Write-WRADISTtoDB
 	$searchbase = "OU=WRAD,DC=WRAD,DC=local"  # Get-WRADSetting | Where SettingName -like "Searchbase" | Select-Object SettingValue   #t.d. Setting aus DB auslesen
 	$filter = "*"  #nicht nötig aus DB zu holen, einfach alle Rohdaten auslesen, filtering wird später gemacht
 	$ADusers = Get-WRADADUsers -filter:$filter -searchbase:$searchbase 
-	$ADgroups = Get-WRADADGroups -searchbase:$searchbase
+	$ADgroups = Get-WRADADGroups
     $today = Get-Date
 
 	$DBusers = Get-WRADUser
@@ -91,7 +91,7 @@ function Write-WRADISTtoDB
 
 	try
 	{
-		### Write Groups from AD to DB
+		### Write/update Groups from AD to DB
 		Write-Verbose "Write Groups from AD to DB";
 		ForEach($group in $ADgroups){
 			if($DBgroups.ObjectGUID -contains $group.ObjectGUID){
@@ -106,9 +106,11 @@ function Write-WRADISTtoDB
 		ForEach($group in $ADgroups){
 			$ParentObjectGUIDs = $group.MemberOf | Get-ADGroup | Select-Object ObjectGUID
 			foreach($parentObjectGUID in $ParentObjectGUIDs){
-				New-WRADGroupOfGroup -ChildGroupObjectGUID:$group.ObjectGUID -ParentGroupObjectGUID:$parentObjectGUID
+				$alreadyExisting = Get-WRADGroupOfGroup -ChildGroupObjectGUID:$group.ObjectGUID -ParentGroupObjectGUID:$parentObjectGUID.ObjectGUID
+				if(!$alreadyExisting){
+					New-WRADGroupOfGroup -ChildGroupObjectGUID:$group.ObjectGUID -ParentGroupObjectGUID:$parentObjectGUID.ObjectGUID
+				}
 			}
-			
 		}
 		### Write Users from AD to DB
 		Write-Verbose "Write Users from AD to DB";
@@ -117,26 +119,36 @@ function Write-WRADISTtoDB
             if($user.accountExpires -eq '9223372036854775807'){ ## Default Value for never expires
                 $expired = $FALSE
             }
-            elseif($today -gt ([datetime]::FromFileTime($user.accountExpires))){
+            elseif($today -gt ([DateTime]::FromFileTime($user.accountExpires))){
                 $expired = $TRUE
             }
             else{
                 $expired = $FALSE
 			}
+			## Set LastLogonTimeStamp to $null if it is empty in AD (else we got conversion Problems with the DateTime-typ)
+			if(!$user.LastLogonDate){
+                [nullable[DateTime]]$LastLogonTimeStamp = $null
+            }
+            else{
+                [nullable[DateTime]]$LastLogonTimeStamp = $user.LastLogonDate
+            }
 			
 			## Actually write/update Users to DB
 			if($DBusers.ObjectGUID -contains $user.ObjectGUID){
-				Update-WRADUser -ObjectGUID:$user.ObjectGUID -SAMAccountName:$user.SamAccountName -DistinguishedName:$user.DistinguishedName -UserPrincipalName:$user.UserPrincipalName -DisplayName:$user.DisplayName -Description:$user.Description -LastLogonTimestamp:$user.LastLogonDate -Enabled:$user.Enabled
+				Update-WRADUser -ObjectGUID:$user.ObjectGUID -SAMAccountName:$user.SamAccountName -DistinguishedName:$user.DistinguishedName -UserPrincipalName:$user.UserPrincipalName -DisplayName:$user.DisplayName -Description:$user.Description -LastLogonTimestamp:$LastLogonTimeStamp -Enabled:$user.Enabled
 			}
 			else{
                 
-                New-WRADUser -ObjectGUID:$user.ObjectGUID -SAMAccountName:$user.SamAccountName -DistinguishedName:$user.DistinguishedName -UserPrincipalName:$user.UserPrincipalName -DisplayName:$user.DisplayName -Description:$user.Description -LastLogonTimestamp:$user.LastLogonDate -Enabled:$user.Enabled -Expired:$expired
+                New-WRADUser -ObjectGUID:$user.ObjectGUID -SAMAccountName:$user.SamAccountName -DistinguishedName:$user.DistinguishedName -UserPrincipalName:$user.UserPrincipalName -DisplayName:$user.DisplayName -Description:$user.Description -LastLogonTimestamp:$LastLogonTimeStamp -Enabled:$user.Enabled -Expired:$expired
 			}
 
 			### Write User in Group Membership to DB
 			$GroupObjectGUIDs = $user.MemberOf | Get-ADGroup | Select-Object ObjectGUID
 			foreach($GroupObjectGUID in $GroupObjectGUIDs){
-				New-WRADGroupOfUser -UserObjectGUID:$user.ObjectGUID -GroupObjectGUID:$GroupObjectGUID
+				$alreadyExisting = Get-WRADGroupOfUser -UserObjectGUID:$user.ObjectGUID -GroupObjectGUID:$GroupObjectGUID.ObjectGUID
+				if(!$alreadyExisting){
+					New-WRADGroupOfUser -UserObjectGUID:$user.ObjectGUID -GroupObjectGUID:$GroupObjectGUID.ObjectGUID
+				}
 			}
 		}
 	}
