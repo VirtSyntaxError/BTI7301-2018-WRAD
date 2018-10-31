@@ -1,4 +1,4 @@
-CREATE DATABASE WRAD;
+CREATE DATABASE WRAD CHARACTER SET = 'utf8mb4' COLLATE = 'utf8mb4_unicode_ci';
 USE WRAD;
 
 DROP TABLE IF EXISTS WRADGroupGroup;
@@ -87,7 +87,7 @@ CREATE TABLE WRADGroup
   CreatedDate TIMESTAMP NULL,
   LastModifiedDate TIMESTAMP NULL,
   SAMAccountName VARCHAR(104) NOT NULL,
-  GroupType ENUM('Domain local','Global','Universal') NOT NULL,
+  GroupType ENUM('DomainLocal','Global','Universal') NOT NULL,
   GroupTypeSecurity ENUM('Security','Distribution') NOT NULL,
   CommonName VARCHAR(256) NOT NULL,
   DistinguishedName VARCHAR(2048) NOT NULL,
@@ -99,7 +99,7 @@ CREATE TABLE WRADRefGroup
 (
   ObjectGUID VARCHAR(36) NOT NULL,
   CreatedDate TIMESTAMP NULL,
-  GroupType ENUM('Domain local','Global','Universal') NOT NULL,
+  GroupType ENUM('DomainLocal','Global','Universal') NOT NULL,
   GroupTypeSecurity ENUM('Security','Distribution') NOT NULL,
   CommonName VARCHAR(256) NOT NULL,
   PRIMARY KEY (ObjectGUID)
@@ -109,7 +109,7 @@ CREATE TABLE WRADRefNewGroup
 (
   NewGroupID INT NOT NULL AUTO_INCREMENT,
   CreatedDate TIMESTAMP NULL,
-  GroupType ENUM('Domain local','Global','Universal') NOT NULL,
+  GroupType ENUM('DomainLocal','Global','Universal') NOT NULL,
   GroupTypeSecurity ENUM('Security','Distribution') NOT NULL,
   CommonName VARCHAR(256) NOT NULL,
   PRIMARY KEY (NewGroupID)
@@ -269,10 +269,6 @@ CREATE TABLE WRADEvent
   DestRefGroupObjectGUID VARCHAR(36) NULL,
   EventType INT NOT NULL,
   PRIMARY KEY (EventID),
-  CONSTRAINT `FK_EventSrcUser` FOREIGN KEY (SrcUserObjectGUID) REFERENCES WRADUser(ObjectGUID),
-  CONSTRAINT `FK_EventSrcRefUser` FOREIGN KEY (SrcRefUserObjectGUID) REFERENCES WRADRefUser(ObjectGUID),
-  CONSTRAINT `FK_EventSrcGroup` FOREIGN KEY (SrcGroupObjectGUID) REFERENCES WRADGroup(ObjectGUID),
-  CONSTRAINT `FK_EventSrcRefGroup` FOREIGN KEY (SrcRefGroupObjectGUID) REFERENCES WRADRefGroup(ObjectGUID),
   CONSTRAINT `FK_EventType` FOREIGN KEY (EventType) REFERENCES WRADEventType(EventTypeID)
 );
 
