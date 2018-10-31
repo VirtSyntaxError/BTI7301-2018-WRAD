@@ -43,7 +43,7 @@ function Get-WRADADGroups
 
 	try 
 	{
-		Get-ADGroup -Filter * -SearchBase * -Properties * | Select-Object ObjectGUID,DistinguishedName,Name,SamAccountName,GroupCategory,GroupScope,Members,MemberOf,Description
+		Get-ADGroup -Filter * -Properties * | Select-Object ObjectGUID,DistinguishedName,Name,SamAccountName,GroupCategory,GroupScope,Members,MemberOf,Description
 	}
 	catch 
 	{
@@ -67,6 +67,7 @@ Description       : blablabla
 
 function Write-WRADISTtoDB
 {
+	[cmdletbinding()] 
 	Param(
 	)
 
@@ -80,7 +81,7 @@ function Write-WRADISTtoDB
 		Write-Error -Message $_.Exception.Message
 	}
 
-	$searchbase = "OU=WRAD,DC=WRAD,DC=local"  # Get-WRADSetting | Where SettingName -like "Searchbase" | Select-Object SettingValue   #t.d. Setting aus DB auslesen
+	$searchbase = "OU=WRAD,DC=WRAD,DC=local"  # Get-WRADSetting | Where SettingName -like "Searchbase" | Select-Object SettingValue   #t.d. Setting aus DB auslesen / prüfen wenn DB null, dann einfach AD Root verwenden
 	$filter = "*"  #nicht nötig aus DB zu holen, einfach alle Rohdaten auslesen, filtering wird später gemacht
 	$ADusers = Get-WRADADUsers -filter:$filter -searchbase:$searchbase 
 	$ADgroups = Get-WRADADGroups
@@ -95,9 +96,11 @@ function Write-WRADISTtoDB
 		Write-Verbose "Write Groups from AD to DB";
 		ForEach($group in $ADgroups){
 			if($DBgroups.ObjectGUID -contains $group.ObjectGUID){
+				Write-Verbose "Updating Group in DB: $group"
 				Update-WRADGroup -ObjectGUID:$group.ObjectGUID -SAMAccountName:$group.SamAccountName -CommonName:$group.Name -DistinguishedName:$group.DistinguishedName -GroupTypeSecurity:$group.GroupCategory -GroupType:$group.GroupScope -Description:$group.Description
 			}
 			else{
+				Write-Verbose "Write New Group to DB: $group"
 				New-WRADGroup -ObjectGUID:$group.ObjectGUID -SAMAccountName:$group.SamAccountName -CommonName:$group.Name -DistinguishedName:$group.DistinguishedName -GroupTypeSecurity:$group.GroupCategory -GroupType:$group.GroupScope -Description:$group.Description
 			}
 		}
@@ -126,20 +129,21 @@ function Write-WRADISTtoDB
                 $expired = $FALSE
 			}
 			## Set LastLogonTimeStamp to $null if it is empty in AD (else we got conversion Problems with the DateTime-typ)
-			if(!$user.LastLogonDate){
+			<#if(!$user.LastLogonDate){
                 [nullable[DateTime]]$LastLogonTimeStamp = $null
             }
             else{
                 [nullable[DateTime]]$LastLogonTimeStamp = $user.LastLogonDate
-            }
+            }#>
 			
 			## Actually write/update Users to DB
 			if($DBusers.ObjectGUID -contains $user.ObjectGUID){
-				Update-WRADUser -ObjectGUID:$user.ObjectGUID -SAMAccountName:$user.SamAccountName -DistinguishedName:$user.DistinguishedName -UserPrincipalName:$user.UserPrincipalName -DisplayName:$user.DisplayName -Description:$user.Description -LastLogonTimestamp:$LastLogonTimeStamp -Enabled:$user.Enabled
+				Write-Verbose "Updating User to in: $user"
+				Update-WRADUser -ObjectGUID:$user.ObjectGUID -SAMAccountName:$user.SamAccountName -DistinguishedName:$user.DistinguishedName -UserPrincipalName:$user.UserPrincipalName -DisplayName:$user.DisplayName -Description:$user.Description -LastLogonTimestamp:$user.LastLogonDate -Enabled:$user.Enabled
 			}
 			else{
-                
-                New-WRADUser -ObjectGUID:$user.ObjectGUID -SAMAccountName:$user.SamAccountName -DistinguishedName:$user.DistinguishedName -UserPrincipalName:$user.UserPrincipalName -DisplayName:$user.DisplayName -Description:$user.Description -LastLogonTimestamp:$LastLogonTimeStamp -Enabled:$user.Enabled -Expired:$expired
+				Write-Verbose "Writing new User to DB: $user"
+                New-WRADUser -ObjectGUID:$user.ObjectGUID -SAMAccountName:$user.SamAccountName -DistinguishedName:$user.DistinguishedName -UserPrincipalName:$user.UserPrincipalName -DisplayName:$user.DisplayName -Description:$user.Description -LastLogonTimestamp:$user.LastLogonDate -Enabled:$user.Enabled -Expired:$expired
 			}
 
 			### Write User in Group Membership to DB
