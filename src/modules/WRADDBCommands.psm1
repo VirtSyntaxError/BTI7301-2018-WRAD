@@ -351,8 +351,8 @@ function New-WRADUser {
 		[String]$DistinguishedName,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
-		[DateTime]$LastLogonTimestamp,
+		[AllowEmptyString()]
+		[Nullable[DateTime]]$LastLogonTimestamp,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
@@ -554,8 +554,8 @@ function Update-WRADUser {
 		[String]$DistinguishedName,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
-		[DateTime]$LastLogonTimestamp,
+		[AllowEmptyString()]
+		[Nullable[DateTime]]$LastLogonTimestamp,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
@@ -819,7 +819,7 @@ function Get-WRADGroup {
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
         [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
-        [ValidateSet('Domain local','Global','Universal')]
+        [ValidateSet('DomainLocal','Global','Universal')]
 		[string]$GroupType,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
@@ -914,7 +914,7 @@ function New-WRADGroup {
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
         [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-        [ValidateSet('Domain local','Global','Universal')]
+        [ValidateSet('DomainLocal','Global','Universal')]
 		[String]$GroupType,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
@@ -1020,7 +1020,7 @@ function New-WRADGroup {
     Specifies the DistinguishedName of the group. Like CN="testgroup",CN="example",CN="local"
 
     .PARAMETER GroupType
-    Specifies the GroupType of the group. This should be 'Domain local','Global' or 'Universal'.
+    Specifies the GroupType of the group. This should be 'DomainLocal','Global' or 'Universal'.
     
     .PARAMETER GroupTypeSecurity
     Specifies the GroupTypeSecurity of the group. This should be either Security' or 'Distribution'.
@@ -1041,7 +1041,7 @@ function New-WRADGroup {
 
     .EXAMPLE
 
-    C:\PS> New-WRADGroup -ObjectGUID d9dl998-03jlasd6-lasd11 -SAMAccountName "Domain Powerusers" -CommonName "Domain Powerusers" -DistinguishedName 'CN="Domain Powerusers",CN="example",CN="local"' -GroupTypeSecurity Security -GroupType Domain local
+    C:\PS> New-WRADGroup -ObjectGUID d9dl998-03jlasd6-lasd11 -SAMAccountName "Domain Powerusers" -CommonName "Domain Powerusers" -DistinguishedName 'CN="Domain Powerusers",CN="example",CN="local"' -GroupTypeSecurity Security -GroupType DomainLocal
 
     #>
 }
@@ -1080,7 +1080,7 @@ function Update-WRADGroup {
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
         [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
-        [ValidateSet('Domain local','Global','Universal')]
+        [ValidateSet('DomainLocal','Global','Universal')]
 		[String]$GroupType,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
@@ -1187,7 +1187,7 @@ function Update-WRADGroup {
     Specifies the DistinguishedName of the group. Like CN="testgroup",CN="example",CN="local"
 
     .PARAMETER GroupType
-    Specifies the GroupType of the group. This should be 'Domain local','Global' or 'Universal'.
+    Specifies the GroupType of the group. This should be 'DomainLocal','Global' or 'Universal'.
     
     .PARAMETER GroupTypeSecurity
     Specifies the GroupTypeSecurity of the group. This should be either Security' or 'Distribution'.
