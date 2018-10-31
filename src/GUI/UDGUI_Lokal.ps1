@@ -8,6 +8,12 @@ if(!(get-module WRADDBCommands)){
     write-host "Import Module WRADCommands"
 }
 
+if(!(get-module Function-Write-Log)){
+    Import-Module C:\Data\Function-Write-Log.ps1
+    write-host "Import Module Function-Write-Log"
+}
+
+
 #if((Get-WRADUser).Count = 0) {
 #    New-WRADUser -ObjectGUID 01 -SAMAccountName mmu -DistinguishedName mmu -UserPrincipalName "m.mustermann" -DisplayName "M. Mustermann" -Description "Max Mustermann" 
 #    New-WRADUser -ObjectGUID 02 -SAMAccountName sac -DistinguishedName sac -UserPrincipalName "s.achter" -DisplayName "S. Achter" -Description "Simon Achter"    
@@ -350,7 +356,8 @@ $UsrAGrp = New-UDPage -Name "UserUndGruppen" -AuthorizedRole @("Auditor") -Conte
 
 $WRADSettings = Get-WRADSetting
 
-$WRADSettingsNew = $WRADSettings | Select SettingName,SettingValue
+Write-Host "Test: " + $WRADSettings[0].SettingName
+
 
 $Settings = New-UDPage -Name "Einstellungen" -AuthorizedRole @("WRADadmin","Auditor") -Content {
 	New-UDRow {
@@ -361,27 +368,61 @@ $Settings = New-UDPage -Name "Einstellungen" -AuthorizedRole @("WRADadmin","Audi
 		New-UDColumn -size 6 -Content {
 			New-UDInput -Title "Settings" -Id "Form" -Content {
                 
-                New-UDInputField -Type 'textbox' -Name $WRADSettings[8].Item("SettingName") -Placeholder 'AD Base' -DefaultValue $WRADSettings[8].Item("SettingValue")
-                New-UDInputField -Type 'textbox' -Name $WRADSettings[0].Item("SettingName") -Placeholder 'AD Gruppe: Abteilungsleiter' -DefaultValue $WRADSettings[0].Item("SettingValue")
-                New-UDInputField -Type 'textbox' -Name $WRADSettings[1].Item("SettingName") -Placeholder 'AD Gruppe: Auditor' -DefaultValue $WRADSettings[1].Item("SettingValue")
-                New-UDInputField -Type 'textbox' -Name $WRADSettings[2].Item("SettingName") -Placeholder 'AD Gruppe: System Administrator' -DefaultValue $WRADSettings[2].Item("SettingValue")
-                New-UDInputField -Type 'textbox' -Name $WRADSettings[3].Item("SettingName") -Placeholder 'AD Gruppe: Application Owner' -DefaultValue $WRADSettings[3].Item("SettingValue")
-                New-UDInputField -Type 'textbox' -Name $WRADSettings[5].Item("SettingName") -Placeholder 'Log-Dateipfad' -DefaultValue $WRADSettings[5].Item("SettingValue")
-                New-UDInputField -Type 'textbox' -Name $WRADSettings[6].Item("SettingName") -Placeholder 'Syslog Server' -DefaultValue $WRADSettings[6].Item("SettingValue")
-                New-UDInputField -Type 'textbox' -Name $WRADSettings[7].Item("SettingName") -Placeholder 'Syslog Protokoll' -DefaultValue $WRADSettings[7].Item("SettingValue")
-                New-UDInputField -Type 'select' -Name $WRADSettings[4].Item("SettingName") -Placeholder 'Externes Logging' -Values @("none", "file", "syslog") -DefaultValue $WRADSettings[4].Item("SettingValue")
+                New-UDInputField -Type 'textbox' -Name $WRADSettings[8].SettingName -Placeholder 'AD Base' -DefaultValue $WRADSettings[8].SettingValue
+                New-UDInputField -Type 'textbox' -Name $WRADSettings[0].SettingName -Placeholder 'AD Gruppe: Abteilungsleiter' -DefaultValue $WRADSettings[0].SettingValue
+                New-UDInputField -Type 'textbox' -Name $WRADSettings[1].SettingName -Placeholder 'AD Gruppe: Auditor' -DefaultValue $WRADSettings[1].SettingValue
+                New-UDInputField -Type 'textbox' -Name $WRADSettings[2].SettingName -Placeholder 'AD Gruppe: System Administrator' -DefaultValue $WRADSettings[2].SettingValue
+                New-UDInputField -Type 'textbox' -Name $WRADSettings[3].SettingName -Placeholder 'AD Gruppe: Application Owner' -DefaultValue $WRADSettings[3].SettingValue
+                New-UDInputField -Type 'textbox' -Name $WRADSettings[5].SettingName -Placeholder 'Log-Dateipfad' -DefaultValue $WRADSettings[5].SettingValue
+                New-UDInputField -Type 'textbox' -Name $WRADSettings[6].SettingName -Placeholder 'Syslog Server' -DefaultValue $WRADSettings[6].SettingValue
+                New-UDInputField -Type 'textbox' -Name $WRADSettings[7].SettingName -Placeholder 'Syslog Protokoll' -DefaultValue $WRADSettings[7].SettingValue
+                New-UDInputField -Type 'select' -Name $WRADSettings[4].SettingName -Placeholder 'Externes Logging' -Values @("none", "file", "syslog") -DefaultValue $WRADSettings[4].SettingValue
                 
             } -Endpoint {
                 param($SearchBase, $ADRoleDepartmentLead, $ADRoleAuditor, $ADRoleSysAdmin, $ADRoleApplOwner, $LogFilePath, $LogSyslogServer, $LogSyslogServerProtocol, $LogExternal)
 
-                $WRADSettingsNew[0].Item("SettingName") = $ADRoleDepartmentLead
+                #Setting up input
+                $WRADSettingsNew = @()
+                Write-Log -Message "WRADSetting1: $ADRoleDepartmentLead" -Path "C:\Data\Logs\gui.log" -Level Info
+                $WRADSettingsNew += $ADRoleDepartmentLead
+                Write-Log -Message "WRADSetting2: $ADRoleAuditor" -Path "C:\Data\Logs\gui.log" -Level Info
+                $WRADSettingsNew += $ADRoleAuditor
+                Write-Log -Message "WRADSetting3: $ADRoleSysAdmin" -Path "C:\Data\Logs\gui.log" -Level Info
+                $WRADSettingsNew += $ADRoleSysAdmin
+                $WRADSettingsNew += $ADRoleApplOwner
+                $WRADSettingsNew += $LogExternal
+                $WRADSettingsNew += $LogFilePath
+                $WRADSettingsNew += $LogSyslogServer
+                $WRADSettingsNew += $LogSyslogServerProtocol
+                $WRADSettingsNew += $SearchBase
                 
-				
-				
-                Write-Host $WRADSettingsNew[0].Item("SettingName")
+                $newSettings = @()
                 
+
+
+                #Look for changes
+                $ne = 0
+                For($i=0; $i -le $WRADSettingsNew.length-1; $i++) {
+                    if($WRADSettings[$i].SettingValue -ne $WRADSettingsNew[$i]){
+                        $newSettings += @{SettingName=($WRADSettings[$i].SettingName); SettingValue=$ADRoleDepartmentLead}
+                        $ne = 1
+                    }
+                }
                 
-                New-UDInputAction -Toast "ADBase: $SearchBase; Grps: $ADRoleDepartmentLead; Syslog: $LogSyslogServerProtocol"
+                #Save new settings
+                if($ne){
+                    $updSettting = "";
+                    ForEach($Setting in $newSettings){
+                        $SName = $Setting.SettingName
+                        $SVal = $Setting.SettingValue
+                        
+                        $updSettting += " -$SName '$SVal'"
+                    }
+
+                    Update-WRADSetting $updSettting -verbose
+                }
+
+                
 
             }
 		}
