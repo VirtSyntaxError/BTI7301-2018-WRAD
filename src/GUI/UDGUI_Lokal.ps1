@@ -350,7 +350,7 @@ $UsrAGrp = New-UDPage -Name "UserUndGruppen" -AuthorizedRole @("Auditor") -Conte
 
 $WRADSettings = Get-WRADSetting
 
-#$WRADSettingsNew = $WRADSettings | Select SettingName,SettingValue
+$WRADSettingsNew = $WRADSettings | Select SettingName,SettingValue
 
 $Settings = New-UDPage -Name "Einstellungen" -AuthorizedRole @("WRADadmin","Auditor") -Content {
 	New-UDRow {
@@ -374,9 +374,11 @@ $Settings = New-UDPage -Name "Einstellungen" -AuthorizedRole @("WRADadmin","Audi
             } -Endpoint {
                 param($SearchBase, $ADRoleDepartmentLead, $ADRoleAuditor, $ADRoleSysAdmin, $ADRoleApplOwner, $LogFilePath, $LogSyslogServer, $LogSyslogServerProtocol, $LogExternal)
 
-                $WRADSettingsNew[0]['SettingValue'] = $ADRoleDepartmentLead
+                $WRADSettingsNew[0].Item("SettingName") = $ADRoleDepartmentLead
                 
-                Write-Host $WRADSettingsNew[0]['SettingValue']
+				
+				
+                Write-Host $WRADSettingsNew[0].Item("SettingName")
                 
                 
                 New-UDInputAction -Toast "ADBase: $SearchBase; Grps: $ADRoleDepartmentLead; Syslog: $LogSyslogServerProtocol"
