@@ -27,12 +27,11 @@ DisplayName       : Agatha S Thornton
 SaMAccountName    : Agatha.S.Thornton
 UserPrincipalName : Agatha.S.Thornton@WRAD.local
 DistinguishedName : CN=Agatha S Thornton,OU=Marketing,OU=Utah,OU=WRAD,DC=WRAD,DC=local
-Description       : blablabla
+Description       : blabla
 Enabled           : True
-createTimeStamp   : 9/26/2018 10:45:13 AM
-Modified          : 9/26/2018 10:45:13 AM
-LastLogonDate     : 9/26/2018 11:37:22 AM
+LastLogonDate     : 10/23/2018 4:27:54 PM
 MemberOf          : {CN=Marketing Coordinator - Utah,OU=Groups,OU=WRAD,DC=WRAD,DC=local}
+accountExpires    : 9223372036854775807
 #>
 
 
@@ -67,7 +66,7 @@ Description       : blablabla
 
 function Write-WRADISTtoDB
 {
-	[cmdletbinding()] 
+	[cmdletbinding()] # needed for the Verbose function
 	Param(
 	)
 
@@ -81,19 +80,33 @@ function Write-WRADISTtoDB
 		Write-Error -Message $_.Exception.Message
 	}
 
-	$searchbase = "OU=WRAD,DC=WRAD,DC=local"  # Get-WRADSetting | Where SettingName -like "Searchbase" | Select-Object SettingValue   #t.d. Setting aus DB auslesen / prüfen wenn DB null, dann einfach AD Root verwenden
+	### Set helper Variables
 	$filter = "*"  #nicht nötig aus DB zu holen, einfach alle Rohdaten auslesen, filtering wird später gemacht
+	$today = Get-Date
+	
+	### set AD searchbase to either DB-Setting or if empty to AD Root
+	$DBsearchbase = (Get-WRADSetting | Where SettingName -like "Searchbase").SettingValue
+	If($DBsearchbase){
+		$searchbase = $DBsearchbase
+	}
+	else {
+		$searchbase = (Get-ADRootDSE).rootDomainNamingContext
+	}
+
+	### Get actual AD Users and Groups
 	$ADusers = Get-WRADADUsers -filter:$filter -searchbase:$searchbase 
 	$ADgroups = Get-WRADADGroups
-    $today = Get-Date
 
+	### Get all DB content for the IS-situation
 	$DBusers = Get-WRADUser
 	$DBgroups = Get-WRADGroup
+	$DBgroupofgroup = Get-WRADGroupOfGroup
+	$DBgroupofuser = Get-WRADGroupOfUser
 
 	try
 	{
 		### Write/update Groups from AD to DB
-		Write-Verbose "Write Groups from AD to DB";
+		Write-Verbose "START writing Groups from AD to DB";
 		ForEach($group in $ADgroups){
 			if($DBgroups.ObjectGUID -contains $group.ObjectGUID){
 				Write-Verbose "Updating Group in DB: $group"
@@ -104,8 +117,10 @@ function Write-WRADISTtoDB
 				New-WRADGroup -ObjectGUID:$group.ObjectGUID -SAMAccountName:$group.SamAccountName -CommonName:$group.Name -DistinguishedName:$group.DistinguishedName -GroupTypeSecurity:$group.GroupCategory -GroupType:$group.GroupScope -Description:$group.Description
 			}
 		}
+		Write-Verbose "COMPLETED writing Groups to DB"
+
 		### Write Group in Group Membership to DB
-		Write-Verbose "Write Group in Group Membership to DB";
+		Write-Verbose "START writing Group in Group Membership to DB";
 		ForEach($group in $ADgroups){
 			$ParentObjectGUIDs = $group.MemberOf | Get-ADGroup | Select-Object ObjectGUID
 			foreach($parentObjectGUID in $ParentObjectGUIDs){
@@ -114,9 +129,19 @@ function Write-WRADISTtoDB
 					New-WRADGroupOfGroup -ChildGroupObjectGUID:$group.ObjectGUID -ParentGroupObjectGUID:$parentObjectGUID.ObjectGUID
 				}
 			}
+			## Delete the removed Group Memberships from DB
+			$DBexistinggroupofgroup = $DBgroupofgroup | Where ChildGroupObjectGUID -eq $group.ObjectGUID
+			foreach($t in $DBexistinggroupofgroup){
+				if($ParentObjectGUIDs.ObjectGUID -notcontains $t.ParentGroupObjectGUID){
+					# delete function not yet existing
+					#Delete-WRADGroupofGroup -ChildGroupObjectGUID:$group.ObjectGUID -ParentGroupObjectGUID:$t.ParentGroupObjectGUID
+				}
+			}
 		}
+		Write-Verbose "COMPLETED writing Group of Group Membership to DB"
+
 		### Write Users from AD to DB
-		Write-Verbose "Write Users from AD to DB";
+		Write-Verbose "START writing Users from AD to DB";
 		ForEach($user in $ADusers){
 			## Set the right value for expired accounts
             if($user.accountExpires -eq '9223372036854775807'){ ## Default Value for never expires
@@ -128,14 +153,7 @@ function Write-WRADISTtoDB
             else{
                 $expired = $FALSE
 			}
-			## Set LastLogonTimeStamp to $null if it is empty in AD (else we got conversion Problems with the DateTime-typ)
-			<#if(!$user.LastLogonDate){
-                [nullable[DateTime]]$LastLogonTimeStamp = $null
-            }
-            else{
-                [nullable[DateTime]]$LastLogonTimeStamp = $user.LastLogonDate
-            }#>
-			
+
 			## Actually write/update Users to DB
 			if($DBusers.ObjectGUID -contains $user.ObjectGUID){
 				Write-Verbose "Updating User to in: $user"
@@ -146,7 +164,8 @@ function Write-WRADISTtoDB
                 New-WRADUser -ObjectGUID:$user.ObjectGUID -SAMAccountName:$user.SamAccountName -DistinguishedName:$user.DistinguishedName -UserPrincipalName:$user.UserPrincipalName -DisplayName:$user.DisplayName -Description:$user.Description -LastLogonTimestamp:$user.LastLogonDate -Enabled:$user.Enabled -Expired:$expired
 			}
 
-			### Write User in Group Membership to DB
+			## Write User in Group Membership to DB
+			Write-Verbose "START writing new Group Memership of User: "+ $user.ObjectGUID
 			$GroupObjectGUIDs = $user.MemberOf | Get-ADGroup | Select-Object ObjectGUID
 			foreach($GroupObjectGUID in $GroupObjectGUIDs){
 				$alreadyExisting = Get-WRADGroupOfUser -UserObjectGUID:$user.ObjectGUID -GroupObjectGUID:$GroupObjectGUID.ObjectGUID
@@ -154,7 +173,16 @@ function Write-WRADISTtoDB
 					New-WRADGroupOfUser -UserObjectGUID:$user.ObjectGUID -GroupObjectGUID:$GroupObjectGUID.ObjectGUID
 				}
 			}
+			## Delete the removed User in Group Memberships from DB
+			$DBexistinggroupofuser = $DBgroupofuser | Where UserObjectGUID -eq $user.ObjectGUID
+			foreach($t in $DBexistinggroupofuser){
+				if($GroupObjectGUIDs.ObjectGUID -notcontains $t.GroupObjectGUID){
+					# delete function not yet existing
+					#Delete-WRADGroupofUser -UserObjectGUID:$user.ObjectGUID -GroupObjectGUID:$t.ParentGroupObjectGUID
+				}
+			}
 		}
+		Write-Verbose "COMPLETED writing Users to DB";
 	}
 	catch 
 	{
