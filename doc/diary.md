@@ -9,11 +9,12 @@
 * Christof Jungo
 
 ### Agenda
-* Database Design (SOLL, Events)
+* Database Design (SOLL)
 * Mapping SOLL-IST
 * Timeplan
 
 ### Decisions
+* Remove NewReference and use noguid for new users
 
 ### ToDo
 * Dario -> DB (SOLL, Events)
