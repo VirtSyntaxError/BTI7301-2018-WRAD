@@ -1,5 +1,27 @@
 # Meetings
 
+## 2018-10-31
+### Attendees
+* Beat Schärz (pidu2)
+* Dario Furigo (VirtSyntaxError)
+* Philipp Köfer (kofep1)
+* Nicola Michaelis (michn2)
+* Christof Jungo
+
+### Agenda
+* Database Design (SOLL, Events)
+* Mapping SOLL-IST
+* Timeplan
+
+### Decisions
+
+### ToDo
+* Dario -> DB (SOLL, Events)
+* Beat -> SOLL-IST comparison
+* Nicola -> GUI
+* Philipp -> IST, SOLL
+
+
 ## 2018-10-19
 ### Attendees
 * Beat Schärz (pidu2)
