@@ -1,14 +1,16 @@
 use wrad;
-
-DELETE * FROM WRADUser;
-DELETE * FROM WRADRefUser;
-DELETE * FROM WRADGroup;
-DELETE * FROM WRADRefGroup;
-DELETE * FROM WRADUserGroup;
-DELETE * FROM WRADRefUserGroup;
-DELETE * FROM WRADGroupGroup;
-DELETE * FROM WRADRefGroupGroup;
-
+SET FOREIGN_KEY_CHECKS = 0; 
+TRUNCATE TABLE WRADExcludeUser;
+TRUNCATE TABLE WRADExcludeGroup;
+TRUNCATE TABLE WRADUserGroup;
+TRUNCATE TABLE WRADRefUserGroup;
+TRUNCATE TABLE WRADGroupGroup;
+TRUNCATE TABLE WRADRefGroupGroup;
+TRUNCATE TABLE WRADRefUser;
+TRUNCATE TABLE WRADRefGroup;
+TRUNCATE TABLE WRADGroup;
+TRUNCATE TABLE WRADUser;
+SET FOREIGN_KEY_CHECKS = 1;
 INSERT INTO WRADUser(ObjectGUID, SAMAccountName, DistinguishedName, LastLogonTimestamp, userPrincipalName, DisplayName, CreatedDate, LastModifiedDate, Enabled, Description, Expired) VALUES
 	('guid1', 'furigod', 'CN=\"dario\",CN=\"example\",CN=\"local\"', NULL, 'furigod', 'Dario Furigo', '0000-00-00 00:00:00.000000', '0000-00-00 00:00:00.000000', 1, '', 0),
 	('guid2', 'schaerzb', 'CN=\"pidu\",CN=\"example\",CN=\"local\"', NULL, 'schaerzb', 'Beat Schärz', '0000-00-00 00:00:00.000000', '0000-00-00 00:00:00.000000', 1, '', 0),
@@ -27,10 +29,10 @@ INSERT INTO WRADRefUser(ObjectGUID, Username, DisplayName, CreatedDate, Enabled)
 INSERT INTO WRADGroup(ObjectGUID, CreatedDate, LastModifiedDate, SAMAccountName, GroupType, GroupTypeSecurity, CommonName, DistinguishedName, Description) VALUES
 	('gguid1', '0000-00-00 00:00:00.000000', '0000-00-00 00:00:00.000000', 'group1', 'DomainLocal', 'Security', 'group1', 'CN=\"group1\",CN=\"example\",CN=\"local\"', ''),
 	('gguid2', '0000-00-00 00:00:00.000000', '0000-00-00 00:00:00.000000', 'group2', 'Global', 'Distribution', 'group2', 'CN=\"group2\",CN=\"example\",CN=\"local\"', ''),
-	('gguid3', '0000-00-00 00:00:00.000000', '0000-00-00 00:00:00.000000', 'group3', 'Universal', 'Distribution', 'group3', 'CN=\"group3\",CN=\"example\",CN=\"local\"', '')
-	('gguid4', '0000-00-00 00:00:00.000000', '0000-00-00 00:00:00.000000', 'groupnotinsoll', 'Universal', 'Distribution', 'groupnotinsoll', 'CN=\"group4\",CN=\"example\",CN=\"local\"', '')
+	('gguid3', '0000-00-00 00:00:00.000000', '0000-00-00 00:00:00.000000', 'group3', 'Universal', 'Distribution', 'group3', 'CN=\"group3\",CN=\"example\",CN=\"local\"', ''),
+	('gguid4', '0000-00-00 00:00:00.000000', '0000-00-00 00:00:00.000000', 'groupnotinsoll', 'Universal', 'Distribution', 'groupnotinsoll', 'CN=\"group4\",CN=\"example\",CN=\"local\"', '');
 
-INSERT INTO WRADRefGroup(ObjectGUID, CreatedDate, GroupType, GrouptTypeSecurity, CommonName) VALUES
+INSERT INTO WRADRefGroup(ObjectGUID, CreatedDate, GroupType, GroupTypeSecurity, CommonName) VALUES
 	('gguid1', '0000-00-00 00:00:00.000000', 'DomainLocal', 'Security', 'group1'),
 	('gguid2', '0000-00-00 00:00:00.000000', 'DomainLocal', 'Distribution', 'group2'),
 	('noguid88', '0000-00-00 00:00:00.000000', 'Universal', 'Distribution', 'group3'),
@@ -49,7 +51,7 @@ INSERT INTO WRADRefUserGroup(CreatedDate, UserObjectGUID, GroupObjectGUID) VALUE
 	('0000-00-00 00:00:00.000000', 'guid1', 'noguid88'),
 	('0000-00-00 00:00:00.000000', 'guid2', 'gguid1'),
 	('0000-00-00 00:00:00.000000', 'guid3', 'noguid88'),
-	('0000-00-00 00:00:00.000000', 'noguid77', 'gguid3');
+	('0000-00-00 00:00:00.000000', 'noguid77', 'noguid88');
 
 INSERT INTO WRADGroupGroup(CreatedDate, ChildGroupObjectGUID, ParentGroupObjectGUID) VALUES
 	('0000-00-00 00:00:00.000000', 'gguid1', 'gguid2'),
