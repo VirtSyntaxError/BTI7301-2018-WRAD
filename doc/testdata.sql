@@ -13,8 +13,9 @@ INSERT INTO WRADUser(ObjectGUID, SAMAccountName, DistinguishedName, LastLogonTim
 	('guid1', 'furigod', 'CN=\"dario\",CN=\"example\",CN=\"local\"', NULL, 'furigod', 'Dario Furigo', '0000-00-00 00:00:00.000000', '0000-00-00 00:00:00.000000', 1, '', 0),
 	('guid2', 'schaerzb', 'CN=\"pidu\",CN=\"example\",CN=\"local\"', NULL, 'schaerzb', 'Beat Schärz', '0000-00-00 00:00:00.000000', '0000-00-00 00:00:00.000000', 1, '', 0),
 	('guid3', 'koeferp', 'CN=\"koeferp\",CN=\"example\",CN=\"local\"', NULL, 'koeferp', 'Phillip Köfer', '0000-00-00 00:00:00.000000', '0000-00-00 00:00:00.000000', 1, '', 0),
-	('guid4', 'michaelisn', 'CN=\"michaelisn\",CN=\"example\",CN=\"local\"', NULL, 'michaelisn', 'Nicolas Michaelis', '0000-00-00 00:00:00.000000', '0000-00-00 00:00:00.000000', 1, '', 0)
-	('guid5', 'notinsoll', 'CN=\"notinsoll\",CN=\"example\",CN=\"local\"', NULL, 'notinsoll', 'User that is not in SOLL', '0000-00-00 00:00:00.000000', '0000-00-00 00:00:00.000000', 1, '', 0);
+	('guid4', 'michaelisn', 'CN=\"michaelisn\",CN=\"example\",CN=\"local\"', NULL, 'michaelisn', 'Nicolas Michaelis', '0000-00-00 00:00:00.000000', '0000-00-00 00:00:00.000000', 1, '', 0),
+	('guid5', 'notinsoll', 'CN=\"notinsoll\",CN=\"example\",CN=\"local\"', NULL, 'notinsoll', 'User that is not in SOLL', '0000-00-00 00:00:00.000000', '0000-00-00 00:00:00.000000', 1, '', 0),
+	('b87461bc-2f4f-44c3-a807-f40d8f26d4a1', 'WRADadmin', 'CN=WRADadmin,OU=IT,OU=California,OU=WRAD,DC=WRAD,DC=local', NULL, 'WRADadmin@WRAD.local', 'WRADadmin', '0000-00-00 00:00:00.000000', '0000-00-00 00:00:00.000000', 1, 'Built-in account for administering the computer/domain', 0);
 
 INSERT INTO WRADRefUser(ObjectGUID, Username, DisplayName, CreatedDate, Enabled) VALUES
 	('guid1', 'furigod', 'Dario Furigo', '0000-00-00 00:00:00.000000', 1),
