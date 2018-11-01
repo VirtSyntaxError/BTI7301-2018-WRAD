@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 
 $null = [System.Reflection.Assembly]::LoadWithPartialName('MySql.Data')
-$BuiltinParameters = @("ErrorAction","WarningAction","Verbose","ErrorVariable","WarningVariable","OutVariable","OutBuffer","Debug","Reference","NewReference")
+$BuiltinParameters = @("ErrorAction","WarningAction","Verbose","ErrorVariable","WarningVariable","OutVariable","OutBuffer","Debug","Reference","NoObjectGUID")
 
 function Connect-WRADDatabase {
     begin
@@ -140,12 +140,7 @@ function Get-WRADUser {
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
 
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[Switch]$NewReference,
-
         [Parameter(ParameterSetName="REFERENCE")]
-        [Parameter(ParameterSetName="NEWREFERENCE")]
 		[ValidateNotNullOrEmpty()]
 		[String]$UserName,
 
@@ -159,7 +154,6 @@ function Get-WRADUser {
 
         [Parameter(ParameterSetName="ACTUAL")]
         [Parameter(ParameterSetName="REFERENCE")]
-        [Parameter(ParameterSetName="NEWREFERENCE")]
 		[ValidateNotNullOrEmpty()]
 		[string]$DisplayName,
 
@@ -170,13 +164,16 @@ function Get-WRADUser {
 
         [Parameter(ParameterSetName="ACTUAL")]
         [Parameter(ParameterSetName="REFERENCE")]
-        [Parameter(ParameterSetName="NEWREFERENCE")]
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Disabled,
 
         [Parameter(ParameterSetName="ACTUAL")]
 		[ValidateNotNullOrEmpty()]
-		[Switch]$Expired
+		[Switch]$Expired,
+
+        [Parameter(ParameterSetName="REFERENCE")]
+		[ValidateNotNullOrEmpty()]
+		[Switch]$NoObjectGUID
 
 
 	)
@@ -185,8 +182,6 @@ function Get-WRADUser {
         $Table = 'WRADUser'
         if($Reference){
             $Table = 'WRADRefUser'
-        } elseif($NewReference){
-            $Table = 'WRADRefNewUser'
         }
         $Query = 'SELECT * FROM '+$Table;
 
@@ -210,6 +205,14 @@ function Get-WRADUser {
                 } else {
                     $Query += ' AND `'+$_+'` = "'+$Value+'" '
                 }
+            }
+        }
+
+        if($NoObjectGUID){
+            if($FirstParameter){
+                $Query += ' WHERE `ObjectGUID` LIKE "noguid%" '
+            } else {
+                $Query += ' AND `ObjectGUID` LIKE "noguid%" '
             }
         }
     
@@ -236,13 +239,10 @@ function Get-WRADUser {
 
     Gets all users which actually exist in the database. These are the fetched users from the Active Directory.
     The Output does not conaint any deleted users.
-    It is possible to load reference users with the -Reference switch or all new reference users with -NewReference.
+    It is possible to load reference users with the -Reference switch.
 
     .PARAMETER Reference
     Specifies if all reference users should be shown instead of the actual one.
-
-    .PARAMETER NewReference
-    Specifies if the new reference user table should be used instead of the actual or the reference one.
 
     .PARAMETER SAMAccountName
     Specifies the SAMAccountName of an user. Only usable with actual users.
@@ -312,15 +312,6 @@ function Get-WRADUser {
     Description        : Pidus User
     Expired            : True
 
-    .EXAMPLE
-    
-    C:\PS> Get-WRADUser -New
-    NewUserID   : 1
-    Username    : testuser2
-    DisplayName : testuser2
-    CreatedDate : 21.10.2018 19:22:51
-    Enabled     : False
-
     #>
 
 }
@@ -333,12 +324,8 @@ function New-WRADUser {
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
 
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[Switch]$NewReference,
-
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
-        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[String]$ObjectGUID,
 
@@ -360,18 +347,15 @@ function New-WRADUser {
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[String]$DisplayName,
 
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[String]$Username,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[Bool]$Enabled,
 
@@ -392,8 +376,6 @@ function New-WRADUser {
         $QueryMiddle = ' ) VALUES ('
         if($Reference){
             $Table = 'WRADRefUser'
-        } elseif($NewReference){
-            $Table = 'WRADRefNewUser'
         } else {
             $Table = 'WRADUser'
             if($DistinguishedName){
@@ -440,15 +422,12 @@ function New-WRADUser {
 		try
 		{
             Write-Verbose "Checking for already existent user";
-            if($NewReference) {
-                if((Get-WRADUser -NewReference -Username $Username) -ne $null){
-                    $CustomError = "Duplicate entry for Username "+$Username
-                    throw($CustomError) 
-                }
-            } elseif ($Reference) {
-                if((Get-WRADUser -Reference -ObjectGUID $ObjectGUID) -ne $null){
-                    $CustomError = "Duplicate entry for ObjectGUID "+$ObjectGUID
-                    throw($CustomError) 
+            if ($Reference) {
+                if($ObjectGUID){
+                    if((Get-WRADUser -Reference -ObjectGUID $ObjectGUID) -ne $null){
+                        $CustomError = "Duplicate entry for ObjectGUID "+$ObjectGUID
+                        throw($CustomError) 
+                    }
                 }
             } else {
                 if((Get-WRADUser -ObjectGUID $ObjectGUID) -ne $null){
@@ -477,9 +456,6 @@ function New-WRADUser {
 
     .PARAMETER Reference
     Specifies if a reference user should be created instead of an actual one.
-
-    .PARAMETER NewReference
-    Specifies if a new reference user should be created instead of an actual or a reference one.
 
     .PARAMETER SAMAccountName
     Specifies the SAMAccountName of the user.
@@ -527,10 +503,6 @@ function Update-WRADUser {
     [CmdletBinding(DefaultParameterSetName="ACTUAL")]
     Param
 	(
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[Switch]$NewReference,
-
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
@@ -545,9 +517,12 @@ function Update-WRADUser {
 		[String]$SAMAccountName,
 
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[String]$Username,
+
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$NewObjectGUID,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
@@ -563,13 +538,11 @@ function Update-WRADUser {
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[String]$DisplayName,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[Bool]$Enabled,
 
@@ -589,9 +562,6 @@ function Update-WRADUser {
         $QueryEnd = ' WHERE `ObjectGUID` = "'+$ObjectGUID+'"'
         if($Reference){
             $Table = 'WRADRefUser'
-        } elseif($NewReference){
-            $Table = 'WRADRefNewUser'
-            $QueryEnd = ' WHERE `Username` = "'+$Username+'"'
         } else {
             $Table = 'WRADUser'
             if($DistinguishedName){
@@ -609,7 +579,7 @@ function Update-WRADUser {
         $QueryValue = @()
 
         $PSBoundParameters.Keys | ForEach {
-            if ($BuiltinParameters -notcontains $_ -and $_ -ne "ObjectGUID" -and $_ -ne "Username") {
+            if ($BuiltinParameters -notcontains $_ -and $_ -ne "ObjectGUID") {
                 [String]$Value = (Get-Variable -Name $_).Value
 
                 if($_ -eq "Expired" -or $_ -eq "Enabled"){
@@ -622,7 +592,11 @@ function Update-WRADUser {
                     $Value = $Value.Replace('&DQ&','\"')
                 }
 
-                $QueryValue += ' `'+$_+'` = "'+$Value+'" '
+                if($_ -eq "NewObjectGUID"){
+                    $QueryValue += ' `ObjectGUID` = "'+$NewObjectGUID+'" '
+                } else {
+                    $QueryValue += ' `'+$_+'` = "'+$Value+'" '
+                }
             }
         }
 
@@ -636,11 +610,7 @@ function Update-WRADUser {
 
             Write-Verbose "Checking if at least one parameter is set";
             if($QueryValue.Count -eq 0){
-                if ($NewReference){
-                    $CustomError = "No parameter is set for user with Username "+$Username
-                } else {
-                    $CustomError = "No parameter is set for user with ObjectGUID "+$ObjectGUID
-                }
+                $CustomError = "No parameter is set for user with ObjectGUID "+$ObjectGUID
                 throw($CustomError) 
             }
 
@@ -650,11 +620,6 @@ function Update-WRADUser {
                     $CustomError = "No entry for ObjectGUID "+$ObjectGUID
                     throw($CustomError) 
                 }
-            } elseif ($NewReference) {
-                 if((Get-WRADUser -NewReference -Username $Username) -eq $null){
-                    $CustomError = "No entry for Username "+$Username
-                    throw($CustomError) 
-                }           
             } else {
                 if((Get-WRADUser -ObjectGUID $ObjectGUID) -eq $null){
                     $CustomError = "No entry for ObjectGUID "+$ObjectGUID
@@ -726,17 +691,9 @@ function Remove-WRADUser {
     [CmdletBinding(DefaultParameterSetName="ACTUAL")]
     Param
 	(
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[Switch]$NewReference,
-
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
-        
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[String]$Username,
 
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
@@ -749,9 +706,6 @@ function Remove-WRADUser {
         $QueryEnd = ' WHERE `ObjectGUID` = "'+$ObjectGUID+'"'
         if($Reference){
             $Table = 'WRADRefUser'
-        } elseif($NewReference){
-            $Table = 'WRADRefNewUser'
-            $QueryEnd = ' WHERE `Username` = "'+$Username+'"'
         } else {
             $Table = 'WRADUser'
         }
@@ -768,11 +722,6 @@ function Remove-WRADUser {
                     $CustomError = "No entry for ObjectGUID "+$ObjectGUID
                     throw($CustomError) 
                 }
-            } elseif ($NewReference) {
-                 if((Get-WRADUser -NewReference -Username $Username) -eq $null){
-                    $CustomError = "No entry for Username "+$Username
-                    throw($CustomError) 
-                }           
             } else {
                 if((Get-WRADUser -ObjectGUID $ObjectGUID) -eq $null){
                     $CustomError = "No entry for ObjectGUID "+$ObjectGUID
@@ -802,37 +751,33 @@ function Get-WRADGroup {
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
 
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[Switch]$NewReference,
-
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[string]$SAMAccountName,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[string]$CommonName,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
         [ValidateSet('DomainLocal','Global','Universal')]
 		[string]$GroupType,
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[string]$ObjectGUID,
         
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
 		[ValidateSet('Security','Distribution')]
-		[String]$GroupTypeSecurity
+		[String]$GroupTypeSecurity,
+
+        [Parameter(ParameterSetName="REFERENCE")]
+		[ValidateNotNullOrEmpty()]
+		[Switch]$NoObjectGUID
 
 	)
 	begin
@@ -841,8 +786,6 @@ function Get-WRADGroup {
         $QueryEnd = ''
         if($Reference){
             $Table = 'WRADRefGroup'
-        } elseif ($NewReference){
-            $Table = 'WRADRefNewGroup'
         }
         $Query = 'SELECT * FROM '+$Table;
 
@@ -860,6 +803,15 @@ function Get-WRADGroup {
                 }
             }
         }	
+        
+        if($NoObjectGUID){
+            if($FirstParameter){
+                $Query += ' WHERE `ObjectGUID` LIKE "noguid%" '
+            } else {
+                $Query += ' AND `ObjectGUID` LIKE "noguid%" '
+            }
+        }
+
         $Query += $QueryEnd	
 	}
 	Process
@@ -888,12 +840,8 @@ function New-WRADGroup {
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
 
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[Switch]$NewReference,
-
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
-        [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[String]$ObjectGUID,
 
@@ -903,7 +851,6 @@ function New-WRADGroup {
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[String]$CommonName,
 
@@ -913,7 +860,6 @@ function New-WRADGroup {
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
         [ValidateSet('DomainLocal','Global','Universal')]
 		[String]$GroupType,
 
@@ -923,7 +869,6 @@ function New-WRADGroup {
         
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateSet('Security','Distribution')]
 		[String]$GroupTypeSecurity
 
@@ -935,8 +880,6 @@ function New-WRADGroup {
         $QueryMiddle = ' ) VALUES ('
         if($Reference){
             $Table = 'WRADRefGroup'
-        } elseif($NewReference){
-            $Table = 'WRADRefNewGroup'
         } else {
             $Table = 'WRADGroup'
             if($DistinguishedName){
@@ -968,15 +911,12 @@ function New-WRADGroup {
 		try
 		{
             Write-Verbose "Checking for already existent group";
-            if($Reference -or $NewReference) {
-                if((Get-WRADGroup -Reference -CommonName $CommonName) -ne $null){
-                    $CustomError = "Duplicate entry for group "+$CommonName
-                    throw($CustomError) 
-                }
-            } elseif($NewReference) {
-                if((Get-WRADGroup -NewReference -ObjectGUID $ObjectGUID) -ne $null){
-                    $CustomError = "Duplicate entry for ObjectGUID "+$ObjectGUID
-                    throw($CustomError) 
+            if($Reference) {
+                if($ObjectGUID){
+                    if((Get-WRADGroup -Reference -ObjectGUID $ObjectGUID) -ne $null){
+                        $CustomError = "Duplicate entry for ObjectGUID "+$ObjectGUID
+                        throw($CustomError) 
+                    }
                 }
             } else {
                 if((Get-WRADGroup -ObjectGUID $ObjectGUID) -ne $null){
@@ -1006,9 +946,6 @@ function New-WRADGroup {
     
     .PARAMETER Reference
     Specifies if a reference group should be created instead of an actual one.
-
-    .PARAMETER NewReference
-    Specifies if a new reference group should be created instead of an actual or a reference one.
 
     .PARAMETER SAMAccountName
     Specifies the SAMAccountName of the group.
@@ -1054,10 +991,6 @@ function Update-WRADGroup {
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
 
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[Switch]$NewReference,
-
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
@@ -1069,7 +1002,6 @@ function Update-WRADGroup {
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[String]$CommonName,
 
@@ -1077,9 +1009,12 @@ function Update-WRADGroup {
 		[ValidateNotNullOrEmpty()]
 		[String]$DistinguishedName,
 
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$NewObjectGUID,
+
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
         [ValidateSet('DomainLocal','Global','Universal')]
 		[String]$GroupType,
 
@@ -1089,7 +1024,6 @@ function Update-WRADGroup {
         
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
 		[ValidateSet('Security','Distribution')]
 		[String]$GroupTypeSecurity
 
@@ -1101,9 +1035,6 @@ function Update-WRADGroup {
         $QueryEnd = ' WHERE `ObjectGUID` = "'+$ObjectGUID+'"'
         if($Reference){
             $Table = 'WRADRefGroup'
-        } elseif($NewReference){
-            $Table = 'WRADRefNewGroup'
-            $QueryEnd = ' WHERE `CommonName` = "'+$CommonName+'"'
         } else {
             $Table = 'WRADGroup'
             if($DistinguishedName){
@@ -1117,9 +1048,13 @@ function Update-WRADGroup {
         $QueryValue = @()
 
         $PSBoundParameters.Keys | ForEach {
-            if ($BuiltinParameters -notcontains $_ -and $_ -ne "ObjectGUID" -and $_ -ne "CommonName") {
-                [String]$Value = (Get-Variable -Name $_).Value
-                $QueryValue += ' `'+$_+'` = "'+$Value+'" '
+            if ($BuiltinParameters -notcontains $_ -and $_ -ne "ObjectGUID") {          
+                if($_ -eq "NewObjectGUID"){
+                    $QueryValue += ' `ObjectGUID` = "'+$NewObjectGUID+'" '
+                } else {
+                    [String]$Value = (Get-Variable -Name $_).Value
+                    $QueryValue += ' `'+$_+'` = "'+$Value+'" '
+                }
             }
         }
 
@@ -1133,11 +1068,7 @@ function Update-WRADGroup {
 
             Write-Verbose "Checking if at least one parameter is set";
             if($QueryValue.Count -eq 0){
-                if ($NewReference){
-                    $CustomError = "No parameter is set for group with CommonName "+$CommonName
-                } else {
-                    $CustomError = "No parameter is set for group with ObjectGUID "+$ObjectGUID
-                }
+                $CustomError = "No parameter is set for group with ObjectGUID "+$ObjectGUID
                 throw($CustomError) 
             }
 
@@ -1147,11 +1078,6 @@ function Update-WRADGroup {
                     $CustomError = "No entry for ObjectGUID "+$ObjectGUID
                     throw($CustomError) 
                 }
-            } elseif ($NewReference) {
-                 if((Get-WRADGroup -NewReference -CommonName $CommonName) -eq $null){
-                    $CustomError = "No entry for CommonName "+$CommonName
-                    throw($CustomError) 
-                }           
             } else {
                 if((Get-WRADGroup -ObjectGUID $ObjectGUID) -eq $null){
                     $CustomError = "No entry for ObjectGUID "+$ObjectGUID
@@ -1217,17 +1143,9 @@ function Remove-WRADGroup {
     [CmdletBinding(DefaultParameterSetName="ACTUAL")]
     Param
 	(
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[Switch]$NewReference,
-
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
-        
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[String]$CommonName,
 
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
@@ -1240,9 +1158,6 @@ function Remove-WRADGroup {
         $QueryEnd = ' WHERE `ObjectGUID` = "'+$ObjectGUID+'"'
         if($Reference){
             $Table = 'WRADRefGroup'
-        } elseif($NewReference){
-            $Table = 'WRADRefNewGroup'
-            $QueryEnd = ' WHERE `CommonName` = "'+$CommonName+'"'
         } else {
             $Table = 'WRADGroup'
         }
@@ -1259,11 +1174,6 @@ function Remove-WRADGroup {
                     $CustomError = "No entry for ObjectGUID "+$ObjectGUID
                     throw($CustomError) 
                 }
-            } elseif ($NewReference) {
-                 if((Get-WRADGroup -NewReference -CommonName $CommonName) -eq $null){
-                    $CustomError = "No entry for CommonName "+$CommonName
-                    throw($CustomError) 
-                }           
             } else {
                 if((Get-WRADGroup -ObjectGUID $ObjectGUID) -eq $null){
                     $CustomError = "Group $ObjectGUID does not exist"
@@ -1293,18 +1203,6 @@ function Get-WRADGroupOfUser {
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
 
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[Switch]$NewReference,
-
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
-		[String]$UserName,
-
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
-		[String]$GroupName,
-
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
@@ -1324,10 +1222,6 @@ function Get-WRADGroupOfUser {
             $Table = 'WRADRefUserGroup'
             $QueryEnd = ' INNER JOIN WRADRefUser ON WRADRefUserGroup.UserObjectGUID = WRADRefUser.ObjectGUID INNER JOIN WRADRefGroup ON WRADRefUserGroup.GroupObjectGUID = WRADRefGroup.ObjectGUID'
             $Query = 'SELECT WRADRefUser.Username,WRADRefGroup.CommonName,WRADRefUserGroup.CreatedDate FROM '+$Table;
-        } elseif($NewReference){
-            $Table = 'WRADRefNewUserGroup'
-            $QueryEnd = ' INNER JOIN WRADRefNewUser ON WRADRefNewUserGroup.NewUserID = WRADRefNewUser.NewUserID INNER JOIN WRADRefNewGroup ON WRADRefNewUserGroup.NewGroupID = WRADRefNewGroup.NewGroupID'
-            $Query = 'SELECT WRADRefNewUser.Username,WRADRefNewGroup.CommonName,WRADRefNewUserGroup.CreatedDate FROM '+$Table;
         }
 
         $FirstParameter = $true;
@@ -1343,13 +1237,7 @@ function Get-WRADGroupOfUser {
                     $QueryEnd += ' AND '
                 }
 
-                if($_ -eq "UserName"){
-                    $QueryEnd += ' `WRADRefNewUser`.`Username` = "'+$Value+'" '
-                } elseif($_ -eq "GroupName") {
-                    $QueryEnd += ' `WRADRefNewGroup`.`CommonName` = "'+$Value+'" '
-                } else {
-                    $QueryEnd += ' `'+$_+'` = "'+$Value+'" '
-                }
+                $QueryEnd += ' `'+$_+'` = "'+$Value+'" '
             }
         } 
         $Query += $QueryEnd	
@@ -1380,18 +1268,6 @@ function New-WRADGroupOfUser {
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
 
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[Switch]$NewReference,
-
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[String]$UserName,
-
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[String]$GroupName,
-
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
@@ -1410,8 +1286,6 @@ function New-WRADGroupOfUser {
         $QueryMiddle = ' ) VALUES ('
         if($Reference){
             $Table = 'WRADRefUserGroup'
-        } elseif($NewReference){
-            $Table = 'WRADRefNewUserGroup'
         } else {
             $Table = 'WRADUserGroup'
         }
@@ -1421,17 +1295,9 @@ function New-WRADGroupOfUser {
 
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
-                if($_ -eq "UserName"){
-                    $QueryVariable += '`NewUserID`'
-                    $QueryValue += '%UID%'
-                } elseif($_ -eq "GroupName"){
-                    $QueryVariable += '`NewGroupID`'
-                    $QueryValue += '%GID%'
-                } else {
-                    [String]$Value = (Get-Variable -Name $_).Value
-                    $QueryVariable += '`'+$_+'`'
-                    $QueryValue += ' "'+$Value+'"'
-                }
+                [String]$Value = (Get-Variable -Name $_).Value
+                $QueryVariable += '`'+$_+'`'
+                $QueryValue += ' "'+$Value+'"'
             }
         }
 
@@ -1446,24 +1312,7 @@ function New-WRADGroupOfUser {
 		{
             #Check for new reference in both tables (ref and refnew) should be performed!!
             Write-Verbose "Checking for already existent user to group mapping and if user and group exist";
-            if($NewReference) {
-                $NewUser = (Get-WRADUser -NewReference -UserName $UserName)
-                $NewGroup = (Get-WRADGroup -NewReference -CommonName $GroupName)
-                if($NewUser -eq $null -or $NewGroup -eq $null){
-                    $CustomError = "Either Group "+$GroupName+" or User "+$UserName+" does not exist"
-                    throw($CustomError) 
-                }
-                $NewUserID = $NewUser.NewUserID
-                $NewGroupID = $NewGroup.NewGroupID
-                if((Get-WRADGroupOfUser -NewReference -UserName $UserName -GroupName $GroupName) -ne $null){
-                    $CustomError = "Duplicate entry for User "+$UserName+" and Group "+$GroupName
-                    throw($CustomError) 
-                }
-
-                $Query = $Query.Replace("%UID%",$NewUserID)
-                $Query = $Query.Replace("%GID%",$NewGroupID)
-
-            } elseif ($Reference) {  
+            if ($Reference) {  
                 if((Get-WRADUser -Reference -ObjectGUID $UserObjectGUID) -eq $null -or (Get-WRADGroup -Reference -ObjectGUID $GroupObjectGUID) -eq $null){
                     $CustomError = "Either UserObjectGUID "+$UserObjectGUID+" or GroupObjectGUID "+$GroupObjectGUID+" does not exist"
                     throw($CustomError) 
@@ -1507,18 +1356,6 @@ function Remove-WRADGroupOfUser {
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
 
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[Switch]$NewReference,
-
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[String]$UserName,
-
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[String]$GroupName,
-
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
@@ -1534,8 +1371,6 @@ function Remove-WRADGroupOfUser {
         $Table = ''
         if($Reference){
             $Table = 'WRADRefUserGroup'
-        } elseif($NewReference){
-            $Table = 'WRADRefNewUserGroup'
         } else {
             $Table = 'WRADUserGroup'
         }
@@ -1544,14 +1379,8 @@ function Remove-WRADGroupOfUser {
 
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
-                if($_ -eq "UserName"){
-                    $QueryValue += '`NewUserID` = %UID%'
-                } elseif($_ -eq "GroupName"){
-                    $QueryValue += '`NewGroupID` = %GID%'
-                } else {
-                    [String]$Value = (Get-Variable -Name $_).Value
-                    $QueryValue += '`'+$_+'` = "'+$Value+'"'
-                }
+                [String]$Value = (Get-Variable -Name $_).Value
+                $QueryValue += '`'+$_+'` = "'+$Value+'"'
             }
         }
 
@@ -1562,15 +1391,7 @@ function Remove-WRADGroupOfUser {
 		try
 		{
             Write-Verbose "Checking if user is in group";
-            if($NewReference) {
-                if((Get-WRADGroupOfUser -NewReference -UserName $UserName -GroupName $GroupName) -eq $null){
-                    $CustomError = "User "+$UserName+" does not belong to Group "+$GroupName
-                    throw($CustomError) 
-                }
-                $Query = $Query.Replace("%UID%",(Get-WRADUser -NewReference -UserName $UserName).NewUserID)
-                $Query = $Query.Replace("%GID%",(Get-WRADGroup -NewReference -CommonName $GroupName).NewGroupID)
-
-            } elseif ($Reference) {  
+            if ($Reference) {  
                 if ((Get-WRADGroupOfUser -Reference -UserObjectGUID $UserObjectGUID -GroupObjectGUID $GroupObjectGUID) -eq $null){
                     $CustomError = "User with ID "+$UserObjectGUID+" does not belong to Group with ID "+$GroupObjectGUID
                     throw($CustomError)
@@ -1604,18 +1425,6 @@ function Get-WRADGroupOfGroup {
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
 
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[Switch]$NewReference,
-
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
-		[String]$ChildGroup,
-
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
-		[String]$ParentGroup,
-
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
@@ -1635,10 +1444,6 @@ function Get-WRADGroupOfGroup {
             $Table = 'WRADRefGroupGroup'
             $QueryEnd = ' INNER JOIN WRADRefGroup AS cg ON WRADRefGroupGroup.ChildGroupObjectGUID = cg.ObjectGUID INNER JOIN WRADRefGroup AS pg ON WRADRefGroupGroup.ParentGroupObjectGUID = pg.ObjectGUID'
             $Query = 'SELECT cg.CommonName AS ChildGroup,pg.CommonName AS ParentGroup,WRADRefGroupGroup.CreatedDate FROM '+$Table;
-        } elseif($NewReference){
-            $Table = 'WRADRefNewGroupGroup'
-            $QueryEnd = ' INNER JOIN WRADRefNewGroup cg ON WRADRefNewGroupGroup.NewChildGroupID = cg.NewGroupID INNER JOIN WRADRefNewGroup AS pg ON WRADRefNewGroupGroup.NewParentGroupID = pg.NewGroupID'
-            $Query = 'SELECT cg.CommonName AS ChildGroup,pg.CommonName AS ParentGroup,WRADRefNewGroupGroup.CreatedDate FROM '+$Table;
         }
         
         $FirstParameter = $true;
@@ -1653,14 +1458,7 @@ function Get-WRADGroupOfGroup {
                 } else {
                     $QueryEnd += ' AND '
                 }
-
-                if($_ -eq "ChildGroup") {
-                    $QueryEnd += ' `cg`.`CommonName` = "'+$Value+'" '
-                } elseif ($_ -eq "ParentGroup") {
-                    $QueryEnd += ' `pg`.`CommonName` = "'+$Value+'" '
-                } else {
-                    $QueryEnd += ' `'+$_+'` = "'+$Value+'" '
-                }
+                $QueryEnd += ' `'+$_+'` = "'+$Value+'" '
             }
         } 
         $Query += $QueryEnd	
@@ -1691,18 +1489,6 @@ function New-WRADGroupOfGroup {
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
 
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[Switch]$NewReference,
-
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[String]$ChildGroup,
-
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateScript({if($ChildGroup -ne $_ ){ $true } else { throw("ChildGroup cannot be the same as ParentGroup")}})]
-		[String]$ParentGroup,
-
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
@@ -1710,7 +1496,7 @@ function New-WRADGroupOfGroup {
 
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
+		[ValidateScript({if($ChildGroupObjectGUID -ne $_ ){ $true } else { throw("ChildGroupObjectGUID cannot be the same as ParentGroupObjectGUID")}})]
 		[String]$ParentGroupObjectGUID
 	)
 	begin
@@ -1720,8 +1506,6 @@ function New-WRADGroupOfGroup {
         $QueryMiddle = ' ) VALUES ('
         if($Reference){
             $Table = 'WRADRefGroupGroup'
-        } elseif($NewReference){
-            $Table = 'WRADRefNewGroupGroup'
         } else {
             $Table = 'WRADGroupGroup'
         }
@@ -1731,17 +1515,9 @@ function New-WRADGroupOfGroup {
 
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
-                if($_ -eq "ChildGroup"){
-                    $QueryVariable += '`NewChildGroupID`'
-                    $QueryValue += '%CGID%'
-                } elseif($_ -eq "ParentGroup"){
-                    $QueryVariable += '`NewParentGroupID`'
-                    $QueryValue += '%PGID%'
-                } else {
-                    [String]$Value = (Get-Variable -Name $_).Value
-                    $QueryVariable += '`'+$_+'`'
-                    $QueryValue += ' "'+$Value+'"'
-                }
+                [String]$Value = (Get-Variable -Name $_).Value
+                $QueryVariable += '`'+$_+'`'
+                $QueryValue += ' "'+$Value+'"'
             }
         }
 
@@ -1756,24 +1532,7 @@ function New-WRADGroupOfGroup {
 		{
             #Check for new reference in both tables (ref and refnew) should be performed!!
             Write-Verbose "Checking for already existent group to group mapping and if groups exist";
-            if($NewReference) {
-                $NewChildGroup = (Get-WRADGroup -NewReference -CommonName $ChildGroup)
-                $NewParentGroup = (Get-WRADGroup -NewReference -CommonName $ParentGroup)
-                if($NewChildGroup -eq $null -or $NewParentGroup -eq $null){
-                    $CustomError = "Either ChildGroup "+$ChildGroup+" or ParentGroup "+$ParentGroup+" does not exist"
-                    throw($CustomError) 
-                }
-                $NewChildGroupID = $NewChildGroup.NewGroupID
-                $NewParentGroupID = $NewParentGroup.NewGroupID
-                if((Get-WRADGroupOfGroup -NewReference -ChildGroup $ChildGroup -ParentGroup $ParentGroup) -ne $null){
-                    $CustomError = "Duplicate entry for ChildGroup "+$ChildGroup+" and ParentGroup "+$ParentGroup
-                    throw($CustomError) 
-                }
-
-                $Query = $Query.Replace("%CGID%",$NewChildGroupID)
-                $Query = $Query.Replace("%PGID%",$NewParentGroupID)
-
-            } elseif ($Reference) { 
+            if ($Reference) { 
                  if((Get-WRADGroup -Reference -ObjectGUID $ChildGroupObjectGUID) -eq $null -or (Get-WRADGroup -Reference -ObjectGUID $ParentGroupObjectGUID) -eq $null){
                     $CustomError = "Either ChildGroupObjectGUID "+$ChildGroupObjectGUID+" or ParentGroupObjectGUID "+$ParentGroupObjectGUID+" does not exist"
                     throw($CustomError) 
@@ -1817,18 +1576,6 @@ function Remove-WRADGroupOfGroup {
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
 
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[Switch]$NewReference,
-
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateNotNullOrEmpty()]
-		[String]$ChildGroup,
-
-        [Parameter(ParameterSetName="NEWREFERENCE", Mandatory=$true)]
-		[ValidateScript({if($ChildGroup -ne $_ ){ $true } else { throw("ChildGroup cannot be the same as ParentGroup")}})]
-		[String]$ParentGroup,
-
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$true)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$true)]
 		[ValidateNotNullOrEmpty()]
@@ -1844,8 +1591,6 @@ function Remove-WRADGroupOfGroup {
         $Table = ''
         if($Reference){
             $Table = 'WRADRefGroupGroup'
-        } elseif($NewReference){
-            $Table = 'WRADRefNewGroupGroup'
         } else {
             $Table = 'WRADGroupGroup'
         }
@@ -1854,14 +1599,8 @@ function Remove-WRADGroupOfGroup {
 
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
-                if($_ -eq "ChildGroup"){
-                    $QueryValue += '`NewChildGroupID` = %CGID%'
-                } elseif($_ -eq "ParentGroup"){
-                    $QueryValue += '`NewParentGroupID` = %PGID%'
-                } else {
-                    [String]$Value = (Get-Variable -Name $_).Value
-                    $QueryValue += '`'+$_+'` = "'+$Value+'"'
-                }
+                [String]$Value = (Get-Variable -Name $_).Value
+                $QueryValue += '`'+$_+'` = "'+$Value+'"'
             }
         }
 
@@ -1872,15 +1611,7 @@ function Remove-WRADGroupOfGroup {
 		try
 		{
             Write-Verbose "Checking if group is in group";
-            if($NewReference) {
-                if((Get-WRADGroupOfGroup -NewReference -ChildGroup $ChildGroup -ParentGroup $ParentGroup) -eq $null){
-                    $CustomError = "Group "+$ChildGroup+" does not belong to Group "+$ParentGroup
-                    throw($CustomError) 
-                }
-                $Query = $Query.Replace("%CGID%",(Get-WRADGroup -NewReference -CommonName $ChildGroup).NewGroupID)
-                $Query = $Query.Replace("%PGID%",(Get-WRADGroup -NewReference -CommonName $ParentGroup).NewGroupID)
-
-            } elseif ($Reference) {  
+            if ($Reference) {  
                 if ((Get-WRADGroupOfGroup -Reference -ChildGroupObjectGUID $ChildGroupObjectGUID -ParentGroupObjectGUID $ParentGroupObjectGUID) -eq $null){
                     $CustomError = "Group with ID "+$ChildGroupObjectGUID+" does not belong to Group with ID "+$ParentGroupObjectGUID
                     throw($CustomError)
