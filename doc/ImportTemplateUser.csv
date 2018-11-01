@@ -1,0 +1,2 @@
+ObjectGUID,DisplayName,SamAccountName,UserPrincipalName,DistinguishedName,Description,Enabled,AccountExpires,Group1,Group2,Group3
+,Denis Schluch,Denis Schluch,Denis.Schluch@wrad.local,"CN=Denis Schluch,OU=Marketing,OU=WRAD,DC=WRAD,DC=local",blabla,TRUE,never,TRUE,,TRUE
