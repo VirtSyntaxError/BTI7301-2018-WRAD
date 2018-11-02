@@ -8,10 +8,12 @@ if(!(get-module WRADDBCommands)){
     write-host "Import Module WRADCommands"
 }
 
-if(!(get-module Function-Write-Log)){
-    Import-Module C:\Data\Function-Write-Log.ps1
-    write-host "Import Module Function-Write-Log"
-}
+#if(!(get-module Function-Write-Log)){
+#    Import-Module C:\Data\Function-Write-Log.ps1
+#    write-host "Import Module Function-Write-Log"
+#}
+
+Enable-UDLogging -FilePath "C:\Data\Logs\UDLog.txt"
 
 
 #if((Get-WRADUser).Count = 0) {
@@ -354,13 +356,13 @@ $UsrAGrp = New-UDPage -Name "UserUndGruppen" -AuthorizedRole @("Auditor") -Conte
 # 8 LogSyslogServerProtocol udp         
 # 9 SearchBase
 
-$WRADSettings = Get-WRADSetting
+#$WRADSettings = Get-WRADSetting
 
-Write-Host "Test: " + $WRADSettings[0].SettingName
-
+$Script:ActualWRADSettings = Get-WRADSetting
 
 $Settings = New-UDPage -Name "Einstellungen" -AuthorizedRole @("WRADadmin","Auditor") -Content {
-	New-UDRow {
+    $WRADSettings = Get-WRADSetting
+    New-UDRow {
         New-UDColumn -size 3 -Content {
 			
 		}
@@ -368,26 +370,23 @@ $Settings = New-UDPage -Name "Einstellungen" -AuthorizedRole @("WRADadmin","Audi
 		New-UDColumn -size 6 -Content {
 			New-UDInput -Title "Settings" -Id "Form" -Content {
                 
-                New-UDInputField -Type 'textbox' -Name $WRADSettings[8].SettingName -Placeholder 'AD Base' -DefaultValue $WRADSettings[8].SettingValue
-                New-UDInputField -Type 'textbox' -Name $WRADSettings[0].SettingName -Placeholder 'AD Gruppe: Abteilungsleiter' -DefaultValue $WRADSettings[0].SettingValue
-                New-UDInputField -Type 'textbox' -Name $WRADSettings[1].SettingName -Placeholder 'AD Gruppe: Auditor' -DefaultValue $WRADSettings[1].SettingValue
-                New-UDInputField -Type 'textbox' -Name $WRADSettings[2].SettingName -Placeholder 'AD Gruppe: System Administrator' -DefaultValue $WRADSettings[2].SettingValue
-                New-UDInputField -Type 'textbox' -Name $WRADSettings[3].SettingName -Placeholder 'AD Gruppe: Application Owner' -DefaultValue $WRADSettings[3].SettingValue
-                New-UDInputField -Type 'textbox' -Name $WRADSettings[5].SettingName -Placeholder 'Log-Dateipfad' -DefaultValue $WRADSettings[5].SettingValue
-                New-UDInputField -Type 'textbox' -Name $WRADSettings[6].SettingName -Placeholder 'Syslog Server' -DefaultValue $WRADSettings[6].SettingValue
-                New-UDInputField -Type 'textbox' -Name $WRADSettings[7].SettingName -Placeholder 'Syslog Protokoll' -DefaultValue $WRADSettings[7].SettingValue
-                New-UDInputField -Type 'select' -Name $WRADSettings[4].SettingName -Placeholder 'Externes Logging' -Values @("none", "file", "syslog") -DefaultValue $WRADSettings[4].SettingValue
+                New-UDInputField -Type 'textbox' -Name $Script:ActualWRADSettings[8].SettingName -Placeholder 'AD Base' -DefaultValue $Script:ActualWRADSettings[8].SettingValue
+                New-UDInputField -Type 'textbox' -Name $Script:ActualWRADSettings[0].SettingName -Placeholder 'AD Gruppe: Abteilungsleiter' -DefaultValue $Script:ActualWRADSettings[0].SettingValue
+                New-UDInputField -Type 'textbox' -Name $Script:ActualWRADSettings[1].SettingName -Placeholder 'AD Gruppe: Auditor' -DefaultValue $Script:ActualWRADSettings[1].SettingValue
+                New-UDInputField -Type 'textbox' -Name $Script:ActualWRADSettings[2].SettingName -Placeholder 'AD Gruppe: System Administrator' -DefaultValue $Script:ActualWRADSettings[2].SettingValue
+                New-UDInputField -Type 'textbox' -Name $Script:ActualWRADSettings[3].SettingName -Placeholder 'AD Gruppe: Application Owner' -DefaultValue $Script:ActualWRADSettings[3].SettingValue
+                New-UDInputField -Type 'textbox' -Name $Script:ActualWRADSettings[5].SettingName -Placeholder 'Log-Dateipfad' -DefaultValue $Script:ActualWRADSettings[5].SettingValue
+                New-UDInputField -Type 'textbox' -Name $Script:ActualWRADSettings[6].SettingName -Placeholder 'Syslog Server' -DefaultValue $Script:ActualWRADSettings[6].SettingValue
+                New-UDInputField -Type 'textbox' -Name $Script:ActualWRADSettings[7].SettingName -Placeholder 'Syslog Protokoll' -DefaultValue $Script:ActualWRADSettings[7].SettingValue
+                New-UDInputField -Type 'select' -Name $Script:ActualWRADSettings[4].SettingName -Placeholder 'Externes Logging' -Values @("none", "file", "syslog") -DefaultValue $Script:ActualWRADSettings[4].SettingValue
                 
             } -Endpoint {
                 param($SearchBase, $ADRoleDepartmentLead, $ADRoleAuditor, $ADRoleSysAdmin, $ADRoleApplOwner, $LogFilePath, $LogSyslogServer, $LogSyslogServerProtocol, $LogExternal)
 
                 #Setting up input
                 $WRADSettingsNew = @()
-                Write-Log -Message "WRADSetting1: $ADRoleDepartmentLead" -Path "C:\Data\Logs\gui.log" -Level Info
                 $WRADSettingsNew += $ADRoleDepartmentLead
-                Write-Log -Message "WRADSetting2: $ADRoleAuditor" -Path "C:\Data\Logs\gui.log" -Level Info
                 $WRADSettingsNew += $ADRoleAuditor
-                Write-Log -Message "WRADSetting3: $ADRoleSysAdmin" -Path "C:\Data\Logs\gui.log" -Level Info
                 $WRADSettingsNew += $ADRoleSysAdmin
                 $WRADSettingsNew += $ADRoleApplOwner
                 $WRADSettingsNew += $LogExternal
@@ -395,34 +394,47 @@ $Settings = New-UDPage -Name "Einstellungen" -AuthorizedRole @("WRADadmin","Audi
                 $WRADSettingsNew += $LogSyslogServer
                 $WRADSettingsNew += $LogSyslogServerProtocol
                 $WRADSettingsNew += $SearchBase
-                
-                $newSettings = @()
-                
-
+                                
+                #$WRADSettingsActual = Get-WRADSetting
 
                 #Look for changes
-                $ne = 0
+                $ns = 0
+                $newSetting = ""
+                Write-UDLog -Message "Check settings"
+
                 For($i=0; $i -le $WRADSettingsNew.length-1; $i++) {
-                    if($WRADSettings[$i].SettingValue -ne $WRADSettingsNew[$i]){
-                        $newSettings += @{SettingName=($WRADSettings[$i].SettingName); SettingValue=$ADRoleDepartmentLead}
-                        $ne = 1
+                   
+                    if($Script:ActualWRADSettings[$i].SettingValue -ne $WRADSettingsNew[$i]){
+                        $cs = $WRADSettingsNew[$i]
+                        Write-UDLog -Message "New Setting $cs" -Level Info
+                        $Script:ActualWRADSettings[$i].SettingValue = $WRADSettingsNew[$i]
+                        $ns = 1
                     }
+
+                    
+
+                    $newSettings += " $($WRADSettingsNew[$i])"
                 }
                 
                 #Save new settings
-                if($ne){
-                    $updSettting = "";
-                    ForEach($Setting in $newSettings){
-                        $SName = $Setting.SettingName
-                        $SVal = $Setting.SettingValue
-                        
-                        $updSettting += " -$SName '$SVal'"
+                if($ns){
+                    if(!(get-module WRADDBCommands)){
+                        Import-Module C:\Users\Administrator\Desktop\BTI7301-2018-WRAD\src\modules\WRADDBCommands.psm1
+                        Write-UDLog -Message "Import Module WRADCommands"
                     }
 
-                    Update-WRADSetting $updSettting -verbose
+                    try {
+                        Update-WRADSetting -$newSettings -verbose
+                        
+                    } 
+                    catch {
+                        Write-UDLog -Message "CATCH: $($_.Exception.Message)"
+                    }
+                    
                 }
-
-                
+                          
+                Write-UDLog -Message "End of code" -Level Info
+                New-UDInputAction -RedirectUrl "/Einstellungen"
 
             }
 		}
@@ -448,5 +460,5 @@ $theme = New-UDTheme -Name "AzureChngBtn" -Definition @{
 Start-UDDashboard -Port 10000 -AllowHttpForLogin -Content {
     
     New-UdDashboard -Login $login -Pages @($PageALDashboard, $PageAtDashboard, $PageSADashboard, $PageAODashboard, $PageASDashboard, $UsrAGrp, $Settings) -Title "Mock up Dashboards" -Color 'Black' -Theme $theme
-
+    
 } -Verbose -debug
