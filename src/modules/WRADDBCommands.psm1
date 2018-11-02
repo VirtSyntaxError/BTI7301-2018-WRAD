@@ -2232,4 +2232,193 @@ function New-WRADExcludedGroup {
 	}
 }
 
+function Get-WRADEvent {
+    Param
+	(
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$SrcUserObjectGUID,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$SrcGroupObjectGUID,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$SrcRefUserObjectGUID,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$SrcRefGroupObjectGUID,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$DestGroupObjectGUID,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$DestRefGroupObjectGUID,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[Int]$EventType,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[Switch]$NotResolved
+	)
+	begin
+	{
+        $Table = 'WRADEvent'
+        $Query = 'SELECT * FROM '+$Table;
+        $FirstParameter = $true	
+
+        $PSBoundParameters.Keys | ForEach {
+            if ($BuiltinParameters -notcontains $_) {
+                $Value = (Get-Variable -Name $_ ).Value
+                        
+                if($FirstParameter){
+                    $Query += ' WHERE '
+                    $FirstParameter = $false
+                } else {
+                    $Query += ' AND '
+                }
+
+                if($_ -eq "NotResolved"){
+                    $Query += ' `ResolvedDate` IS NULL'
+                } else {
+                    $Query += '`'+$_+'` = "'+$Value+'"'
+
+                }
+            }
+        }
+	}
+	Process
+	{
+		try
+		{
+			Write-Verbose "Invoking SELECT SQL Query on table $Table";
+			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
+		}
+		catch
+		{
+			Write-Error -Message $_.Exception.Message
+			break
+		}
+	}
+	End
+	{
+	}
+}
+
+function Set-WRADEventResolved {
+    Param
+	(
+        [Parameter(Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+		[Int]$EventID
+	)
+	begin
+	{
+        $Table = 'WRADEvent'
+        [String]$Date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss")
+        $Query = 'UPDATE '+$Table+' SET `ResolvedDate` = "'+$Date+'" ';	
+	}
+	Process
+	{
+		try
+		{
+			Write-Verbose "Invoking UPDATE SQL Query on table $Table";
+			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
+		}
+		catch
+		{
+			Write-Error -Message $_.Exception.Message
+			break
+		}
+	}
+	End
+	{
+	}
+}
+
+function New-WRADEvent {
+    Param
+	(
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$SrcUserObjectGUID,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$SrcGroupObjectGUID,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$SrcRefUserObjectGUID,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$SrcRefGroupObjectGUID,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$DestGroupObjectGUID,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[String]$DestRefGroupObjectGUID,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[Int]$EventType
+	)
+	begin
+	{
+        $Table = 'WRADEvent'
+        $QueryEnd = ') '
+        $QueryMiddle = ' ) VALUES ('    
+            
+        $Query = 'INSERT INTO '+$Table+' ('
+        $QueryValue = @()
+        $QueryVariable = @()
+
+        $PSBoundParameters.Keys | ForEach {
+            if ($BuiltinParameters -notcontains $_) {
+                [String]$Value = (Get-Variable -Name $_).Value
+
+                $QueryVariable += '`'+$_+'`'
+                $QueryValue += ' "'+$Value+'"'
+            }
+        }
+
+        $Query += ($QueryVariable -join ", ")
+        $Query += $QueryMiddle
+        $Query += ($QueryValue -join ", ")
+        $Query += $QueryEnd
+	}
+	Process
+	{
+		try
+		{
+            Invoke-Expression(Get-WRADEvent $PSBoundParameters.toString())
+            throw("test")
+            if(Get-WRADEvent $PSBoundParameters.ToString()){
+                $CustomError = "Event already exists"
+                throw($CustomError) 
+            }
+			Write-Verbose "Invoking INSERT SQL Query on table $Table";
+			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
+		}
+		catch
+		{
+			Write-Error -Message $_.Exception.Message
+			break
+		}
+	}
+	End
+	{
+	}
+}
+
 Connect-WRADDatabase
