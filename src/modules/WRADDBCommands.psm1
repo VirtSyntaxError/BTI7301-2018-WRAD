@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 
 $null = [System.Reflection.Assembly]::LoadWithPartialName('MySql.Data')
-$BuiltinParameters = @("ErrorAction","WarningAction","Verbose","ErrorVariable","WarningVariable","OutVariable","OutBuffer","Debug","Reference","NoObjectGUID","ExistentObjectGUID","UserPrincipalNameNoDomain")
+$BuiltinParameters = @("ErrorAction","WarningAction","Verbose","ErrorVariable","WarningVariable","OutVariable","OutBuffer","Debug","Reference","NoObjectGUID","ExistentObjectGUID","UserPrincipalNameNoDomain","ShowCommonNames")
 
 function Connect-WRADDatabase {
     begin
@@ -1230,6 +1230,10 @@ function Get-WRADGroupOfUser {
 		[ValidateNotNullOrEmpty()]
 		[Switch]$ExistentObjectGUID,
 
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[Switch]$ShowCommonNames,
+
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
@@ -1248,8 +1252,12 @@ function Get-WRADGroupOfUser {
         $FirstParameter = $true;
         if($Reference){
             $Table = 'WRADRefUserGroup'
-            $QueryEnd = ' INNER JOIN WRADRefUser ON WRADRefUserGroup.UserObjectGUID = WRADRefUser.ObjectGUID INNER JOIN WRADRefGroup ON WRADRefUserGroup.GroupObjectGUID = WRADRefGroup.ObjectGUID'
-            $Query = 'SELECT WRADRefUser.Username,WRADRefGroup.CommonName,WRADRefUserGroup.CreatedDate FROM '+$Table;
+            if($ShowCommonNames){
+                $QueryEnd = ' INNER JOIN WRADRefUser ON WRADRefUserGroup.UserObjectGUID = WRADRefUser.ObjectGUID INNER JOIN WRADRefGroup ON WRADRefUserGroup.GroupObjectGUID = WRADRefGroup.ObjectGUID'
+                $Query = 'SELECT WRADRefUser.Username,WRADRefGroup.CommonName,WRADRefUserGroup.CreatedDate FROM '+$Table;
+            } else {
+                $Query = 'SELECT * FROM '+$Table;
+            }
 
             if($ExistentObjectGUID){
                 $QueryEnd += ' WHERE WRADRefUser.ObjectGUID NOT LIKE "noguid%" AND WRADRefGroup.ObjectGUID NOT LIKE "noguid%"'
@@ -1460,6 +1468,10 @@ function Get-WRADGroupOfGroup {
 		[ValidateNotNullOrEmpty()]
 		[Switch]$ExistentObjectGUID,
 
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[Switch]$ShowCommonNames,
+
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
@@ -1477,8 +1489,12 @@ function Get-WRADGroupOfGroup {
         $Query = 'SELECT * FROM '+$Table;
         if($Reference){
             $Table = 'WRADRefGroupGroup'
-            $QueryEnd = ' INNER JOIN WRADRefGroup AS cg ON WRADRefGroupGroup.ChildGroupObjectGUID = cg.ObjectGUID INNER JOIN WRADRefGroup AS pg ON WRADRefGroupGroup.ParentGroupObjectGUID = pg.ObjectGUID'
-            $Query = 'SELECT cg.CommonName AS ChildGroup,pg.CommonName AS ParentGroup,WRADRefGroupGroup.CreatedDate FROM '+$Table;
+            if($ShowCommonNames){
+                $QueryEnd = ' INNER JOIN WRADRefGroup AS cg ON WRADRefGroupGroup.ChildGroupObjectGUID = cg.ObjectGUID INNER JOIN WRADRefGroup AS pg ON WRADRefGroupGroup.ParentGroupObjectGUID = pg.ObjectGUID'
+                $Query = 'SELECT cg.CommonName AS ChildGroup,pg.CommonName AS ParentGroup,WRADRefGroupGroup.CreatedDate FROM '+$Table;
+            } else {
+                $Query = 'SELECT * FROM '+$Table;
+            }
   
             if($ExistentObjectGUID){
                 $QueryEnd += ' WHERE cg.ObjectGUID NOT LIKE "noguid%" AND pg.ObjectGUID NOT LIKE "noguid%"'
