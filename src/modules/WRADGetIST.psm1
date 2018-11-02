@@ -176,7 +176,7 @@ function Write-WRADISTtoDB
 			$DBexistinggroupofuser = $DBgroupofuser | Where UserObjectGUID -eq $user.ObjectGUID
 			foreach($t in $DBexistinggroupofuser){
 				if($GroupObjectGUIDs.ObjectGUID -notcontains $t.GroupObjectGUID){
-					Remove-WRADGroupOfUser -UserObjectGUID:$user.ObjectGUID -GroupObjectGUID:$t.ParentGroupObjectGUID
+					Remove-WRADGroupOfUser -UserObjectGUID:$user.ObjectGUID -GroupObjectGUID:$t.GroupObjectGUID
 				}
 			}
 		}
