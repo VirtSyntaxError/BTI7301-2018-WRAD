@@ -25,31 +25,20 @@
 
     # define empty error array
     $ERR_list = @()
-    <#
-    user ist loop:
-    1$ERR_users_not_in_SOLL = @()
-    3$ERR_user_username = @()
-    4$ERR_users_displayname = @()
-    5$ERR_users_enabled = @()
-    getnoguid refusers:
-    2$ERR_users_not_in_IST = @()
-    group ist loop:
-    6$ERR_groups_not_in_SOLL = @()
-    8$ERR_group_groupname = @()
-    9$ERR_groups_grouptype = @()
-    10$ERR_groups_grouptypesecurity = @()
-    getnoguid refgroup:
-    7$ERR_groups_not_in_IST = @()
-    loop through usergroupref:
-    11$ERR_usergroups_user_not_in_group = @()
-    loop through usergroup:
-    12$ERR_usergroups_user_in_group = @()
-
-    loop through groupgroupref:
-    13$ERR_groupgroups_group_not_in_group = @()
-    loop through groupgroup:
-    14$ERR_groupgroups_group_in_group = @()#>
-
+    # get old eventlist and cast to event objects
+    $ERR_old = Get-WRADEvent -NotResolved
+    $ERR_list_old = @()
+    foreach ($err in $ERR_old){
+        $ev = [event]::new()
+        $ev.EventID = $err.EventID
+        $ev.SrcUser = $err.SrcUser
+        $ev.SrcGroup = $err.SrcGroup
+        $ev.SrcRefUser = $err.SrcRefUser
+        $ev.DstGroup = $err.DstGroup
+        $ev.DstResGroup = $err.DstResGroup
+        $ERR_list_old.Add($ev)
+    }
+    
     # Do User Comparison
     foreach($uIST in $usersIST){
         # get UPN
@@ -61,7 +50,7 @@
         # if no ref user found, add event to list
         if (!$uRef){
             $ev = [event]::new()
-            $ev.ID = 1
+            $ev.EventType = 1
             $ev.SrcUser = $uIST.ObjectGUID
             $ERR_list.Add($ev)
             continue
@@ -69,21 +58,21 @@
         # comparisons. if not equal, create event
         if ($uRef.Username -ne $username){
             $ev = [event]::new()
-            $ev.ID = 3
+            $ev.EventType = 3
             $ev.SrcUser = $uIST.ObjectGUID
             $ev.SrcRefUser = $uRef.ObjectGUID
             $ERR_list.Add($ev)
         }
         if ($uRef.DisplayName -ne $uIST.DisplayName){
             $ev = [event]::new()
-            $ev.ID = 4
+            $ev.EventType = 4
             $ev.SrcUser = $uIST.ObjectGUID
             $ev.SrcRefUser = $uRef.ObjectGUID
             $ERR_list.Add($ev)
         }
         if ($uRef.Enabled -ne $uIST.Enabled){
             $ev = [event]::new()
-            $ev.ID = 5
+            $ev.EventType = 5
             $ev.SrcUser = $uIST.ObjectGUID
             $ev.SrcRefUser = $uRef.ObjectGUID
             $ERR_list.Add($ev)
@@ -93,7 +82,7 @@
     # add all users that are not in IST
     foreach ($uRef in $usersRefNoGUID){
         $ev = [event]::new()
-        $ev.ID = 2
+        $ev.EventType = 2
         $ev.SrcRefUser = $uRef.ObjectGUID
         $ERR_list.Add($ev)
     }
@@ -105,7 +94,7 @@
         # if no ref group found, add event to list
         if (!$gRef){
             $ev = [event]::new()
-            $ev.ID = 6
+            $ev.EventType = 6
             $ev.SrcUser = $gIST.ObjectGUID
             $ERR_list.Add($ev)
             continue
@@ -113,21 +102,21 @@
         # comparisons. if not equal, create event
         if ($gRef.CommonName -ne $gIST.CommonName){
             $ev = [event]::new()
-            $ev.ID = 8
+            $ev.EventType = 8
             $ev.SrcGroup = $gIST.ObjectGUID
             $ev.SrcRefGroup = $gRef.ObjectGUID
             $ERR_list.Add($ev)
         }
         if ($gRef.GroupType -ne $gIST.GroupType){
             $ev = [event]::new()
-            $ev.ID = 9
+            $ev.EventType = 9
             $ev.SrcGroup = $gIST.ObjectGUID
             $ev.SrcRefGroup = $gRef.ObjectGUID
             $ERR_list.Add($ev)
         }
         if ($gRef.GroupTypeSecurity -ne $gIST.GroupTypeSecurity){
             $ev = [event]::new()
-            $ev.ID = 10
+            $ev.EventType = 10
             $ev.SrcGroup = $gIST.ObjectGUID
             $ev.SrcRefGroup = $gRef.ObjectGUID
             $ERR_list.Add($ev)
@@ -136,7 +125,7 @@
         # add all groups that are not in IST
         foreach ($gRef in $groupsRefNoGUID){
             $ev = [event]::new()
-            $ev.ID = 7
+            $ev.EventType = 7
             $ev.SrcRefGroup = $gRef.ObjectGUID
             $ERR_list.Add($ev)
         }
@@ -146,7 +135,7 @@
             $ugIST = $usergroupsIST | Where-Object {$_.UserObjectGUID -eq $ugRef.UserObjectGUID -and $_.GroupObjectGUID -eq $ugRef.GroupObjectGUID}
             if (!$ugIST){
                 $ev = [event]::new()
-                $ev.ID = 11
+                $ev.EventType = 11
                 $ev.SrcUser = $ugRef.UserObjectGUID
                 $ev.SrcRefUser = $ugRef.UserObjectGUID
                 $ev.DstRefGroup = $ugRef.GroupObjectGUID
@@ -159,7 +148,7 @@
             $ugRef = $usergroupsRef | Where-Object {$_.UserObjectGUID -eq $ugIST.UserObjectGUID -and $_.GroupObjectGUID -eq $ugIST.GroupObjectGUID}
             if (!$ugRef){
                 $ev = [event]::new()
-                $ev.ID = 12
+                $ev.EventType = 12
                 $ev.SrcUser = $ugIST.UserObjectGUID
                 $ev.SrcRefUser = $ugIST.UserObjectGUID
                 $ev.DstGroup = $ugIST.GroupObjectGUID
@@ -172,7 +161,7 @@
             $ggIST = $groupgroupsIST | Where-Object {$_.ChildGroupObjectGUID -eq $ggRef.ChildGroupObjectGUID -and $_.ParentGroupObjectGUID -eq $ggRef.ParentGroupObjectGUID}
             if (!$ggIST){
                 $ev = [event]::new()
-                $ev.ID = 13
+                $ev.EventType = 13
                 $ev.SrcGroup = $ggRef.ChildGroupObjectGUID
                 $ev.SrcRefGroup = $ggRef.ChildGroupObjectGUID
                 $ev.DstRefGroup = $ggRef.ParentGroupObjectGUID
@@ -185,13 +174,16 @@
             $ggRef = $groupgroupsRef | Where-Object {$_.ChildGroupObjectGUID -eq $ggIST.ChildGroupObjectGUID -and $_.ParentGroupObjectGUID -eq $ggIST.ParentGroupObjectGUID}
             if (!$ggRef){
                 $ev = [event]::new()
-                $ev.ID = 14
+                $ev.EventType = 14
                 $ev.SrcGroup = $ugIST.ChildGroupObjectGUID
                 $ev.SrcRefGroup = $ugIST.ChildGroupObjectGUID
                 $ev.DstGroup = $ugIST.ParentGroupObjectGUID
                 $ERR_list.Add($ev)
             }
         }
+
+
+        
 
     }
 
