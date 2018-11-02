@@ -133,8 +133,7 @@ function Write-WRADISTtoDB
 			$DBexistinggroupofgroup = $DBgroupofgroup | Where ChildGroupObjectGUID -eq $group.ObjectGUID
 			foreach($t in $DBexistinggroupofgroup){
 				if($ParentObjectGUIDs.ObjectGUID -notcontains $t.ParentGroupObjectGUID){
-					# delete function not yet existing
-					#Delete-WRADGroupofGroup -ChildGroupObjectGUID:$group.ObjectGUID -ParentGroupObjectGUID:$t.ParentGroupObjectGUID
+					Remove-WRADGroupOfGroup -ChildGroupObjectGUID:$group.ObjectGUID -ParentGroupObjectGUID:$t.ParentGroupObjectGUID
 				}
 			}
 		}
@@ -156,7 +155,7 @@ function Write-WRADISTtoDB
 
 			## Actually write/update Users to DB
 			if($DBusers.ObjectGUID -contains $user.ObjectGUID){
-				Write-Verbose "Updating User to in: $user"
+				Write-Verbose "Updating User to DB: $user"
 				Update-WRADUser -ObjectGUID:$user.ObjectGUID -SAMAccountName:$user.SamAccountName -DistinguishedName:$user.DistinguishedName -UserPrincipalName:$user.UserPrincipalName -DisplayName:$user.DisplayName -Description:$user.Description -LastLogonTimestamp:$user.LastLogonDate -Enabled:$user.Enabled
 			}
 			else{
@@ -165,7 +164,7 @@ function Write-WRADISTtoDB
 			}
 
 			## Write User in Group Membership to DB
-			Write-Verbose "START writing new Group Memership of User: "+ $user.ObjectGUID
+			Write-Verbose "START writing new Group Memership of User: $($user.ObjectGUID)"
 			$GroupObjectGUIDs = $user.MemberOf | Get-ADGroup | Select-Object ObjectGUID
 			foreach($GroupObjectGUID in $GroupObjectGUIDs){
 				$alreadyExisting = Get-WRADGroupOfUser -UserObjectGUID:$user.ObjectGUID -GroupObjectGUID:$GroupObjectGUID.ObjectGUID
@@ -177,8 +176,7 @@ function Write-WRADISTtoDB
 			$DBexistinggroupofuser = $DBgroupofuser | Where UserObjectGUID -eq $user.ObjectGUID
 			foreach($t in $DBexistinggroupofuser){
 				if($GroupObjectGUIDs.ObjectGUID -notcontains $t.GroupObjectGUID){
-					# delete function not yet existing
-					#Delete-WRADGroupofUser -UserObjectGUID:$user.ObjectGUID -GroupObjectGUID:$t.ParentGroupObjectGUID
+					Remove-WRADGroupOfUser -UserObjectGUID:$user.ObjectGUID -GroupObjectGUID:$t.ParentGroupObjectGUID
 				}
 			}
 		}
