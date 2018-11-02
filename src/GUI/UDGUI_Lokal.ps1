@@ -1,10 +1,12 @@
+$Script:ScriptPath = $PSScriptRoot
+
 if(!(get-module UniversalDashboard)){
 	Import-Module UniversalDashboard
     write-host "Import Module UniversalDasboard"
 }
 
 if(!(get-module WRADDBCommands)){
-    Import-Module $PSScriptRoot\..\modules\WRADDBCommands.psm1
+    Import-Module $Script:ScriptPath\..\modules\WRADDBCommands.psm1
     write-host "Import Module WRADCommands"
 }
 
@@ -12,8 +14,8 @@ if(!(get-module WRADDBCommands)){
 #    Import-Module C:\Data\Function-Write-Log.ps1
 #    write-host "Import Module Function-Write-Log"
 #}
-
-Enable-UDLogging -FilePath "C:\Data\Logs\UDLog.txt"
+$date = Get-Date -UFormat "%Y%m%d"
+Enable-UDLogging -FilePath "C:\Data\Logs\UDLog_$date.txt"
 
 
 #if((Get-WRADUser).Count = 0) {
@@ -361,7 +363,6 @@ $UsrAGrp = New-UDPage -Name "UserUndGruppen" -AuthorizedRole @("Auditor") -Conte
 $Script:ActualWRADSettings = Get-WRADSetting
 
 $Settings = New-UDPage -Name "Einstellungen" -AuthorizedRole @("WRADadmin","Auditor") -Content {
-    $WRADSettings = Get-WRADSetting
     New-UDRow {
         New-UDColumn -size 3 -Content {
 			
@@ -399,32 +400,32 @@ $Settings = New-UDPage -Name "Einstellungen" -AuthorizedRole @("WRADadmin","Audi
 
                 #Look for changes
                 $ns = 0
-                $newSetting = ""
+                $newSettings = "Update-WRADSetting"
                 Write-UDLog -Message "Check settings"
 
                 For($i=0; $i -le $WRADSettingsNew.length-1; $i++) {
                    
                     if($Script:ActualWRADSettings[$i].SettingValue -ne $WRADSettingsNew[$i]){
-                        $cs = $WRADSettingsNew[$i]
-                        Write-UDLog -Message "New Setting $cs" -Level Info
-                        $Script:ActualWRADSettings[$i].SettingValue = $WRADSettingsNew[$i]
+                        Write-UDLog -Message "New Setting $($WRADSettingsNew[$i])" -Level Info
+                        #$Script:ActualWRADSettings[$i].SettingValue = $WRADSettingsNew[$i]
                         $ns = 1
+
+                        $newSettings += " -$($Script:ActualWRADSettings[$i].SettingName) '$($WRADSettingsNew[$i])'"
                     }
-
-                    
-
-                    $newSettings += " $($WRADSettingsNew[$i])"
                 }
                 
                 #Save new settings
                 if($ns){
                     if(!(get-module WRADDBCommands)){
-                        Import-Module C:\Users\Administrator\Desktop\BTI7301-2018-WRAD\src\modules\WRADDBCommands.psm1
+                        Import-Module $Script:ScriptPath\..\modules\WRADDBCommands.psm1
                         Write-UDLog -Message "Import Module WRADCommands"
                     }
 
+                    $Script:ActualWRADSettings = Get-WRADSetting
+
                     try {
-                        Update-WRADSetting -$newSettings -verbose
+                        Write-UDLog -Message $newSettings
+                        Invoke-Expression $newSettings
                         
                     } 
                     catch {
