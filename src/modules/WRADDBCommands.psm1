@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 
 $null = [System.Reflection.Assembly]::LoadWithPartialName('MySql.Data')
-$BuiltinParameters = @("ErrorAction","WarningAction","Verbose","ErrorVariable","WarningVariable","OutVariable","OutBuffer","Debug","Reference","NoObjectGUID")
+$BuiltinParameters = @("ErrorAction","WarningAction","Verbose","ErrorVariable","WarningVariable","OutVariable","OutBuffer","Debug","Reference","NoObjectGUID","ExistentObjectGUID","UserPrincipalNameNoDomain")
 
 function Connect-WRADDatabase {
     begin
@@ -153,6 +153,10 @@ function Get-WRADUser {
 		[string]$UserPrincipalName,
 
         [Parameter(ParameterSetName="ACTUAL")]
+		[ValidateNotNullOrEmpty()]
+		[string]$UserPrincipalNameNoDomain,
+
+        [Parameter(ParameterSetName="ACTUAL")]
         [Parameter(ParameterSetName="REFERENCE")]
 		[ValidateNotNullOrEmpty()]
 		[string]$DisplayName,
@@ -210,10 +214,21 @@ function Get-WRADUser {
 
         if($NoObjectGUID){
             if($FirstParameter){
-                $Query += ' WHERE `ObjectGUID` LIKE "noguid%" '
+                $Query += ' WHERE '
+                $FirstParameter = $false
             } else {
-                $Query += ' AND `ObjectGUID` LIKE "noguid%" '
+                $Query += ' AND '
             }
+            $Query += '`ObjectGUID` LIKE "noguid%"'
+        }    
+        if($UserPrincipalNameNoDomain){
+            if($FirstParameter){
+                $Query += ' WHERE '
+                $FirstParameter = $false
+            } else {
+                $Query += ' AND '
+            }
+            $Query += '`UserPrincipalName` LIKE "'+$UserPrincipalNameNoDomain+'@%" '
         }
     
 	}
@@ -1211,6 +1226,10 @@ function Get-WRADGroupOfUser {
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
 
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[Switch]$ExistentObjectGUID,
+
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
@@ -1226,13 +1245,17 @@ function Get-WRADGroupOfUser {
         $Table = 'WRADUserGroup'
         $QueryEnd = ''
         $Query = 'SELECT * FROM '+$Table;
+        $FirstParameter = $true;
         if($Reference){
             $Table = 'WRADRefUserGroup'
             $QueryEnd = ' INNER JOIN WRADRefUser ON WRADRefUserGroup.UserObjectGUID = WRADRefUser.ObjectGUID INNER JOIN WRADRefGroup ON WRADRefUserGroup.GroupObjectGUID = WRADRefGroup.ObjectGUID'
             $Query = 'SELECT WRADRefUser.Username,WRADRefGroup.CommonName,WRADRefUserGroup.CreatedDate FROM '+$Table;
-        }
 
-        $FirstParameter = $true;
+            if($ExistentObjectGUID){
+                $QueryEnd += ' WHERE WRADRefUser.ObjectGUID NOT LIKE "noguid%" AND WRADRefGroup.ObjectGUID NOT LIKE "noguid%"'
+                $FirstParameter = $false
+            }
+        }
 
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
@@ -1433,6 +1456,10 @@ function Get-WRADGroupOfGroup {
 		[ValidateNotNullOrEmpty()]
 		[Switch]$Reference,
 
+        [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[Switch]$ExistentObjectGUID,
+
         [Parameter(ParameterSetName="ACTUAL", Mandatory=$false)]
         [Parameter(ParameterSetName="REFERENCE", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
@@ -1452,6 +1479,11 @@ function Get-WRADGroupOfGroup {
             $Table = 'WRADRefGroupGroup'
             $QueryEnd = ' INNER JOIN WRADRefGroup AS cg ON WRADRefGroupGroup.ChildGroupObjectGUID = cg.ObjectGUID INNER JOIN WRADRefGroup AS pg ON WRADRefGroupGroup.ParentGroupObjectGUID = pg.ObjectGUID'
             $Query = 'SELECT cg.CommonName AS ChildGroup,pg.CommonName AS ParentGroup,WRADRefGroupGroup.CreatedDate FROM '+$Table;
+  
+            if($ExistentObjectGUID){
+                $QueryEnd += ' WHERE cg.ObjectGUID NOT LIKE "noguid%" AND pg.ObjectGUID NOT LIKE "noguid%"'
+                $FirstParameter = $false
+            }
         }
         
         $FirstParameter = $true;
@@ -2171,53 +2203,6 @@ function New-WRADExcludedGroup {
             }
 
             Write-Verbose "Invoking INSERT SQL Query on table $Table";
-			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
-		}
-		catch
-		{
-			Write-Error -Message $_.Exception.Message
-			break
-		}
-	}
-	End
-	{
-	}
-}
-
-function Clear-WRADReference {
-    Param
-	(
-        [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
-		[Switch]$Force
-	)
-	begin
-	{
-        $Tables = @("WRADRefUserGroup","WRADRefGroupGroup","WRADRefUser","WRADRefGroup")
-        $Query = ''
-        $QueryParts = @()
-
-        $Tables | ForEach {
-                $QueryParts += "DELETE FROM $_"
-        }
-
-        $Query += ($QueryParts -join "; ")
-	}
-	Process
-	{
-		try
-		{
-            if(!$Force){
-                $Reply = Read-Host -Prompt "Are you sure to delete all reference Tables?[y/n]"
-                if ( $Reply -notmatch "[yY]" ) { 
-                    $CustomError = "Command aborted by user"
-                    throw($CustomError)
-                }
-            } else {
-                Write-Verbose "Force parameter specified";
-            }
-
-            Write-Verbose "Invoking TRUNCATE SQL Query on all reference tables";
 			Invoke-MariaDBQuery -Query $Query -ErrorAction Stop;
 		}
 		catch
