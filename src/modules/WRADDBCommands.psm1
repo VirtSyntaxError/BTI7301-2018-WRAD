@@ -408,7 +408,11 @@ function New-WRADUser {
                 }
 
                 $QueryVariable += '`'+$_+'`'
-                $QueryValue += ' "'+$Value+'"'
+                if($_ -eq "LastLogonTimestamp" -and $Value -eq "") {
+                    $QueryValue += ' NULL '
+                } else {
+                    $QueryValue += ' "'+$Value+'"'
+                }
             }
         }
 
@@ -595,7 +599,11 @@ function Update-WRADUser {
                 if($_ -eq "NewObjectGUID"){
                     $QueryValue += ' `ObjectGUID` = "'+$NewObjectGUID+'" '
                 } else {
-                    $QueryValue += ' `'+$_+'` = "'+$Value+'" '
+                     if($_ -eq "LastLogonTimestamp" -and $Value -eq "") {
+                        $QueryValue += ' `'+$_+'` = NULL '
+                    } else {
+                        $QueryValue += ' `'+$_+'` = "'+$Value+'" '
+                    }
                 }
             }
         }

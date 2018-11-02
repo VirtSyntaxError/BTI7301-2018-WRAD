@@ -7,7 +7,7 @@ function Import-WRADcsv
         [String]$csvPath,
         [Parameter(Mandatory=$true)]
         [ValidateSet('Users','Groups')]
-		[string]$Type
+		[string]$ImportAs
 	)
 <#
     try 
@@ -24,7 +24,14 @@ function Import-WRADcsv
     try
     {
         $csvData = Import-Csv -Path:$csvPath
-        Write-Host $csvData
+        ### validate Input, for every 
+        
+
+        ### write SOLL Data into DB
+
+
+
+        
     }
     catch
     {
@@ -32,4 +39,4 @@ function Import-WRADcsv
     }
 }
 # Example Function Call
-#Import-WRADcsv -csvPath "C:\Code\BFH.WRAD\doc\ImportTemplateUser.csv" -Type "Users"
+#Import-WRADcsv -csvPath "C:\Code\BFH.WRAD\doc\ImportTemplateUser.csv" -ImportAs "Users"
