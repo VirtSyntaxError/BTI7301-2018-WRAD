@@ -20,7 +20,7 @@
         $username = $u_ref.Username
         $old_guid = $u_ref.ObjectGUID
         $new_guid = ""
-        $user_ist = Get-WRADUser -UserPrincipalName $username
+        $user_ist = Get-WRADUser -UserPrincipalNameNoDomain $username
         # if no user found, leave guid, else update guid
         if ($user_ist){
             $new_guid = $user_ist.ObjectGUID
