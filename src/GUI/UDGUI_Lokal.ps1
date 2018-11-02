@@ -10,29 +10,8 @@ if(!(get-module WRADDBCommands)){
     write-host "Import Module WRADCommands"
 }
 
-#if(!(get-module Function-Write-Log)){
-#    Import-Module C:\Data\Function-Write-Log.ps1
-#    write-host "Import Module Function-Write-Log"
-#}
 $date = Get-Date -UFormat "%Y%m%d"
 Enable-UDLogging -FilePath "C:\Data\Logs\UDLog_$date.txt"
-
-
-#if((Get-WRADUser).Count = 0) {
-#    New-WRADUser -ObjectGUID 01 -SAMAccountName mmu -DistinguishedName mmu -UserPrincipalName "m.mustermann" -DisplayName "M. Mustermann" -Description "Max Mustermann" 
-#    New-WRADUser -ObjectGUID 02 -SAMAccountName sac -DistinguishedName sac -UserPrincipalName "s.achter" -DisplayName "S. Achter" -Description "Simon Achter"    
-#    New-WRADUser -ObjectGUID 03 -SAMAccountName aow -DistinguishedName aow -UserPrincipalName "a.owsen" -DisplayName "A. Owsen" -Description "Albert Owsen"
-#    New-WRADUser -ObjectGUID 04 -SAMAccountName ast -DistinguishedName ast -UserPrincipalName "a.stadler" -DisplayName "A. Stadler" -Description "Alexa Stadler"
-#
-#    New-WRADGroup -ObjectGUID 05 -SAMAccountName Auditor -CommonName Auditor -DistinguishedName Auditor -GroupType ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP -GroupTypeSecurity Security -Description "Auditoren Gruppe"
-#    New-WRADGroup -ObjectGUID 06 -SAMAccountName Auditor -CommonName Auditor -DistinguishedName Auditor -GroupType ADS_GROUP_TYPE_DOMAIN_LOCAL_GROUP -GroupTypeSecurity Security -Description "Auditoren Gruppe"
-#
-#    New-WRADGroupOfUser -UserObjectGUID 01 -GroupObjectGUID 05
-#}
-# Dashboard Daten
-
-
-
 
 $FpMBckgrn = "#95cc0000"
 $FpMBckgrnHvr = "#A1220C"
@@ -346,22 +325,52 @@ $UsrAGrp = New-UDPage -Name "UserUndGruppen" -AuthorizedRole @("Auditor") -Conte
 }
 
 #---------------------------------------------------------------------------------------------------------------
-#$WRADSettings = Get-WRADSetting
-# SettingID, SettingName, SettingValue
-# 1 ADRoleDepartmentLead                
-# 2 ADRoleAuditor                       
-# 3 ADRoleSysAdmin                      
-# 4 ADRoleApplOwner                     
-# 5 LogExternal             none        
-# 6 LogFilePath                         
-# 7 LogSyslogServer                     
-# 8 LogSyslogServerProtocol udp         
-# 9 SearchBase
-
-#$WRADSettings = Get-WRADSetting
 
 #Load outsourced Pages
 . .\pageSettings.ps1
+
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Benutzer Anlegen
+
+$PageAddUser = New-UDPage -Name "Add User or Group" -AuthorizedRole @("WRADadmin","Auditor") -Content {
+    New-UDRow {
+        #Add User
+		New-UDColumn -size 6 -Content {
+			New-UDInput -Title "Add User" -Id "FormAddUser" -Content {
+                
+                New-UDInputField -Type 'textbox' -Name 'un' -Placeholder 'Username' 
+                New-UDInputField -Type 'textbox' -Name 'dn' -Placeholder 'Displayname' 
+                New-UDInputField -Type 'select' -Name 'enabled' -Placeholder 'Enabled' -Values @("true", "false") 
+                
+            } -Endpoint {
+                param($un, $dn, $enabled)
+
+                $un = $un.trim()
+                $dn = $dn.trim()
+
+                if(-not ([string]::IsNullOrEmpty($un) -or [string]::IsNullOrEmpty($dn))){
+                    
+                } else {
+                    Write-UDLog -Level Info -Message "A string was empty. Username: $un Displayname: $dn"
+                    New-UDInputAction -Toast "A field is empty. Please fill all fields"
+                }
+            }
+        }
+        #Add Group
+		New-UDColumn -size 6 -Content {
+            New-UDInput -Title "Add Group" -Id "FormAddGroup" -Content {
+                
+                New-UDInputField -Type 'textbox' -Name 'cn' -Placeholder 'Common name' 
+                New-UDInputField -Type 'select' -Name 'gt' -Placeholder 'Group type' -Values @("DomainLocal", "Global", "Universal") 
+                New-UDInputField -Type 'select' -Name 'gts' -Placeholder 'Group type security' -Values @("Distribution", "Security") -DefaultValue "Security"
+                
+            } -Endpoint {
+                param($cn, $gt, $gts)
+
+            }
+        }
+    }
+}
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
