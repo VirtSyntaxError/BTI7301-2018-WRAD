@@ -117,7 +117,7 @@ function Write-WRADISTtoDB
 				New-WRADGroup -ObjectGUID:$group.ObjectGUID -SAMAccountName:$group.SamAccountName -CommonName:$group.Name -DistinguishedName:$group.DistinguishedName -GroupTypeSecurity:$group.GroupCategory -GroupType:$group.GroupScope -Description:$group.Description
 			}
 		}
-		Write-Verbose "COMPLETED writing Groups to DB"
+		Write-Verbose "FINISHED writing Groups to DB"
 
 		### Write Group in Group Membership to DB
 		Write-Verbose "START writing Group in Group Membership to DB";
@@ -137,7 +137,7 @@ function Write-WRADISTtoDB
 				}
 			}
 		}
-		Write-Verbose "COMPLETED writing Group of Group Membership to DB"
+		Write-Verbose "FINISHED writing Group of Group Membership to DB"
 
 		### Write Users from AD to DB
 		Write-Verbose "START writing Users from AD to DB";
@@ -180,7 +180,24 @@ function Write-WRADISTtoDB
 				}
 			}
 		}
-		Write-Verbose "COMPLETED writing Users to DB";
+		Write-Verbose "FINISHED writing Users to DB";
+
+		### Delete removed Users from DB
+		Write-Verbose "START cleaning up DB. Deleting the removed users/groups from DB.";
+		foreach($user in $DBusers){
+			if($ADusers.ObjectGUID -notcontains $user.ObjectGUID){
+				Write-Verbose "REMOVING user from DB: $user"
+				Remove-WRADUser -ObjectGUID:$user.ObjectGUID
+			}
+		}
+		### Delete removed Groups from DB
+		foreach($group in $DBgroups){
+			if($ADgroups.ObjectGUID -notcontains $group.ObjectGUID){
+				Write-Verbose "REMOVING group from DB: $group"
+				Remove-WRADGroup -ObjectGUID:$group.ObjectGUID
+			}
+		}
+		Write-Verbose "FINISHED cleaning up DB";
 	}
 	catch 
 	{
