@@ -1260,7 +1260,7 @@ function Get-WRADGroupOfUser {
             }
 
             if($ExistentObjectGUID){
-                $QueryEnd += ' WHERE WRADRefUser.ObjectGUID NOT LIKE "noguid%" AND WRADRefGroup.ObjectGUID NOT LIKE "noguid%"'
+                $QueryEnd += ' WHERE WRADRefUserGroup.UserObjectGUID NOT LIKE "noguid%" AND WRADRefUserGroup.GroupObjectGUID NOT LIKE "noguid%"'
                 $FirstParameter = $false
             }
         }
@@ -1497,7 +1497,7 @@ function Get-WRADGroupOfGroup {
             }
   
             if($ExistentObjectGUID){
-                $QueryEnd += ' WHERE cg.ObjectGUID NOT LIKE "noguid%" AND pg.ObjectGUID NOT LIKE "noguid%"'
+                $QueryEnd += ' WHERE WRADRefGroupGroup.ChildGroupObjectGUID NOT LIKE "noguid%" AND WRADRefGroupGroup.ParentGroupObjectGUID NOT LIKE "noguid%"'
                 $FirstParameter = $false
             }
         }
