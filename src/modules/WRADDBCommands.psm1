@@ -2411,7 +2411,6 @@ function New-WRADEvent {
 	{
 		try
 		{
-            write-host $Validation
             if (Invoke-Expression($Validation)){
                 $CustomError = "Event already exists"
                 throw($CustomError) 
