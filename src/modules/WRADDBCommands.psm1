@@ -2236,27 +2236,27 @@ function Get-WRADEvent {
     Param
 	(
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+		[AllowEmptyString()]
 		[String]$SrcUserObjectGUID,
 
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+		[AllowEmptyString()]
 		[String]$SrcGroupObjectGUID,
 
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+		[AllowEmptyString()]
 		[String]$SrcRefUserObjectGUID,
 
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+		[AllowEmptyString()]
 		[String]$SrcRefGroupObjectGUID,
 
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+		[AllowEmptyString()]
 		[String]$DestGroupObjectGUID,
 
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+		[AllowEmptyString()]
 		[String]$DestRefGroupObjectGUID,
 
         [Parameter(Mandatory=$false)]
@@ -2287,8 +2287,11 @@ function Get-WRADEvent {
                 if($_ -eq "NotResolved"){
                     $Query += ' `ResolvedDate` IS NULL'
                 } else {
-                    $Query += '`'+$_+'` = "'+$Value+'"'
-
+                    if($Value -eq ""){
+                        $Query += '`'+$_+'` IS NULL'
+                    } else {
+                        $Query += '`'+$_+'` = "'+$Value+'"'
+                    }
                 }
             }
         }
@@ -2346,27 +2349,27 @@ function New-WRADEvent {
     Param
 	(
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+        [AllowEmptyString()]
 		[String]$SrcUserObjectGUID,
 
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+        [AllowEmptyString()]
 		[String]$SrcGroupObjectGUID,
 
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+        [AllowEmptyString()]
 		[String]$SrcRefUserObjectGUID,
 
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+        [AllowEmptyString()]
 		[String]$SrcRefGroupObjectGUID,
 
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+        [AllowEmptyString()]
 		[String]$DestGroupObjectGUID,
 
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+        [AllowEmptyString()]
 		[String]$DestRefGroupObjectGUID,
 
         [Parameter(Mandatory=$false)]
@@ -2378,17 +2381,24 @@ function New-WRADEvent {
         $Table = 'WRADEvent'
         $QueryEnd = ') '
         $QueryMiddle = ' ) VALUES ('    
-            
         $Query = 'INSERT INTO '+$Table+' ('
         $QueryValue = @()
         $QueryVariable = @()
+        $Validation = "Get-WRADEvent "
 
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
                 [String]$Value = (Get-Variable -Name $_).Value
 
                 $QueryVariable += '`'+$_+'`'
-                $QueryValue += ' "'+$Value+'"'
+                $Validation += '-'+$_+' '
+                if($Value -eq ""){
+                    $QueryValue += ' NULL'
+                    $Validation += ' $null '
+                } else {
+                    $QueryValue += ' "'+$Value+'"'
+                    $Validation += $Value+' '
+                }
             }
         }
 
@@ -2401,9 +2411,8 @@ function New-WRADEvent {
 	{
 		try
 		{
-            Invoke-Expression(Get-WRADEvent $PSBoundParameters.toString())
-            throw("test")
-            if(Get-WRADEvent $PSBoundParameters.ToString()){
+            write-host $Validation
+            if (Invoke-Expression($Validation)){
                 $CustomError = "Event already exists"
                 throw($CustomError) 
             }
