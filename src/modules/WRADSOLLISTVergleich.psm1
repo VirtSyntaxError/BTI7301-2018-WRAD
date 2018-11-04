@@ -34,8 +34,8 @@ function Invoke-WRADSOLLISTVergleich{
     $usergroupsRef = Get-WRADGroupOfUser -Reference -ExistentObjectGUID
     $groupgroupsRef = Get-WRADGroupOfGroup -Reference -ExistentObjectGUID
 
-    # define empty error array
-    $ERR_list = @()
+    # define empty error list
+    $ERR_list = New-Object System.Collections.Generic.List[System.Object]
     # get old events that are not resolved
     $ERR_old = Get-WRADEvent -NotResolved
     
@@ -43,8 +43,14 @@ function Invoke-WRADSOLLISTVergleich{
     foreach($uIST in $usersIST){
         # get UPN
         $username_upn = $uIST.userPrincipalName
-        # get UPN without domain
-        $username = $username_upn.Substring(0,$username.IndexOf("@"))
+        # get UPN without domain (if contains domain)
+        $username = ""
+        if ($username.IndexOf("@") -gt 0){
+            $username = $username_upn.Substring(0,$username.IndexOf("@"))
+        } else {
+            $username = $username_upn
+        }
+        
         # try to get ref user
         $uRef = $usersRef | Where-Object -Property ObjectGUID -EQ $uIST.ObjectGUID
         # if no ref user found, add event to list
