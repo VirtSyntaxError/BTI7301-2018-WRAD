@@ -1,2 +1,5 @@
-ObjectGUID,Name,GroupScope,GroupCategory,Group1,Group2,Group3
-,AdminsIT,Universal,Security,,TRUE,
+ObjectGUID,Name,GroupScope,GroupCategory,Membership
+,AdminsIT,Universal,Security,Mailing1;Domain Admins
+,Group10,Global,Security,Mailing1
+,Mailing1,DomainLocal,Distribution,
+,Domain Admin,Global,Security,

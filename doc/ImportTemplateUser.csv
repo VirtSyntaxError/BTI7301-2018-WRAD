@@ -1,2 +1,5 @@
-ObjectGUID,DisplayName,UserPrincipalName,Enabled,Group1,Group2,Group3
-,Denis Schluch,Denis.Schluch@wrad.local,TRUE,TRUE,,TRUE
+ObjectGUID,DisplayName,UserPrincipalName,Enabled,Membership
+,Denis Schluch,Denis.Schluch@wrad.local,TRUE,Group10;AdminsIT
+,Bla Blup,bla.blup@wrad.local,TRUE,Group10
+,Sascha Banz,sascha.banz@wrad.local,FALSE,
+,Chrigu Jungo,chrigu.jungo@wrad.local,TRUE,Mailing1;Group10

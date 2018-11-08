@@ -72,8 +72,10 @@ function Write-WRADISTtoDB
 
 	try 
 	{
-		Write-Verbose "Loading PS Module WRADDBCommands";
+		Write-Verbose "Loading WRAD Custom PS Module WRADDBCommands";
 		Import-Module $PSScriptRoot\WRADDBCommands.psd1
+		Write-Verbose "Loading PS Module ActiveDirectory";
+		Import-Module ActiveDirectory
 	}
 	catch 
 	{
