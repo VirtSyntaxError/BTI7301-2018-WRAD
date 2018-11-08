@@ -2325,7 +2325,9 @@ function Set-WRADEventResolved {
 	{
         $Table = 'WRADEvent'
         [String]$Date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss")
-        $Query = 'UPDATE '+$Table+' SET `ResolvedDate` = "'+$Date+'" ';	
+        $Query = 'UPDATE '+$Table+' SET `ResolvedDate` = "'+$Date+'" WHERE `EventID` = '+$EventID;	
+
+
 	}
 	Process
 	{
