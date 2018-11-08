@@ -223,6 +223,9 @@ function Invoke-WRADSOLLISTVergleich{
         # if user or group is excluded, skip that event
         $excl_u = $excl_users | Where-Object {$_.ObjectGUID -eq $ev_new.SrcUser -or $_.ObjectGUID -eq $ev_new.SrcRefUser}
         $excl_g = $excl_groups | Where-Object {$_.ObjectGUID -eq $ev_new.SrcGroup -or $_.ObjectGUID -eq $ev_new.SrcRefGroup -or $_.ObjectGUID -eq $ev_new.DestGroup -or $_.ObjectGUID -eq $ev_new.DestRefGroup}
+        if ($excl_u -or $excl_g){
+            continue
+        }
         $ev_old = $ERR_old | Where-Object {$_.SrcUserObjectGUID.ToString() -eq $ev_new.SrcUser -and $_.SrcGroupObjectGUID.ToString() -eq $ev_new.SrcGroup -and $_.SrcRefUserObjectGUID.ToString() -eq $ev_new.SrcRefUser -and $_.SrcRefGroupObjectGUID.ToString() -eq $ev_new.SrcRefGroup -and $_.DestGroupObjectGUID.ToString() -eq $ev_new.DestGroup -and $_.DestRefGroupObjectGUID.ToString() -eq $ev_new.DestRefGroup -and $_.EventType -eq $ev_new.EventType}
         if ($ev_old){
             # if the event already exists, remove it from old
