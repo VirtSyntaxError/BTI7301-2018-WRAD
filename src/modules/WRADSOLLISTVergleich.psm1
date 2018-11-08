@@ -1,13 +1,13 @@
 ﻿class WRADEvent
 {
     [int]$EventID
-    [String]$SrcUser
-    [String]$SrcGroup
-    [String]$SrcRefUser
-    [String]$SrcRefGroup
-    [String]$DestGroup
-    [String]$DestRefGroup
-    [int]$EventType
+    [String]$SrcUser=""
+    [String]$SrcGroup=""
+    [String]$SrcRefUser=""
+    [String]$SrcRefGroup=""
+    [String]$DestGroup=""
+    [String]$DestRefGroup=""
+    [int]$EventType=""
 }
 function Invoke-WRADSOLLISTVergleich{
     # import DB module
@@ -33,6 +33,9 @@ function Invoke-WRADSOLLISTVergleich{
     # here only the ones referring users and groups that exist
     $usergroupsRef = Get-WRADGroupOfUser -Reference -ExistentObjectGUID
     $groupgroupsRef = Get-WRADGroupOfGroup -Reference -ExistentObjectGUID
+    # get excluded users & groups
+    $excl_users = Get-WRADExcludedUser
+    $excl_groups = Get-WRADExcludedGroup
 
     # define empty error list
     $ERR_list = New-Object System.Collections.Generic.List[System.Object]
@@ -217,8 +220,10 @@ function Invoke-WRADSOLLISTVergleich{
 
     # handle events
     foreach ($ev_new in $ERR_list){
-        #Write-Host $ev_old = $ERR_old " | Where-Object {"$_.SrcUserObjectGUID "-eq" $ev_new.SrcUser "-and" $_.SrcGroupObjectGUID "-eq" $ev_new.SrcGroup "-and" $_.SrcRefUserObjectGUID "-eq" $ev_new.SrcRefUser "-and" $_.SrcRefGroupObjectGUID "-eq" $ev_new.SrcRefGroup "-and" $_.DestGroupObjectGUID "-eq" $ev_new.DestGroup "-and" $_.DestRefGroupObjectGUID "-eq" $ev_new.DestRefGroup "-and" $_.EventType "-eq" $ev_new.EventType"}"
-        $ev_old = $ERR_old | Where-Object {$_.SrcUserObjectGUID -eq $ev_new.SrcUser -and $_.SrcGroupObjectGUID -eq $ev_new.SrcGroup -and $_.SrcRefUserObjectGUID -eq $ev_new.SrcRefUser -and $_.SrcRefGroupObjectGUID -eq $ev_new.SrcRefGroup -and $_.DestGroupObjectGUID -eq $ev_new.DestGroup -and $_.DestRefGroupObjectGUID -eq $ev_new.DestRefGroup -and $_.EventType -eq $ev_new.EventType}
+        # if user or group is excluded, skip that event
+        $excl_u = $excl_users | Where-Object {$_.ObjectGUID -eq $ev_new.SrcUser -or $_.ObjectGUID -eq $ev_new.SrcRefUser}
+        $excl_g = $excl_groups | Where-Object {$_.ObjectGUID -eq $ev_new.SrcGroup -or $_.ObjectGUID -eq $ev_new.SrcRefGroup -or $_.ObjectGUID -eq $ev_new.DestGroup -or $_.ObjectGUID -eq $ev_new.DestRefGroup}
+        $ev_old = $ERR_old | Where-Object {$_.SrcUserObjectGUID.ToString() -eq $ev_new.SrcUser -and $_.SrcGroupObjectGUID.ToString() -eq $ev_new.SrcGroup -and $_.SrcRefUserObjectGUID.ToString() -eq $ev_new.SrcRefUser -and $_.SrcRefGroupObjectGUID.ToString() -eq $ev_new.SrcRefGroup -and $_.DestGroupObjectGUID.ToString() -eq $ev_new.DestGroup -and $_.DestRefGroupObjectGUID.ToString() -eq $ev_new.DestRefGroup -and $_.EventType -eq $ev_new.EventType}
         if ($ev_old){
             # if the event already exists, remove it from old
             $ERR_old = $ERR_old | Where-Object {$_.EventID -ne $ev_old.EventID}
