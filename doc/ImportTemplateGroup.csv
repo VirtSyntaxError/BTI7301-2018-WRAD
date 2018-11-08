@@ -1,2 +1,2 @@
-ObjectGUID,Name,SamAccountName,DistinguishedName,Description,GroupScope,GroupCategory,Group1,Group2,Group3
-,AdminsIT,AdminsIT,"CN=AdminsIT,OU=Groups,OU=WRAD,DC=WRAD,DC=local",blabla,Universal,Security,,TRUE,
+ObjectGUID,Name,GroupScope,GroupCategory,Group1,Group2,Group3
+,AdminsIT,Universal,Security,,TRUE,

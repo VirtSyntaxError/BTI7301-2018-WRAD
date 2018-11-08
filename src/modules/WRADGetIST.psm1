@@ -93,7 +93,7 @@ function Write-WRADISTtoDB
 		$searchbase = (Get-ADRootDSE).rootDomainNamingContext
 	}
 
-	### Get actual AD Users and Groups
+	### Get actual AD Users and Groups from AD
 	$ADusers = Get-WRADADUsers -filter:$filter -searchbase:$searchbase 
 	$ADgroups = Get-WRADADGroups
 
@@ -204,9 +204,3 @@ function Write-WRADISTtoDB
 		Write-Error -Message $_.Exception.Message
 	}
 }
-
-
-#Example function calls
-#Get-WRADADUsers -filter 'Name -like "*Thor*"' -searchbase "OU=WRAD,DC=WRAD,DC=local"
-#Get-WRADADGroups -searchbase "OU=WRAD,DC=WRAD,DC=local"
-#Write-WRADISTtoDB

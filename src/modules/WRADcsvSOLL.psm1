@@ -32,7 +32,7 @@ function Import-WRADcsv
         $DBgroupofuser = Get-WRADGroupOfUser -Reference
 
         ### validate csv Input, for every column
-        
+        # tbd.
 
         ### write SOLL Group Data into Reference DB
         Write-Verbose "START writing Groups from csv to Reference DB";
@@ -53,7 +53,7 @@ function Import-WRADcsv
             Write-Verbose "START cleaning up DB. Deleting the removed groups from Reference DB.";
             foreach($group in $DBgroups){
                 if($csvData.ObjectGUID -notcontains $group.ObjectGUID){
-                    # tbd. check if there are still existing group memberships, if yes throw error to first update the memberships
+                    # still existing memberships dont have to be checked, the deletion cascades to the memberships
                     Write-Verbose "REMOVING group from Reference DB: $group"
                     Remove-WRADGroup -ObjectGUID:$group.ObjectGUID
                 }
@@ -80,7 +80,7 @@ function Import-WRADcsv
             Write-Verbose "START cleaning up DB. Deleting the removed users from Reference DB.";
             foreach($user in $DBusers){
                 if($csvData.ObjectGUID -notcontains $user.ObjectGUID){
-                    # tbd. check if there are still existing group memberships, if yes throw error to first update the memberships
+                    # still existing memberships dont have to be checked, the deletion cascades to the memberships
                     Write-Verbose "REMOVING user from Reference DB: $user"
                     Remove-WRADUser -Reference -ObjectGUID:$user.ObjectGUID
                 }
