@@ -10,6 +10,7 @@ TRUNCATE TABLE WRADRefUser;
 TRUNCATE TABLE WRADRefGroup;
 TRUNCATE TABLE WRADGroup;
 TRUNCATE TABLE WRADUser;
+TRUNCATE TABLE WRADEvent;
 SET FOREIGN_KEY_CHECKS = 1;
 INSERT INTO WRADUser(ObjectGUID, SAMAccountName, DistinguishedName, LastLogonTimestamp, userPrincipalName, DisplayName, CreatedDate, LastModifiedDate, Enabled, Description, Expired) VALUES
 	('guid1', 'furigod', 'CN=\"dario\",CN=\"example\",CN=\"local\"', NULL, 'furigod', 'Dario Furigo', '0000-00-00 00:00:00.000000', '0000-00-00 00:00:00.000000', 1, '', 0),
