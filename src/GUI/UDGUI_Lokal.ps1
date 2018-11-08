@@ -328,49 +328,9 @@ $UsrAGrp = New-UDPage -Name "UserUndGruppen" -AuthorizedRole @("Auditor") -Conte
 
 #Load outsourced Pages
 . .\pageSettings.ps1
-
+. .\pageAddUserAndGroup.ps1
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#Benutzer Anlegen
-
-$PageAddUser = New-UDPage -Name "Add User or Group" -AuthorizedRole @("WRADadmin","Auditor") -Content {
-    New-UDRow {
-        #Add User
-		New-UDColumn -size 6 -Content {
-			New-UDInput -Title "Add User" -Id "FormAddUser" -Content {
-                
-                New-UDInputField -Type 'textbox' -Name 'un' -Placeholder 'Username' 
-                New-UDInputField -Type 'textbox' -Name 'dn' -Placeholder 'Displayname' 
-                New-UDInputField -Type 'select' -Name 'enabled' -Placeholder 'Enabled' -Values @("true", "false") 
-                
-            } -Endpoint {
-                param($un, $dn, $enabled)
-
-                $un = $un.trim()
-                $dn = $dn.trim()
-
-                if(-not ([string]::IsNullOrEmpty($un) -or [string]::IsNullOrEmpty($dn))){
-                    
-                } else {
-                    Write-UDLog -Level Info -Message "A string was empty. Username: $un Displayname: $dn"
-                    New-UDInputAction -Toast "A field is empty. Please fill all fields"
-                }
-            }
-        }
-        #Add Group
-		New-UDColumn -size 6 -Content {
-            New-UDInput -Title "Add Group" -Id "FormAddGroup" -Content {
-                
-                New-UDInputField -Type 'textbox' -Name 'cn' -Placeholder 'Common name' 
-                New-UDInputField -Type 'select' -Name 'gt' -Placeholder 'Group type' -Values @("DomainLocal", "Global", "Universal") 
-                New-UDInputField -Type 'select' -Name 'gts' -Placeholder 'Group type security' -Values @("Distribution", "Security") -DefaultValue "Security"
-                
-            } -Endpoint {
-                param($cn, $gt, $gts)
-
-            }
-        }
-    }
-}
+#Benutzer und Gruppe hinzufügen
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -386,6 +346,6 @@ $theme = New-UDTheme -Name "AzureChngBtn" -Definition @{
 
 Start-UDDashboard -Port 10000 -AllowHttpForLogin -Content {
     
-    New-UdDashboard -Login $login -Pages @($PageALDashboard, $PageAtDashboard, $PageSADashboard, $PageAODashboard, $PageASDashboard, $UsrAGrp, $PageSettings) -Title "Mock up Dashboards" -Color 'Black' -Theme $theme
+    New-UdDashboard -Login $login -Pages @($PageALDashboard, $PageAtDashboard, $PageSADashboard, $PageAODashboard, $PageASDashboard, $UsrAGrp, $PageSettings, $PageAddUser) -Title "Mock up Dashboards" -Color 'Black' -Theme $theme
     
 } -Verbose -debug
