@@ -40,14 +40,15 @@ function Import-WRADcsv
             Write-Verbose "START writing Groups from csv to Reference DB";
             foreach($group in $csvData){
                 if($DBgroups.ObjectGUID -contains $group.ObjectGUID -and $DBgroups.CommonName -contains $group.Name){
-                    Write-Verbose "Updating Group in Reference DB: $group"
+                    Write-Verbose "UPDATING Group in Reference DB: $group"
                     Update-WRADGroup -Reference -ObjectGUID:$group.ObjectGUID -CommonName:$group.Name -GroupTypeSecurity:$group.GroupCategory -GroupType:$group.GroupScope
                 }
                 else{
-                    Write-Verbose "Write New Group to Reference DB: $group"
+                    Write-Verbose "WRITING New Group to Reference DB: $group"
                     New-WRADGroup -Reference -CommonName:$group.Name -GroupTypeSecurity:$group.GroupCategory -GroupType:$group.GroupScope
                 }
             }
+
             ## Write Group in Group Memberships to Reference DB
             Write-Verbose "START writing Group in Group Membership to Reference DB";
             ForEach($group in $csvData){
@@ -58,17 +59,20 @@ function Import-WRADcsv
                 foreach($parentObjectGUID in $ParentObjectGUIDs){
                     $alreadyExisting = Get-WRADGroupOfGroup -Reference -ChildGroupObjectGUID:$group.ObjectGUID -ParentGroupObjectGUID:$parentObjectGUID.ObjectGUID
                     if(!$alreadyExisting){
+                        Write-Verbose "WRITING New Group in group membership to Reference DB. Child:$($group.ObjectGUID), Parent:$($parentObjectGUID.ObjectGUID)"
                         New-WRADGroupOfGroup -Reference -ChildGroupObjectGUID:$group.ObjectGUID -ParentGroupObjectGUID:$parentObjectGUID.ObjectGUID
                     }
                 }
-                ## Delete the removed Group Memberships from DB
+                ## Delete the csv removed Group Memberships from DB
                 $DBexistinggroupofgroup = $DBgroupofgroup | Where ChildGroupObjectGUID -eq $group.ObjectGUID
                 foreach($t in $DBexistinggroupofgroup){
                     if($ParentObjectGUIDs.ObjectGUID -notcontains $t.ParentGroupObjectGUID){
+                        Write-Verbose "REMOVING group in group membership from Reference DB. Child:$($group.ObjectGUID), Parent:$($t.ParentGroupObjectGUID)"
                         Remove-WRADGroupOfGroup -Reference -ChildGroupObjectGUID:$group.ObjectGUID -ParentGroupObjectGUID:$t.ParentGroupObjectGUID
                     }
                 }
             }
+
             ## Delete csv removed Groups from DB
             Write-Verbose "START cleaning up DB. Deleting the removed groups from Reference DB.";
             foreach($group in $DBgroups){
@@ -87,16 +91,37 @@ function Import-WRADcsv
             Write-Verbose "START writing Users from csv to Reference DB";
             foreach($user in $csvData){
                 if($DBusers.ObjectGUID -contains $user.ObjectGUID){
-                    Write-Verbose "Updating User to Reference DB: $user"
+                    Write-Verbose "UPDATING User to Reference DB: $user"
                     Update-WRADUser -ObjectGUID:$user.ObjectGUID -UserName:$user.UserPrincipalName -DisplayName:$user.DisplayName -Enabled:$user.Enabled
                 }
                 else{
-                    Write-Verbose "Writing new User to Reference DB: $user"
+                    Write-Verbose "WRITING new User to Reference DB: $user"
                     New-WRADUser -Reference -UserName:$user.UserPrincipalName -DisplayName:$user.DisplayName -Enabled:$user.Enabled
                 }
-            }
-            ## Write User in Group Memberships to Reference DB
 
+                ## Write User in Group Memberships to Reference DB
+                Write-Verbose "START writing new Group Memership of User: $($user.ObjectGUID)"
+                $GroupObjectGUIDs = $user.Membership -split ";" | Get-WRADGroup -Reference -CommonName:$_ # tbd.
+                if(!$user.ObjectGUID){
+                    $user.ObjectGUID = $(Get-WRADUser -Reference -UserName:$user.UserPrincipalName).ObjectGUID
+                }
+                foreach($GroupObjectGUID in $GroupObjectGUIDs){
+                    $alreadyExisting = Get-WRADGroupOfUser -Reference -UserObjectGUID:$user.ObjectGUID -GroupObjectGUID:$GroupObjectGUID.ObjectGUID
+                    if(!$alreadyExisting){
+                        Write-Verbose "WRITING new User in group membership to Reference DB. User:$($user.ObjectGUID), Group:$($GroupObjectGUID.ObjectGUID)"
+                        New-WRADGroupOfUser -Reference -UserObjectGUID:$user.ObjectGUID -GroupObjectGUID:$GroupObjectGUID.ObjectGUID
+                    }
+                }
+
+                ## Delete the csv removed User in Group Memberships from DB
+                $DBexistinggroupofuser = $DBgroupofuser | Where UserObjectGUID -eq $user.ObjectGUID
+                foreach($t in $DBexistinggroupofuser){
+                    if($GroupObjectGUIDs.ObjectGUID -notcontains $t.GroupObjectGUID){
+                        Write-Verbose "REMOVING user in group membership from Reference DB. User:$($user.ObjectGUID), Group:$($t.GroupObjectGUID)"
+                        Remove-WRADGroupOfUser -Reference -UserObjectGUID:$user.ObjectGUID -GroupObjectGUID:$t.GroupObjectGUID
+                    }
+                }
+            }
             
             ## Delete csv removed Users from DB
             Write-Verbose "START cleaning up DB. Deleting the removed users from Reference DB.";
