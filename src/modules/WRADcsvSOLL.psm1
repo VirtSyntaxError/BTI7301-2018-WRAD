@@ -61,7 +61,7 @@ function Import-WRADcsv
                 }
                 Write-Verbose "WORKING on Memberships of: $group"
                 if($group.Membership){
-                    $ParentObjectGUIDs = $group.Membership -split ";" | %{Get-WRADGroup -Reference -CommonName:$_} # tbd.
+                    $ParentObjectGUIDs = $group.Membership -split ";" | %{Get-WRADGroup -Reference -CommonName:$_}
                     Write-Verbose "Parent Groups: $($ParentObjectGUIDs.ObjectGUID)"
                     foreach($parentObjectGUID in $ParentObjectGUIDs){
                         $alreadyExisting = Get-WRADGroupOfGroup -Reference -ChildGroupObjectGUID:$group.ObjectGUID -ParentGroupObjectGUID:$parentObjectGUID.ObjectGUID
@@ -100,19 +100,20 @@ function Import-WRADcsv
         ### write SOLL User Data into Reference DB
         if($ImportAs -eq 'Users')
         {
-            [Boolean]$csvData.Enabled = $csvData.Enabled
             Write-Verbose "START writing Users from csv to Reference DB";
             foreach($user in $csvData){
+                [Boolean]$user.Enabled = $user.Enabled
                 if(!$user.ObjectGUID){
                     $user.ObjectGUID = $(Get-WRADUser -Reference -UserName:$user.UserPrincipalName).ObjectGUID
                 }
                 if($DBusers.ObjectGUID -contains $user.ObjectGUID){
                     Write-Verbose "UPDATING User to Reference DB: $user"
-                    Update-WRADUser -ObjectGUID:$user.ObjectGUID -UserName:$user.UserPrincipalName -DisplayName:$user.DisplayName -Enabled:$user.Enabled
+                    Update-WRADUser -Reference -ObjectGUID:$user.ObjectGUID -UserName:$user.UserPrincipalName -DisplayName:$user.DisplayName -Enabled:$user.Enabled
                 }
                 else{
                     Write-Verbose "WRITING new User to Reference DB: $user"
                     New-WRADUser -Reference -UserName:$user.UserPrincipalName -DisplayName:$user.DisplayName -Enabled:$user.Enabled
+                    $user.ObjectGUID = $(Get-WRADUser -Reference -UserName:$user.UserPrincipalName).ObjectGUID
                 }
 
                 ## Write User in Group Memberships to Reference DB
