@@ -39,7 +39,7 @@ $PageSettings = New-UDPage -Name "Settings" -AuthorizedRole @("WRADadmin","Audit
                 #Look for changes
                 $ns = 0
                 $newSettings = "Update-WRADSetting"
-                Write-UDLog -Level Info -Message "Check settings"
+                Write-UDLog -Level Warning -Message "Check settings"
 
                 For($i=0; $i -le $WRADSettingsNew.length-1; $i++) {
                    
@@ -56,23 +56,23 @@ $PageSettings = New-UDPage -Name "Settings" -AuthorizedRole @("WRADadmin","Audit
                 if($ns){
                     if(!(get-module WRADDBCommands)){
                         Import-Module $Script:ScriptPath\..\modules\WRADDBCommands.psm1
-                        Write-UDLog -Message "Import Module WRADCommands"
+                        Write-UDLog -Level Warning -Message "Import Module WRADCommands"
                     }
 
                     try {
-                        Write-UDLog -Message $newSettings
+                        Write-UDLog -Level Warning -Message $newSettings
                         Invoke-Expression $newSettings
                         
                     } 
                     catch {
-                        Write-UDLog -Message "CATCH: $($_.Exception.Message)"
+                        Write-UDLog -Level Warning -Message "CATCH: $($_.Exception.Message)"
                     }
 
                     $Script:ActualWRADSettings = Get-WRADSetting
                     
                 }
                           
-                Write-UDLog -Message "End of code 'insert settings'"
+                Write-UDLog -Level Warning -Message "End of code 'insert settings'"
                 New-UDInputAction -RedirectUrl "/Einstellungen"
 
             }

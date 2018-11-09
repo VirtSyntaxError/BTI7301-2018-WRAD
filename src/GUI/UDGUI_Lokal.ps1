@@ -11,7 +11,9 @@ if(!(get-module WRADDBCommands)){
 }
 
 $date = Get-Date -UFormat "%Y%m%d"
-Enable-UDLogging -FilePath "C:\Data\Logs\UDLog_$date.txt"
+Enable-UDLogging -FilePath "C:\Data\Logs\UDLog_$date.txt" -Level Warning
+
+#----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 $FpMBckgrn = "#95cc0000"
 $FpMBckgrnHvr = "#A1220C"
@@ -91,6 +93,8 @@ $auth = New-UDAuthenticationMethod -Endpoint {
 
     if ($Credentials.UserName -eq "Auditor" -and $Credentials.GetNetworkCredential().Password -eq "Auditor") {
 		New-UDAuthenticationResult -Success -UserName $Credentials.UserName -Role "Auditor"
+    } ElseIf ($Credentials.UserName -eq "Admin" -and $Credentials.GetNetworkCredential().Password -eq "Admin") {
+		New-UDAuthenticationResult -Success -UserName $Credentials.UserName -Role "WRADadmin"
     }
 
 	New-UDAuthenticationResult -ErrorMessage "You are not allowed to login!"
@@ -330,7 +334,28 @@ $UsrAGrp = New-UDPage -Name "UserUndGruppen" -AuthorizedRole @("Auditor") -Conte
 . .\pageSettings.ps1
 . .\pageAddUserAndGroup.ps1
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#Benutzer und Gruppe hinzufügen
+#Edit User
+
+#Dynamic Pages 
+
+$AllUserGrid = @()
+$AllUser = Get-WRADUser -Reference
+Write-UDLog -Level Warning -Message "There are $($AllUser.Count) Users"
+ForEach($User in $AllUser){
+    $AllUserGrid += @{Username = $User.Username; DisplayName = $User.DisplayName; CreatedDate = $User.CreatedDate; Enabled = $User.Enabled; Edit =(New-UDLink -Text "Wikipedia" -Url "https://en.wikipedia.org/wiki/Fox")} #(New-UDButton -Text "Edit")
+}
+
+$PageEditUser = New-UDPage -Name "Edit User" -AuthorizedRole @("WRADadmin","Auditor") -Content {
+    New-UDRow {
+        New-UDColumn -Size 6 -Content {
+            New-UDGrid -Title "All user" -Header @("Username", "Displayname", "Create date", "Enabled", "Edit") -Properties @("Username", "DisplayName", "CreatedDate", "Enabled", "Edit") -Endpoint {
+
+                Write-UDLog -Level Warning -Message "AllUserGrid $($AllUserGrid.Count) Username:$($AllUserGrid[0].Username) DisplayName:$($AllUserGrid[0].DisplayName)" 
+                $AllUserGrid | Out-UDGridData
+            }
+        }
+    }
+}
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -346,6 +371,6 @@ $theme = New-UDTheme -Name "AzureChngBtn" -Definition @{
 
 Start-UDDashboard -Port 10000 -AllowHttpForLogin -Content {
     
-    New-UdDashboard -Login $login -Pages @($PageALDashboard, $PageAtDashboard, $PageSADashboard, $PageAODashboard, $PageASDashboard, $UsrAGrp, $PageSettings, $PageAddUser) -Title "Mock up Dashboards" -Color 'Black' -Theme $theme
+    New-UDDashboard -Login $login -Pages @($PageALDashboard, $PageAtDashboard, $PageSADashboard, $PageAODashboard, $PageASDashboard, $UsrAGrp, $PageSettings, $PageAddUser, $PageEditUser) -Title "Mock up Dashboards" -Color 'Black' -Theme $theme
     
-} -Verbose -debug
+} #-Verbose -debug

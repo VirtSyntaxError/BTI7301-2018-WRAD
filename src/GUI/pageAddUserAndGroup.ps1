@@ -28,12 +28,12 @@ $PageAddUser = New-UDPage -Name "Add User or Group" -AuthorizedRole @("WRADadmin
                     #Load Module
                     if(!(get-module WRADDBCommands)){
                         Import-Module $Script:ScriptPath\..\modules\WRADDBCommands.psm1
-                        Write-UDLog -Level Info -Message "Import Module WRADCommands"
+                        Write-UDLog -Level Warning -Message "Import Module WRADCommands"
                     }
 
                     #Check for unique Username
                     if((Get-WRADUser -Reference -UserName $un).count -eq 0){
-                        Write-UDLog -Message "Add user $un $dn $active $nbld"
+                        Write-UDLog -Level Warning -Message "Add user $un $dn $active $nbld"
                         New-WRADUser -Reference -Username "$un" -DisplayName "$dn" -Enabled $nbld
 
                         New-UDInputAction -Toast "The user '$un' was added." -Duration 5000 -ClearInput
@@ -72,15 +72,15 @@ $PageAddUser = New-UDPage -Name "Add User or Group" -AuthorizedRole @("WRADadmin
                     #Load Module
                     if(!(get-module WRADDBCommands)){
                         Import-Module $Script:ScriptPath\..\modules\WRADDBCommands.psm1
-                        Write-UDLog -Level Info -Message "Import Module WRADCommands"
+                        Write-UDLog -Level Warning -Message "Import Module WRADCommands"
                     }
 
                     #Save Group
                     New-WRADGroup -Reference -CommonName "$cmnnm" -GroupType $grptyp -GroupTypeSecurity $grptypsec
-                    Write-UDLog -Message "Group Added"
+                    Write-UDLog -Level Warning -Message "Group Added"
                     New-UDInputAction -Toast "The group '$cmnnm' is saved." -ClearInput -Duration 5000
                 } else {
-                    Write-UDLog -Message "No CommonName"
+                    Write-UDLog -Level Warning -Message "No CommonName"
                     New-UDInputAction -Toast "Please give the group a CommonName." -Duration 5000
                 }
 
