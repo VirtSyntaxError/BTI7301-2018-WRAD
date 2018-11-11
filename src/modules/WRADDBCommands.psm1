@@ -6,15 +6,13 @@ $BuiltinParameters = @("ErrorAction","WarningAction","Verbose","ErrorVariable","
 function Connect-WRADDatabase {
     begin
 	{
-        $PasswordPlain = "ktX4xRb7qxSw6oPctx"
-        $Password = ConvertTo-SecureString -AsPlainText $PasswordPlain -Force
+        $PasswordPlain = Get-Content ($PSScriptRoot+"\db_pw.ini")
         $Username = "wradadmin"
         $Server = "localhost"
         $Port = "3306"
         $Database = "WRAD"
         $SSLMode = "none"
 
-        $Credentials =  New-Object -Typename System.Management.Automation.PSCredential -Argumentlist $Username,$Password
         $ConnectionString = "server=$Server;port=$Port;uid=$Username;pwd=$PasswordPlain;database=$Database;SSLMode=$SSLMode"
 	}
 	Process
