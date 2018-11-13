@@ -342,7 +342,7 @@ $AllUserGrid = @()
 $AllUser = Get-WRADUser -Reference
 Write-UDLog -Level Warning -Message "There are $($AllUser.Count) Users"
 ForEach($User in $AllUser){
-    $AllUserGrid += @{Username = $User.Username; DisplayName = $User.DisplayName; CreatedDate = $User.CreatedDate; Enabled = $User.Enabled; Edit =(New-UDLink -Text "Wikipedia" -Url "https://en.wikipedia.org/wiki/Fox")} #(New-UDButton -Text "Edit")
+    $AllUserGrid += @{Username = $User.Username; DisplayName = $User.DisplayName; CreatedDate = $User.CreatedDate; Enabled = $User.Enabled; Edit =(New-UDLink -Text "Wikipedia" -Url "/:$($User.Username)")} #(New-UDButton -Text "Edit")
 }
 
 $PageEditUser = New-UDPage -Name "Edit User" -AuthorizedRole @("WRADadmin","Auditor") -Content {
