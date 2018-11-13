@@ -342,16 +342,64 @@ $AllUserGrid = @()
 $AllUser = Get-WRADUser -Reference
 Write-UDLog -Level Warning -Message "There are $($AllUser.Count) Users"
 ForEach($User in $AllUser){
-    $AllUserGrid += @{Username = $User.Username; DisplayName = $User.DisplayName; CreatedDate = $User.CreatedDate; Enabled = $User.Enabled; Edit =(New-UDLink -Text "Wikipedia" -Url "/:$($User.Username)")} #(New-UDButton -Text "Edit")
+    $AllUserGrid += @{Username = $User.Username; DisplayName = $User.DisplayName; CreatedDate = $User.CreatedDate; Enabled = $User.Enabled; Edit =(New-UDLink -Text "Edit" -Url "/:$($User.Username)")} #(New-UDButton -Text "Edit")
 }
 
-$PageEditUser = New-UDPage -Name "Edit User" -AuthorizedRole @("WRADadmin","Auditor") -Content {
+$PageEditUser = New-UDPage -Name "Edit User" -URL "EditUser/:un" -AuthorizedRole @("WRADadmin","Auditor") -Content {
+    param($un)
+
     New-UDRow {
         New-UDColumn -Size 6 -Content {
             New-UDGrid -Title "All user" -Header @("Username", "Displayname", "Create date", "Enabled", "Edit") -Properties @("Username", "DisplayName", "CreatedDate", "Enabled", "Edit") -Endpoint {
 
                 Write-UDLog -Level Warning -Message "AllUserGrid $($AllUserGrid.Count) Username:$($AllUserGrid[0].Username) DisplayName:$($AllUserGrid[0].DisplayName)" 
                 $AllUserGrid | Out-UDGridData
+            }
+        }
+        if(-not [string]::IsNullOrEmpty($un)){
+        
+            #Get User and make him editable
+            $Script:EUuser = Get-WRADUser -Reference -UserName $un
+        
+            if($Script:EUuser.Enabled){
+                $EUenabled = "Yes"
+            } else {
+                $EUenabled = "No"
+            }
+
+
+            New-UDColumn -Size 6 -Content {
+                New-UDInput -Title "Edit User" -Id "FormEditUser" -Content {
+                    New-UDInputField -Type 'textbox' -Name 'euun' -Placeholder 'Username' -DefaultValue $Script:EUuser.UserName
+                    New-UDInputField -Type 'textbox' -Name 'eudn' -Placeholder 'Displayname' -DefaultValue $Script:EUuser.DisplayName
+                    New-UDInputField -Type 'select' -Name 'euactive' -Placeholder 'Enabled' -Values @("Yes", "No") -DefaultValue $EUenabled
+                
+                } -Endpoint {
+                    param($euun, $eudn, $euactive)
+                
+
+                    if($euactive -eq "Yes"){
+                        $eunbld = $true
+                    } else {
+                        $eunbld = $false
+                    }
+
+                    if(($Script:EUuser.Username -ne $euun) -or ($Script:EUuser.DisplayName -ne $eudn) -or ($Script:EUuser.Enabled -ne $eunbld)){
+                
+                        #Load Module
+                        if(!(get-module WRADDBCommands)){
+                            Import-Module $Script:ScriptPath\..\modules\WRADDBCommands.psm1
+                            Write-UDLog -Level Warning -Message "Import Module WRADCommands"
+                        }
+                        #Update User
+                        Write-UDLog -Level Warning -Message "Update User $euun $eudn $eunbld"
+                        Update-WRADUser -Reference -UserName $euun -DiplayName $eudn -Enabled $eunbld
+
+                        New-UDInputAction -Toast "The user '$euun' is edited." -Duration 5000
+                    } else {
+                        New-UDInputAction -Toast "The user '$euun' didn't change." -Duration 5000
+                    }
+                }
             }
         }
     }
