@@ -11,7 +11,9 @@ if(!(get-module WRADDBCommands)){
 }
 
 $date = Get-Date -UFormat "%Y%m%d"
-Enable-UDLogging -FilePath "C:\Data\Logs\UDLog_$date.txt"
+Enable-UDLogging -FilePath "C:\Data\Logs\UDLog_$date.txt" -Level Warning
+
+#----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 $FpMBckgrn = "#95cc0000"
 $FpMBckgrnHvr = "#A1220C"
@@ -91,6 +93,8 @@ $auth = New-UDAuthenticationMethod -Endpoint {
 
     if ($Credentials.UserName -eq "Auditor" -and $Credentials.GetNetworkCredential().Password -eq "Auditor") {
 		New-UDAuthenticationResult -Success -UserName $Credentials.UserName -Role "Auditor"
+    } ElseIf ($Credentials.UserName -eq "Admin" -and $Credentials.GetNetworkCredential().Password -eq "Admin") {
+		New-UDAuthenticationResult -Success -UserName $Credentials.UserName -Role "WRADadmin"
     }
 
 	New-UDAuthenticationResult -ErrorMessage "You are not allowed to login!"
@@ -328,45 +332,74 @@ $UsrAGrp = New-UDPage -Name "UserUndGruppen" -AuthorizedRole @("Auditor") -Conte
 
 #Load outsourced Pages
 . .\pageSettings.ps1
-
+. .\pageAddUserAndGroup.ps1
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#Benutzer Anlegen
+#Edit User
 
-$PageAddUser = New-UDPage -Name "Add User or Group" -AuthorizedRole @("WRADadmin","Auditor") -Content {
+#Dynamic Pages 
+
+$AllUserGrid = @()
+$AllUser = Get-WRADUser -Reference
+Write-UDLog -Level Warning -Message "There are $($AllUser.Count) Users"
+ForEach($User in $AllUser){
+    $AllUserGrid += @{Username = $User.Username; DisplayName = $User.DisplayName; CreatedDate = $User.CreatedDate; Enabled = $User.Enabled; Edit =(New-UDLink -Text "Edit" -Url "/:$($User.Username)")} #(New-UDButton -Text "Edit")
+}
+
+$PageEditUser = New-UDPage -Name "Edit User" -URL "EditUser/:un" -AuthorizedRole @("WRADadmin","Auditor") -Content {
+    param($un)
+
     New-UDRow {
-        #Add User
-		New-UDColumn -size 6 -Content {
-			New-UDInput -Title "Add User" -Id "FormAddUser" -Content {
-                
-                New-UDInputField -Type 'textbox' -Name 'un' -Placeholder 'Username' 
-                New-UDInputField -Type 'textbox' -Name 'dn' -Placeholder 'Displayname' 
-                New-UDInputField -Type 'select' -Name 'enabled' -Placeholder 'Enabled' -Values @("true", "false") 
-                
-            } -Endpoint {
-                param($un, $dn, $enabled)
+        New-UDColumn -Size 6 -Content {
+            New-UDGrid -Title "All user" -Header @("Username", "Displayname", "Create date", "Enabled", "Edit") -Properties @("Username", "DisplayName", "CreatedDate", "Enabled", "Edit") -Endpoint {
 
-                $un = $un.trim()
-                $dn = $dn.trim()
-
-                if(-not ([string]::IsNullOrEmpty($un) -or [string]::IsNullOrEmpty($dn))){
-                    
-                } else {
-                    Write-UDLog -Level Info -Message "A string was empty. Username: $un Displayname: $dn"
-                    New-UDInputAction -Toast "A field is empty. Please fill all fields"
-                }
+                Write-UDLog -Level Warning -Message "AllUserGrid $($AllUserGrid.Count) Username:$($AllUserGrid[0].Username) DisplayName:$($AllUserGrid[0].DisplayName)" 
+                $AllUserGrid | Out-UDGridData
             }
         }
-        #Add Group
-		New-UDColumn -size 6 -Content {
-            New-UDInput -Title "Add Group" -Id "FormAddGroup" -Content {
-                
-                New-UDInputField -Type 'textbox' -Name 'cn' -Placeholder 'Common name' 
-                New-UDInputField -Type 'select' -Name 'gt' -Placeholder 'Group type' -Values @("DomainLocal", "Global", "Universal") 
-                New-UDInputField -Type 'select' -Name 'gts' -Placeholder 'Group type security' -Values @("Distribution", "Security") -DefaultValue "Security"
-                
-            } -Endpoint {
-                param($cn, $gt, $gts)
+        if(-not [string]::IsNullOrEmpty($un)){
+        
+            #Get User and make him editable
+            $Script:EUuser = Get-WRADUser -Reference -UserName $un
+        
+            if($Script:EUuser.Enabled){
+                $EUenabled = "Yes"
+            } else {
+                $EUenabled = "No"
+            }
 
+
+            New-UDColumn -Size 6 -Content {
+                New-UDInput -Title "Edit User" -Id "FormEditUser" -Content {
+                    New-UDInputField -Type 'textbox' -Name 'euun' -Placeholder 'Username' -DefaultValue $Script:EUuser.UserName
+                    New-UDInputField -Type 'textbox' -Name 'eudn' -Placeholder 'Displayname' -DefaultValue $Script:EUuser.DisplayName
+                    New-UDInputField -Type 'select' -Name 'euactive' -Placeholder 'Enabled' -Values @("Yes", "No") -DefaultValue $EUenabled
+                
+                } -Endpoint {
+                    param($euun, $eudn, $euactive)
+                
+
+                    if($euactive -eq "Yes"){
+                        $eunbld = $true
+                    } else {
+                        $eunbld = $false
+                    }
+
+                    if(($Script:EUuser.Username -ne $euun) -or ($Script:EUuser.DisplayName -ne $eudn) -or ($Script:EUuser.Enabled -ne $eunbld)){
+                
+                        #Load Module
+                        if(!(get-module WRADDBCommands)){
+                            Import-Module $Script:ScriptPath\..\modules\WRADDBCommands.psm1
+                            Write-UDLog -Level Warning -Message "Import Module WRADCommands"
+                        }
+                        #Update User
+                        Write-UDLog -Level Warning -Message "Update User $euun $eudn $eunbld"
+                        Update-WRADUser -Reference -UserName $euun -DiplayName $eudn -Enabled $eunbld
+
+                        New-UDInputAction -Toast "The user '$euun' is edited." -Duration 5000
+                    } else {
+                        New-UDInputAction -Toast "The user '$euun' didn't change." -Duration 5000
+                    }
+                }
             }
         }
     }
@@ -386,6 +419,6 @@ $theme = New-UDTheme -Name "AzureChngBtn" -Definition @{
 
 Start-UDDashboard -Port 10000 -AllowHttpForLogin -Content {
     
-    New-UdDashboard -Login $login -Pages @($PageALDashboard, $PageAtDashboard, $PageSADashboard, $PageAODashboard, $PageASDashboard, $UsrAGrp, $PageSettings) -Title "Mock up Dashboards" -Color 'Black' -Theme $theme
+    New-UDDashboard -Login $login -Pages @($PageALDashboard, $PageAtDashboard, $PageSADashboard, $PageAODashboard, $PageASDashboard, $UsrAGrp, $PageSettings, $PageAddUser, $PageEditUser) -Title "Mock up Dashboards" -Color 'Black' -Theme $theme
     
-} -Verbose -debug
+} #-Verbose -debug

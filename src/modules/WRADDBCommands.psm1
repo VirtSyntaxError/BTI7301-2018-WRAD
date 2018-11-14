@@ -6,15 +6,13 @@ $BuiltinParameters = @("ErrorAction","WarningAction","Verbose","ErrorVariable","
 function Connect-WRADDatabase {
     begin
 	{
-        $PasswordPlain = "ktX4xRb7qxSw6oPctx"
-        $Password = ConvertTo-SecureString -AsPlainText $PasswordPlain -Force
+        $PasswordPlain = Get-Content ($PSScriptRoot+"\db_pw.ini")
         $Username = "wradadmin"
         $Server = "localhost"
         $Port = "3306"
         $Database = "WRAD"
         $SSLMode = "none"
 
-        $Credentials =  New-Object -Typename System.Management.Automation.PSCredential -Argumentlist $Username,$Password
         $ConnectionString = "server=$Server;port=$Port;uid=$Username;pwd=$PasswordPlain;database=$Database;SSLMode=$SSLMode"
 	}
 	Process
@@ -2236,27 +2234,27 @@ function Get-WRADEvent {
     Param
 	(
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+		[AllowEmptyString()]
 		[String]$SrcUserObjectGUID,
 
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+		[AllowEmptyString()]
 		[String]$SrcGroupObjectGUID,
 
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+		[AllowEmptyString()]
 		[String]$SrcRefUserObjectGUID,
 
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+		[AllowEmptyString()]
 		[String]$SrcRefGroupObjectGUID,
 
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+		[AllowEmptyString()]
 		[String]$DestGroupObjectGUID,
 
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+		[AllowEmptyString()]
 		[String]$DestRefGroupObjectGUID,
 
         [Parameter(Mandatory=$false)]
@@ -2287,8 +2285,11 @@ function Get-WRADEvent {
                 if($_ -eq "NotResolved"){
                     $Query += ' `ResolvedDate` IS NULL'
                 } else {
-                    $Query += '`'+$_+'` = "'+$Value+'"'
-
+                    if($Value -eq ""){
+                        $Query += '`'+$_+'` IS NULL'
+                    } else {
+                        $Query += '`'+$_+'` = "'+$Value+'"'
+                    }
                 }
             }
         }
@@ -2322,7 +2323,9 @@ function Set-WRADEventResolved {
 	{
         $Table = 'WRADEvent'
         [String]$Date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss")
-        $Query = 'UPDATE '+$Table+' SET `ResolvedDate` = "'+$Date+'" ';	
+        $Query = 'UPDATE '+$Table+' SET `ResolvedDate` = "'+$Date+'" WHERE `EventID` = '+$EventID;	
+
+
 	}
 	Process
 	{
@@ -2346,27 +2349,27 @@ function New-WRADEvent {
     Param
 	(
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+        [AllowEmptyString()]
 		[String]$SrcUserObjectGUID,
 
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+        [AllowEmptyString()]
 		[String]$SrcGroupObjectGUID,
 
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+        [AllowEmptyString()]
 		[String]$SrcRefUserObjectGUID,
 
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+        [AllowEmptyString()]
 		[String]$SrcRefGroupObjectGUID,
 
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+        [AllowEmptyString()]
 		[String]$DestGroupObjectGUID,
 
         [Parameter(Mandatory=$false)]
-		[ValidateNotNullOrEmpty()]
+        [AllowEmptyString()]
 		[String]$DestRefGroupObjectGUID,
 
         [Parameter(Mandatory=$false)]
@@ -2378,17 +2381,24 @@ function New-WRADEvent {
         $Table = 'WRADEvent'
         $QueryEnd = ') '
         $QueryMiddle = ' ) VALUES ('    
-            
         $Query = 'INSERT INTO '+$Table+' ('
         $QueryValue = @()
         $QueryVariable = @()
+        $Validation = "Get-WRADEvent "
 
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
                 [String]$Value = (Get-Variable -Name $_).Value
 
                 $QueryVariable += '`'+$_+'`'
-                $QueryValue += ' "'+$Value+'"'
+                $Validation += '-'+$_+' '
+                if($Value -eq ""){
+                    $QueryValue += ' NULL'
+                    $Validation += ' $null '
+                } else {
+                    $QueryValue += ' "'+$Value+'"'
+                    $Validation += $Value+' '
+                }
             }
         }
 
@@ -2401,9 +2411,7 @@ function New-WRADEvent {
 	{
 		try
 		{
-            Invoke-Expression(Get-WRADEvent $PSBoundParameters.toString())
-            throw("test")
-            if(Get-WRADEvent $PSBoundParameters.ToString()){
+            if (Invoke-Expression($Validation)){
                 $CustomError = "Event already exists"
                 throw($CustomError) 
             }
