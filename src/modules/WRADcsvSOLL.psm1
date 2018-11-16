@@ -14,7 +14,8 @@ function Import-WRADcsv
     try 
 	{
 		Write-Verbose "Loading PS Module WRADDBCommands";
-		Import-Module $PSScriptRoot\WRADDBCommands.psd1
+        Import-Module $PSScriptRoot\WRADDBCommands.psd1
+        Import-Module $PSScriptRoot\WRADLogging.psd1
 	}
 	catch 
 	{
@@ -30,9 +31,6 @@ function Import-WRADcsv
         $DBgroups = Get-WRADGroup -Reference
         $DBgroupofgroup = Get-WRADGroupOfGroup -Reference
         $DBgroupofuser = Get-WRADGroupOfUser -Reference
-
-        ### validate csv Input, for every column
-        # tbd.
 
         ### write SOLL Group Data into Reference DB
         if($ImportAs -eq 'Groups')
@@ -95,6 +93,7 @@ function Import-WRADcsv
                 }
             }
             Write-Verbose "FINISHED cleaning up Group Reference DB";
+            Write-WRADLog 'Updated Group SOLL DB from CSV' 0
         }
 
         ### write SOLL User Data into Reference DB
@@ -153,15 +152,46 @@ function Import-WRADcsv
                 }
             }
             Write-Verbose "FINISHED cleaning User Reference DB";
+            Write-WRADLog 'Updated User SOLL DB from CSV' 0
         }
     }
     catch
     {
         Write-Error -Message $_.Exception.Message
+        Write-WRADLog 'Failed to update SOLL DB from CSV' 2
     }
+    <#
+    .SYNOPSIS
+
+    Imports a CSV into the Reference DB
+
+    .DESCRIPTION
+
+    Imports the SOLL Data from a .csv File into the Reference DB. Either for Users or Groups, only one at a time. Groups need to be imported before the Users
+    
+    .PARAMETER csvPath
+
+    Specifies the Path to the .csv File
+
+    .PARAMETER ImportAs
+
+    Specifies if you want to import Users or Groups. Possible Values: Users,Groups
+
+    .INPUTS
+    
+    None. You cannot pipe objects to this function.
+
+    .OUTPUTS
+
+    Nothing. This function returns an error if something is wrong.
+
+    .EXAMPLE
+
+    C:\PS> Import-WRADcsv -csvPath "C:\Code\BFH.WRAD\doc\ImportTemplateUser.csv" -ImportAs "Users"
+
+    #>
 }
-# Example Function Call
-#Import-WRADcsv -csvPath "C:\Code\BFH.WRAD\doc\ImportTemplateUser.csv" -ImportAs "Users"
+
 
 function Export-WRADcsv
 {
@@ -183,7 +213,9 @@ function Export-WRADcsv
 		Write-Verbose "Loading WRAD Custom PS Module WRADDBCommands";
         Import-Module $PSScriptRoot\WRADDBCommands.psd1
         Write-Verbose "Loading WRAD Custom PS Module WRADGetIST";
-		Import-Module $PSScriptRoot\WRADGetIST.psd1
+        Import-Module $PSScriptRoot\WRADGetIST.psd1
+        Write-Verbose "Loading PS Module ActiveDirectory";
+		Import-Module ActiveDirectory
 	}
 	catch 
 	{
@@ -197,11 +229,14 @@ function Export-WRADcsv
             if($initial)
             {
                 ### do an initial Export directly from AD
-                $DBgroups = Get-WRADADGroups
+                $ADgroups = Get-WRADADGroups | Select-Object ObjectGUID,Name,GroupScope,GroupCategory,MemberOf
+                $ADgroups | Export-Csv -Path:$csvPath
             }
             else 
             {
-                
+                ### do an export from Reference DB
+                $DBgroups = Get-WRADGroup -Reference | Select-Object ObjectGUID,CommonName,GroupTypeSecurity,GroupType
+                # tbd. append group membership to variable
             }
         }
         if($ExportOf -eq 'Users')
@@ -209,11 +244,13 @@ function Export-WRADcsv
             if($initial)
             {
                 ### do an initial Export directly from AD
-                $ADusers = Get-WRADADUsers -filter * -searchbase:$((Get-ADRootDSE).rootDomainNamingContext)
+                $ADusers = Get-WRADADUsers -filter * -searchbase:$((Get-ADRootDSE).rootDomainNamingContext) | Select-Object ObjectGUID,DisplayName,UserPrincipalName,Enabled,MemberOf
+                $ADusers | Export-Csv -Path:$csvPath
             }
             else 
             {
-                
+                $DBusers = Get-WRADUser -Reference | Select-Object ObjectGUID,UserName,DisplayName,Enabled
+                # tbd. append group membership to variable
             }
         }
     }
@@ -221,4 +258,38 @@ function Export-WRADcsv
     {
         Write-Error -Message $_.Exception.Message
     }
+    <#
+    .SYNOPSIS
+
+    Exports Data from SOLL DB or directly form AD to a .csv File
+
+    .DESCRIPTION
+
+    Imports the SOLL Data from a .csv File into the Reference DB. Either for Users or Groups, only one at a time.
+    
+    .PARAMETER csvPath
+
+    Specifies the Path to the .csv File
+
+    .PARAMETER ExportOf
+
+    Specifies if you want to export Users or Groups. Possible Values: Users,Groups
+
+    .PARAMETER initial
+
+    Specifies if you want to export directly form AD
+
+    .INPUTS
+    
+    None. You cannot pipe objects to this function.
+
+    .OUTPUTS
+
+    a .csv File with the exportet Data
+
+    .EXAMPLE
+
+    C:\PS> Export-WRADcsv -csvPath "C:\Code\BFH.WRAD\doc\Export-test.csv" -ExportOf "Users"
+
+    #>
 }
