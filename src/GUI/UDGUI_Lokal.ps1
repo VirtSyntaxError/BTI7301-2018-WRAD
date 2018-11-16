@@ -336,16 +336,14 @@ $UsrAGrp = New-UDPage -Name "UserUndGruppen" -AuthorizedRole @("Auditor") -Conte
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #Edit User
 
-#Dynamic Pages 
-
 $AllUserGrid = @()
 $AllUser = Get-WRADUser -Reference
 Write-UDLog -Level Warning -Message "There are $($AllUser.Count) Users"
 ForEach($User in $AllUser){
-    $AllUserGrid += @{Username = $User.Username; DisplayName = $User.DisplayName; CreatedDate = $User.CreatedDate; Enabled = $User.Enabled; Edit =(New-UDLink -Text "Edit" -Url "/EditUser/$($User.ObjectGUID)")} #(New-UDButton -Text "Edit")
+    $AllUserGrid += @{Username = $User.Username; DisplayName = $User.DisplayName; CreatedDate = $User.CreatedDate; Enabled = $User.Enabled; Edit =(New-UDLink -Text "Edit" -Url "/EditUser/$($User.ObjectGUID)")} 
 }
 
-$PageEditUser = New-UDPage -Name "Edit User" -AuthorizedRole @("WRADadmin","Auditor") -AutoRefresh -Content {
+$PageEditUser = New-UDPage -Name "Edit User" -AuthorizedRole @("WRADadmin","Auditor") -AutoRefresh -RefreshInterval 30 -Content {
     
     New-UDRow {
         New-UDColumn -Size 3 -Content {
@@ -364,7 +362,9 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -AuthorizedRole @("WRADa
 
     #Load Module
     if(!(get-module WRADDBCommands)){
+#WARNING: Hard Coded Path. Works only on BFH Server--------------------------------------------------------------------------------------------------------------------------------
         Import-Module C:\Data\BTI7301-2018-WRAD\src\modules\WRADDBCommands.psm1
+#--------------------------------------------------------------------------------------------------------------------------------
         Write-UDLog -Level Warning -Message "Import Module WRADCommands"
     }
 
@@ -387,7 +387,6 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -AuthorizedRole @("WRADa
                 New-UDInputField -Type 'textbox' -Name 'euun' -Placeholder 'Username' -DefaultValue $Script:EUuser.UserName
                 New-UDInputField -Type 'textbox' -Name 'eudn' -Placeholder 'Displayname' -DefaultValue $Script:EUuser.DisplayName
                 New-UDInputField -Type 'select' -Name 'euactive' -Placeholder 'Enabled' -Values @("Yes", "No") -DefaultValue $EUenabled
-                
             } -Endpoint {
                 param($euun, $eudn, $euactive)
                 
