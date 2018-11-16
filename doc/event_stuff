@@ -1,0 +1,15 @@
+ID meaning:
+1:User not in SOLL:SrcUser
+2:User not in IST:SrcRefUser
+3:Username wrong:SrcUser,SrcRefUser
+4:Displayname wrong:same
+5:Enabled/Disabled:same
+6:Group not in SOLL:SrcGroup
+7:Groupt not in IST:SrcRefGroup
+8:CommonName wrong:SrcGroup,SrcRefGroup
+9:GroupType wrong:same
+10:GroupTypeSecurity wrong:same
+11:User that should be in group but is not:SrcUser,SrcRefUser,DestRefGroup
+12:User that is in group but should not:SrcUser,SrcRefUser,DesGroup
+13:Group that should be in group but is not:SrcGroup,SrcRefGroup,DestRefGroup
+14:Group that is in group but should not:SrcGroup,SrcRefGroup,DestGroup
