@@ -371,6 +371,7 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -AuthorizedRole @("WRADa
     #Get User and make him editable
     Write-UDLog -Level Warning -Message "Get User: $usrguid"
     $Script:EUuser = Get-WRADUser -Reference -ObjectGUID $usrguid
+    $Script:EUgroup = Get-WRADGroupOfUser -Reference -UserObjectGUID $usrguid
         
     if($Script:EUuser.Enabled){
         $EUenabled = "Yes"
@@ -379,9 +380,6 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -AuthorizedRole @("WRADa
     }
 
     New-UDRow {
-        New-UDColumn -Size 3 -Content {
-
-        }
         New-UDColumn -Size 6 -Content {
             New-UDInput -Title "Edit User" -Id "FormEditUser" -Content {
                 New-UDInputField -Type 'textbox' -Name 'euun' -Placeholder 'Username' -DefaultValue $Script:EUuser.UserName
@@ -415,11 +413,26 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -AuthorizedRole @("WRADa
                     New-UDInputAction -Toast "The user '$euun' didn't change." -Duration 5000
                 }
             } 
+        }
+        New-UDColumn -Size 6 -Content {
+            If($Script:EUgroup.count() -gt 0){
+                $UsrGrp = @()
+                ForEach($group in $Scipt:EUgroup){
+                    $newgroup = Get-WRADGroup -Reference -ObjectGUID $group.ObjectGUID
+                    $UsrGrp += @{ GroupName = $newgroup.CommonName; Edit =(New-UDLink -Text "Remove" -Url "/RemUsrFrmGrp/$($Script:EUuser.ObjectGUID)/$($group.ObjectGUID)")}
+                }
+            }
         } 
     } 
 }
 
+$PageRemUsrFrmGrp = New-UDPage -URL "/RemUsrFrmGrp/:usrguid/:grpguid" -AuthorizedRole @("WRADadmin","Auditor") -Endpoint {
+    param($usrguid, $grpguid)
 
+    Remove-WRADGroupOfUser -Reference -UserObjectGUID $usrguid -GroupObjectGUID $grpguid
+
+    New-UDInputAction -RedirectUrl "/Edit-User/"
+}
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Get-UDDashboard | Stop-UDDashboard
