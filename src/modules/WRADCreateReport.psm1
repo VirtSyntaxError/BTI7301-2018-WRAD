@@ -95,7 +95,9 @@ function Write-WRADReport{
         $users_30_90_html = $users_30_90 | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
         $users_90_X_html = $users_90_X | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
         $users_never_html = $users_never | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
-        $report = $report -replace "</body>", "<h2>30d > Last Logon <90d$($users_30_90_html)</body>"
+        $report = $report -replace "</body>", "<h2>30d &gt; Last Logon &lt; 90d</h2>$($users_30_90_html)</body>"
+        $report = $report -replace "</body>", "<h2>90d &lt; Last Logon</h2>$($users_90_X_html)</body>"
+        $report = $report -replace "</body>", "<h2>Never logged in</h2>$($users_never_html)</body>"
         Write-Host $report
         
     } # full report
