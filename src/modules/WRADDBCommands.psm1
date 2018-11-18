@@ -1,6 +1,8 @@
 Set-StrictMode -Version Latest
 
+# Load MySQL Library
 $null = [System.Reflection.Assembly]::LoadWithPartialName('MySql.Data')
+# Define an array that reflects all the common parameters which will not be included in the SQL statements
 $BuiltinParameters = @("ErrorAction","WarningAction","Verbose","ErrorVariable","WarningVariable","OutVariable","OutBuffer","Debug","Reference","NoObjectGUID","ExistentObjectGUID","UserPrincipalNameNoDomain","ShowCommonNames")
 
 function Connect-WRADDatabase {
@@ -40,7 +42,7 @@ function Connect-WRADDatabase {
 
     .DESCRIPTION
 
-    Connects to localhost and selects the WRAD Database.
+    Connects to localhost and selects the database WRAD.
 
     .INPUTS
 
@@ -98,7 +100,7 @@ function Invoke-MariaDBQuery {
     <#
     .SYNOPSIS
 
-    Invokes a MariaDB query.
+    Invokes a MariaDB SQL query.
 
     .DESCRIPTION
 
@@ -120,12 +122,12 @@ function Invoke-MariaDBQuery {
 
     .EXAMPLE
 
-    C:\PS> Invoke-MariaDBQuery -Query "SELET * FROM WRADUser"
+    C:\PS> Invoke-MariaDBQuery -Query "SELECT * FROM WRADUser"
     System.Row
 
     .EXAMPLE
 
-    C:\PS> Invoke-MariaDBQuery -Query "SELET * FROM WRADUser" -Connection $Connection
+    C:\PS> Invoke-MariaDBQuery -Query "SELECT * FROM WRADUser" -Connection $Connection
     System.Row
     #>
 }
@@ -181,6 +183,7 @@ function Get-WRADUser {
 	)
 	begin
 	{
+        # Prepare query with table and select statement
         $Table = 'WRADUser'
         if($Reference){
             $Table = 'WRADRefUser'
@@ -189,7 +192,9 @@ function Get-WRADUser {
 
         $FirstParameter = $true;
 
+        # Loop through each parameter and add it to the select statement
         $PSBoundParameters.Keys | ForEach {
+            #Exclude all common parameters
             if ($BuiltinParameters -notcontains $_) {
                 $Value = (Get-Variable -Name $_ ).Value
 
@@ -210,6 +215,7 @@ function Get-WRADUser {
             }
         }
 
+        # Get all users without a windows guid
         if($NoObjectGUID){
             if($FirstParameter){
                 $Query += ' WHERE '
@@ -219,6 +225,8 @@ function Get-WRADUser {
             }
             $Query += '`ObjectGUID` LIKE "noguid%"'
         }    
+
+        # Get all users with the given UPN and ignore the domain
         if($UserPrincipalNameNoDomain){
             if($FirstParameter){
                 $Query += ' WHERE '
@@ -246,12 +254,12 @@ function Get-WRADUser {
     <#
     .SYNOPSIS
 
-    Gets all users.
+    Gets all or a selected WRAD users.
 
     .DESCRIPTION
 
     Gets all users which actually exist in the database. These are the fetched users from the Active Directory.
-    The Output does not conaint any deleted users.
+    The Output does not contain any deleted users.
     It is possible to load reference users with the -Reference switch.
 
     .PARAMETER Reference
@@ -261,9 +269,12 @@ function Get-WRADUser {
     Specifies the SAMAccountName of an user. Only usable with actual users.
 
     .PARAMETER UserPrincipalName
-    Specifies the UserPrincipalName of an user. Only usable with actual users.
+    Specifies the exact UserPrincipalName of an user including the domain. Only usable with actual users.
 
-    .PARAMETER Username
+    .PARAMETER UserPrincipalNameNoDomain
+    Specifies the UserPrincipalName of an user without the domain. Only usable with actual users.
+
+    .PARAMETER UserName
     Specifies the Username of an user. Only usable with reference users.
     
     .PARAMETER DisplayName
@@ -271,6 +282,9 @@ function Get-WRADUser {
 
     .PARAMETER ObjectGUID
     Specifies the Globally Unique Identifier of an user.
+
+    .PARAMETER NoObjectGUID
+    Gets all users without an valid Windows GUID. This is only usable for reference users.
 
     .PARAMETER Disabled
     Specifies if an user is disabled.
@@ -284,16 +298,16 @@ function Get-WRADUser {
 
     .OUTPUTS
 
-    System.Array. Get-WRADUser returns all parameters from the user table (actual or reference) in an array.
+    System.Row. Get-WRADUser returns all parameters from the user table (actual or reference) in an row.
 
     .EXAMPLE
 
-    C:\PS> Get-WRADUser -Reference -Username furid
+    C:\PS> Get-WRADUser -Reference -UserName furid
+    ObjectGUID         : noguid1541155481408
     Username           : furid
     DisplayName        : Dario Furigo
     CreatedDate        : 15.10.2018 10:51:00
     Enabled            : True
-    Description        : Darios User
 
     .EXAMPLE
 
@@ -391,6 +405,7 @@ function New-WRADUser {
             $Table = 'WRADRefUser'
         } else {
             $Table = 'WRADUser'
+            # Replace all double quotes for later
             if($DistinguishedName){
                 $DistinguishedName = $DistinguishedName.Replace('"','&DQ&')
             }
@@ -406,10 +421,12 @@ function New-WRADUser {
         $QueryValue = @()
         $QueryVariable = @()
 
+        # Loop through each parameter and add it to the insert statement
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
                 [String]$Value = (Get-Variable -Name $_).Value
 
+                # Change expired and enabled from boolean to int
                 if($_ -eq "Expired" -or $_ -eq "Enabled"){
                     if($Value -eq $true ){
                         [Int]$Value = 1
@@ -420,6 +437,7 @@ function New-WRADUser {
                     $Value = $Value.Replace('&DQ&','\"')
                 }
 
+                # If date is empty -> Insert NULL into table
                 $QueryVariable += '`'+$_+'`'
                 if($_ -eq "LastLogonTimestamp" -and $Value -eq "") {
                     $QueryValue += ' NULL '
@@ -438,6 +456,7 @@ function New-WRADUser {
 	{
 		try
 		{
+            # Check if reference user exists
             Write-Verbose "Checking for already existent user";
             if ($Reference) {
                 if($ObjectGUID){
@@ -447,6 +466,7 @@ function New-WRADUser {
                     }
                 }
             } else {
+                # Check if actual user exists
                 if((Get-WRADUser -ObjectGUID $ObjectGUID) -ne $null){
                     $CustomError = "Duplicate entry for ObjectGUID "+$ObjectGUID
                     throw($CustomError) 
@@ -465,7 +485,7 @@ function New-WRADUser {
     <#
     .SYNOPSIS
 
-    Creates new user.
+    Creates a new WWRAD user.
 
     .DESCRIPTION
 
@@ -484,10 +504,13 @@ function New-WRADUser {
     Specifies the DistinguishedName of the user. Like CN="testuser",CN="example",CN="local"
 
     .PARAMETER LastLogonTimestamp
-    Specifies the LastLogonTimestamp of the user. This should be a DateTime value.
+    Specifies the LastLogonTimestamp of the user. This should be a DateTime value or $null.
     
     .PARAMETER DisplayName
     Specifies the DisplayName of the user.
+
+    .PARAMETER Username
+    Specifies the Username of the reference user.
 
     .PARAMETER ObjectGUID
     Specifies the Globally Unique Identifier of the user.
@@ -511,7 +534,11 @@ function New-WRADUser {
 
     .EXAMPLE
 
-    C:\PS> New-WRADUser -ObjectGUID d9dl998-03jlasd9-lasd99 -SAMAccountName testuser -DistinguishedName 'CN="testuser",CN="example",CN="local"' -UserPrincipalName test.user -DisplayName "testuser" -Description "Testuser for WRAD" -LastLogonTimestamp $timestamp
+    C:\PS> New-WRADUser -ObjectGUID d9dl998-03jlasd9-lasd99 -SAMAccountName testuser -DistinguishedName 'CN="testuser",CN="example",CN="local"' -UserPrincipalName test.user@test.local -DisplayName "testuser" -Description "Testuser for WRAD" -LastLogonTimestamp $timestamp -Enabled $false
+
+    .EXAMPLE
+
+    C:\PS> New-WRADUser -Reference -Username testuser -DisplayName "testuser" -Enabled $true
 
     #>
 }
@@ -575,12 +602,14 @@ function Update-WRADUser {
 	)
 	begin
 	{
+        # Prepare the SQL query
         $Table = ''
         $QueryEnd = ' WHERE `ObjectGUID` = "'+$ObjectGUID+'"'
         if($Reference){
             $Table = 'WRADRefUser'
         } else {
             $Table = 'WRADUser'
+            # Replace all double quotes for later
             if($DistinguishedName){
                 $DistinguishedName = $DistinguishedName.Replace('"','&DQ&')
             }
@@ -595,10 +624,12 @@ function Update-WRADUser {
         $Query = 'UPDATE '+$Table+' SET '
         $QueryValue = @()
 
+        # Loop through each parameter and add it to the update statement
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_ -and $_ -ne "ObjectGUID") {
                 [String]$Value = (Get-Variable -Name $_).Value
 
+                # Change expired and enabled from boolean to int
                 if($_ -eq "Expired" -or $_ -eq "Enabled"){
                     if($Value -eq $true ){
                         [Int]$Value = 1
@@ -609,9 +640,11 @@ function Update-WRADUser {
                     $Value = $Value.Replace('&DQ&','\"')
                 }
 
+                # If new ObjectGUID will be set
                 if($_ -eq "NewObjectGUID"){
                     $QueryValue += ' `ObjectGUID` = "'+$NewObjectGUID+'" '
                 } else {
+                    # If date is empty -> Insert NULL into table
                      if($_ -eq "LastLogonTimestamp" -and $Value -eq "") {
                         $QueryValue += ' `'+$_+'` = NULL '
                     } else {
@@ -629,13 +662,15 @@ function Update-WRADUser {
         try
 		{
 
+            # Check if parameter is set
             Write-Verbose "Checking if at least one parameter is set";
             if($QueryValue.Count -eq 0){
                 $CustomError = "No parameter is set for user with ObjectGUID "+$ObjectGUID
                 throw($CustomError) 
             }
 
-            Write-Verbose "Checking for already existent user";
+            # Check if user to change exists
+            Write-Verbose "Checking for existent user";
             if($Reference) {
                 if((Get-WRADUser -Reference -ObjectGUID $ObjectGUID) -eq $null){
                     $CustomError = "No entry for ObjectGUID "+$ObjectGUID
@@ -660,11 +695,14 @@ function Update-WRADUser {
     <#
     .SYNOPSIS
 
-    Updates a user.
+    Updates a WRAD user.
 
     .DESCRIPTION
 
     Updates a user in the database with the given parameters.
+    
+    .PARAMETER Reference
+    Specifies if a reference user should be updated instead of an actual one.
 
     .PARAMETER SAMAccountName
     Specifies the SAMAccountName of the user.
@@ -676,13 +714,19 @@ function Update-WRADUser {
     Specifies the DistinguishedName of the user. Like CN="testuser",CN="example",CN="local"
 
     .PARAMETER LastLogonTimestamp
-    Specifies the LastLogonTimestamp of the user. This should be a DateTime value.
+    Specifies the LastLogonTimestamp of the user. This should be a DateTime value or $null.
     
     .PARAMETER DisplayName
     Specifies the DisplayName of the user.
 
+    .PARAMETER Username
+    Specifies the Username of the reference user.
+
     .PARAMETER ObjectGUID
     Specifies the Globally Unique Identifier of the user.
+
+    .PARAMETER NewObjectGUID
+    Specifies a new Globally Unique Identifier for a reference user. This is used to change from noguid to a valid Windows GUID.
 
     .PARAMETER Disabled
     Specifies if the user is disabled.
@@ -705,6 +749,9 @@ function Update-WRADUser {
 
     C:\PS> Update-WRADUser -ObjectGUID d9dl998-03jlasd9-lasd99 -SAMAccountName testuser -LastLogonTimestamp $timestamp
 
+    .EXAMPLE
+
+    C:\PS> Update-WRADUser -Reference -ObjectGUID noguid99999 -NewObjectGUID op3n-93kae-903ld9-22kdl -Enabled $false
     #>
 }
 
@@ -723,6 +770,7 @@ function Remove-WRADUser {
 	)
 	begin
 	{
+        # Prepare the quqery for the delete
         $Table = ''
         $QueryEnd = ' WHERE `ObjectGUID` = "'+$ObjectGUID+'"'
         if($Reference){
@@ -737,6 +785,7 @@ function Remove-WRADUser {
 	{
 		try
 		{
+            # Check if user to delete exists
             Write-Verbose "Checking if user exists";
             if($Reference) {
                 if((Get-WRADUser -Reference -ObjectGUID $ObjectGUID) -eq $null){
@@ -762,6 +811,39 @@ function Remove-WRADUser {
 	End
 	{
 	}
+
+<#
+    .SYNOPSIS
+
+    Deletes a WRAD user.
+
+    .DESCRIPTION
+
+    Deletes the specified WRAD user in the database.
+
+    .PARAMETER Reference
+    Specifies if a reference user should be deleted instead of an actual one.
+
+    .PARAMETER ObjectGUID
+    Specifies the Globally Unique Identifier of the user.
+
+    .INPUTS
+
+    None. You cannot pipe objects to Remove-WRADUser.
+
+    .OUTPUTS
+
+    Nothing. Remove-WRADUser returns an error if something is wrong.
+
+    .EXAMPLE
+
+    C:\PS> Remove-WRADUser -ObjectGUID d9dl998-03jlasd9-lasd99
+
+    .EXAMPLE
+
+    C:\PS> Remove-WRADUser -Reference -ObjectGUID noguid1541155481408
+
+    #>
 }
 
 function Get-WRADGroup {
@@ -803,6 +885,7 @@ function Get-WRADGroup {
 	)
 	begin
 	{
+        # Prepare SQL query for select statement
         $Table = 'WRADGroup'
         $QueryEnd = ''
         if($Reference){
@@ -812,6 +895,7 @@ function Get-WRADGroup {
 
         $FirstParameter = $true;
 
+        # Loop through each parameter and add it to the SELECT statement
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
                 $Value = (Get-Variable -Name $_).Value
@@ -825,6 +909,7 @@ function Get-WRADGroup {
             }
         }	
         
+        # Get all WRAD groups with a synthetic guid like noguid*
         if($NoObjectGUID){
             if($FirstParameter){
                 $Query += ' WHERE `ObjectGUID` LIKE "noguid%" '
@@ -851,6 +936,76 @@ function Get-WRADGroup {
 	End
 	{
 	}
+
+<#
+    .SYNOPSIS
+
+    Gets all WRAD groups.
+
+    .DESCRIPTION
+
+    Gets all WRAD groups from the database with the specified parameters.
+
+    .PARAMETER Reference
+    Specifies if a reference group should be created instead of an actual one.
+
+    .PARAMETER SAMAccountName
+    Specifies the SAMAccountName of the group.
+    
+    .PARAMETER CommonName
+    Specifies the CommonName of the group.
+
+    .PARAMETER ObjectGUID
+    Specifies the Globally Unique Identifier of the group.
+
+    .PARAMETER GroupType
+    Specifies the group type of the group. This can be either 'DomainLocal','Global' or 'Universal'.
+
+    .PARAMETER GroupTypeSecurity
+    Specifies the security type of the group. This can be either 'Security' or 'Distribution'.
+
+    .PARAMETER NoObjectGUID
+    Gets all groups without an valid Windows GUID. This is only usable for reference groups.
+
+    .INPUTS
+
+    None. You cannot pipe objects to Get-WRADGroup.
+
+    .OUTPUTS
+
+    System.Row. Get-WRADGroup returns all parameters from the group table (actual or reference) in an row.
+
+    .EXAMPLE
+
+    C:\PS> Get-WRADGroup -GroupTypeSecurity Distribution -CommonName MaurerMail
+
+    ObjectGUID        : 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
+    CreatedDate       : 18.11.2018 12:47:03
+    LastModifiedDate  : 18.11.2018 12:47:03
+    SAMAccountName    : MaurerMail
+    GroupType         : DomainLocal
+    GroupTypeSecurity : Distribution
+    CommonName        : MaurerMail
+    DistinguishedName : CN="MaurerMail", CN="test", CN="local"
+    Description       :
+
+    .EXAMPLE
+
+    C:\PS> Get-WRADGroup -Reference
+
+    ObjectGUID        : noguid0393822221452
+    CreatedDate       : 02.11.2018 11:52:11
+    GroupType         : Global
+    GroupTypeSecurity : Security
+    CommonName        : Architektur
+
+    ObjectGUID        : noguid1541155564978
+    CreatedDate       : 02.11.2018 10:46:04
+    GroupType         : DomainLocal
+    GroupTypeSecurity : Distribution
+    CommonName        : DesignMail
+
+    #>
 }
 
 function New-WRADGroup {
@@ -896,6 +1051,7 @@ function New-WRADGroup {
 	)
 	begin
 	{
+        # Prepare the SQL statement
         $Table = ''
         $QueryEnd = ') '
         $QueryMiddle = ' ) VALUES ('
@@ -903,6 +1059,7 @@ function New-WRADGroup {
             $Table = 'WRADRefGroup'
         } else {
             $Table = 'WRADGroup'
+            # Replace all double quotes for later
             if($DistinguishedName){
                 $DistinguishedName = $DistinguishedName.Replace('"','&DQ&')
             }
@@ -914,11 +1071,14 @@ function New-WRADGroup {
         $QueryValue = @()
         $QueryVariable = @()
 
+        # Loop through each parameter and add it to the insert statement
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
                 [String]$Value = (Get-Variable -Name $_).Value
                 $QueryVariable += '`'+$_+'`'
-                $QueryValue += ' "'+$Value+'"'
+
+                # Replace the placeholder with actual escaped double quotes
+                $QueryValue += ' "'+$Value.Replace('&DQ&','\"')+'"'
             }
         }
 
@@ -931,6 +1091,7 @@ function New-WRADGroup {
 	{
 		try
 		{
+            # Check if group exists, if yes throw an error
             Write-Verbose "Checking for already existent group";
             if($Reference) {
                 if($ObjectGUID){
@@ -958,11 +1119,11 @@ function New-WRADGroup {
 	<#
     .SYNOPSIS
 
-    Creates a new group.
+    Creates a new WRAD group.
 
     .DESCRIPTION
 
-    Creates a new group in the database with the given parameters.
+    Creates a new WRAD group in the database with the given parameters.
 
     
     .PARAMETER Reference
@@ -981,7 +1142,7 @@ function New-WRADGroup {
     Specifies the GroupType of the group. This should be 'DomainLocal','Global' or 'Universal'.
     
     .PARAMETER GroupTypeSecurity
-    Specifies the GroupTypeSecurity of the group. This should be either Security' or 'Distribution'.
+    Specifies the GroupTypeSecurity of the group. This should be either 'Security' or 'Distribution'.
 
     .PARAMETER ObjectGUID
     Specifies the Globally Unique Identifier of the group.
@@ -999,7 +1160,7 @@ function New-WRADGroup {
 
     .EXAMPLE
 
-    C:\PS> New-WRADGroup -ObjectGUID d9dl998-03jlasd6-lasd11 -SAMAccountName "Domain Powerusers" -CommonName "Domain Powerusers" -DistinguishedName 'CN="Domain Powerusers",CN="example",CN="local"' -GroupTypeSecurity Security -GroupType DomainLocal
+    C:\PS> New-WRADGroup -ObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8 -SAMAccountName "Domain Powerusers" -CommonName "Domain Powerusers" -DistinguishedName 'CN="Domain Powerusers",CN="example",CN="local"' -GroupTypeSecurity Security -GroupType DomainLocal
 
     #>
 }
@@ -1052,11 +1213,13 @@ function Update-WRADGroup {
 	)
 	begin
 	{
+        # Prepare the SQL UPDATE statement
         $Table = ''
         $QueryEnd = ' WHERE `ObjectGUID` = "'+$ObjectGUID+'"'
         if($Reference){
             $Table = 'WRADRefGroup'
         } else {
+            # Replace all double quotes for later
             $Table = 'WRADGroup'
             if($DistinguishedName){
                 $DistinguishedName = $DistinguishedName.Replace('"','&DQ&')
@@ -1068,13 +1231,16 @@ function Update-WRADGroup {
         $Query = 'UPDATE '+$Table+' SET '
         $QueryValue = @()
 
+        # Loop through each parameter and add it to the UPDATE statement
         $PSBoundParameters.Keys | ForEach {
-            if ($BuiltinParameters -notcontains $_ -and $_ -ne "ObjectGUID") {          
+            if ($BuiltinParameters -notcontains $_ -and $_ -ne "ObjectGUID") {      
+                # If NewObjectGUID is set the ObjectGUID should be changed as well
                 if($_ -eq "NewObjectGUID"){
                     $QueryValue += ' `ObjectGUID` = "'+$NewObjectGUID+'" '
                 } else {
                     [String]$Value = (Get-Variable -Name $_).Value
-                    $QueryValue += ' `'+$_+'` = "'+$Value+'" '
+                    # Replace the placeholder back to double quotes
+                    $QueryValue += ' `'+$_+'` = "'+$Value.Replace('&DQ&','\"')+'" '
                 }
             }
         }
@@ -1086,13 +1252,14 @@ function Update-WRADGroup {
 	{
         try
 		{
-
+            # Check if a parameter is set
             Write-Verbose "Checking if at least one parameter is set";
             if($QueryValue.Count -eq 0){
                 $CustomError = "No parameter is set for group with ObjectGUID "+$ObjectGUID
                 throw($CustomError) 
             }
 
+            # Check if group to update exists or throw an error
             Write-Verbose "Checking for already existent group";
             if($Reference) {
                 if((Get-WRADGroup -Reference -ObjectGUID $ObjectGUID) -eq $null){
@@ -1118,11 +1285,14 @@ function Update-WRADGroup {
     <#
     .SYNOPSIS
 
-    Updates a group.
+    Updates a WRAD group.
 
     .DESCRIPTION
 
-    Updates a group in the database with the given parameters.
+    Updates a WRAD group in the database with the given parameters.
+
+    .PARAMETER Reference
+    Specifies if a reference group should be updated instead of an actual one.
 
     .PARAMETER SAMAccountName
     Specifies the SAMAccountName of the group.
@@ -1141,6 +1311,9 @@ function Update-WRADGroup {
 
     .PARAMETER ObjectGUID
     Specifies the Globally Unique Identifier of the group.
+    
+    .PARAMETER NewObjectGUID
+    Specifies a new Globally Unique Identifier for a reference group. This is used to change from noguid to a valid Windows GUID.
 
     .PARAMETER Description
     Specifies the description.
@@ -1155,7 +1328,11 @@ function Update-WRADGroup {
 
     .EXAMPLE
 
-    C:\PS> Update-WRADGroup -ObjectGUID d9dl998-03jlasd6-lasd11 -CommonName "New Groupname"
+    C:\PS> Update-WRADGroup -ObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8 -CommonName "New Groupname"
+
+    .EXAMPLE
+
+    C:\PS> Update-WRADGroup -Reference -ObjectGUID noguid374927339119 -NewObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
 
     #>
 }
@@ -1175,6 +1352,7 @@ function Remove-WRADGroup {
 	)
 	begin
 	{
+        # Prepare the DELETE statement
         $Table = ''
         $QueryEnd = ' WHERE `ObjectGUID` = "'+$ObjectGUID+'"'
         if($Reference){
@@ -1189,6 +1367,7 @@ function Remove-WRADGroup {
 	{
 		try
 		{
+            # Check if group to delete exists
             Write-Verbose "Checking if group exists";
             if($Reference) {
                 if((Get-WRADGroup -Reference -ObjectGUID $ObjectGUID) -eq $null){
@@ -1214,6 +1393,38 @@ function Remove-WRADGroup {
 	End
 	{
 	}
+<#
+    .SYNOPSIS
+
+    Deletes a WRAD group.
+
+    .DESCRIPTION
+
+    Deletes the specified WRAD group in the database.
+
+    .PARAMETER Reference
+    Specifies if a reference group should be deleted instead of an actual one.
+
+    .PARAMETER ObjectGUID
+    Specifies the Globally Unique Identifier of the group.
+
+    .INPUTS
+
+    None. You cannot pipe objects to Remove-WRADGroup.
+
+    .OUTPUTS
+
+    Nothing. Remove-WRADGroup returns an error if something is wrong.
+
+    .EXAMPLE
+
+    C:\PS> Remove-WRADGroup -ObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
+
+    .EXAMPLE
+
+    C:\PS> Remove-WRADGroup -Reference -ObjectGUID noguid1541155481408
+
+    #>
 }
 
 function Get-WRADGroupOfUser {
@@ -1250,6 +1461,7 @@ function Get-WRADGroupOfUser {
         $FirstParameter = $true;
         if($Reference){
             $Table = 'WRADRefUserGroup'
+            # If the parameter ShowCommonNames is set the SQL query joins the WRADRefUser and WRADRefGroup tables to display the common names
             if($ShowCommonNames){
                 $QueryEnd = ' INNER JOIN WRADRefUser ON WRADRefUserGroup.UserObjectGUID = WRADRefUser.ObjectGUID INNER JOIN WRADRefGroup ON WRADRefUserGroup.GroupObjectGUID = WRADRefGroup.ObjectGUID'
                 $Query = 'SELECT WRADRefUser.Username,WRADRefGroup.CommonName,WRADRefUserGroup.CreatedDate FROM '+$Table;
@@ -1257,12 +1469,14 @@ function Get-WRADGroupOfUser {
                 $Query = 'SELECT * FROM '+$Table;
             }
 
+            # If the ExistentObjectGUID parameter is set the SQL query exclude als non-Windows GUIDs
             if($ExistentObjectGUID){
                 $QueryEnd += ' WHERE WRADRefUserGroup.UserObjectGUID NOT LIKE "noguid%" AND WRADRefUserGroup.GroupObjectGUID NOT LIKE "noguid%"'
                 $FirstParameter = $false
             }
         }
 
+        # Loop through each parameter and add it to the SELECT statement
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
                 $Value = (Get-Variable -Name $_ ).Value
@@ -1295,6 +1509,58 @@ function Get-WRADGroupOfUser {
 	End
 	{
 	}
+<#
+    .SYNOPSIS
+
+    Gets all WRAD user to group memberships.
+
+    .DESCRIPTION
+
+    Gets all WRAD user to group memberships from the database with the specified parameters.
+
+    .PARAMETER Reference
+    Specifies if all reference user to group membership should be selected instead of an actual one.
+
+    .PARAMETER ExistentObjectGUID
+    Show only the membership which have valid Windows GUIDs.
+    
+    .PARAMETER ShowCommonName
+    Show the real names of the users and groups instead of the GUIDs.
+
+    .PARAMETER UserObjectGUID
+    Specifies the Globally Unique Identifier of the user.
+
+    .PARAMETER GroupObjectGUID
+    Specifies the Globally Unique Identifier of the group.
+
+    .INPUTS
+
+    None. You cannot pipe objects to Get-WRADGroupOfUser.
+
+    .OUTPUTS
+
+    System.Row. Get-WRADGroupOfUser returns all parameters from the UserGroup table (actual or reference) in an row.
+
+    .EXAMPLE
+
+    C:\PS> Get-WRADGroupOfUser -Reference
+
+    CreatedDate         UserObjectGUID          GroupObjectGUID
+    -----------         --------------          ---------------
+    02.11.2018 10:46:29 noguid1541155481408     noguid1541155564978
+    02.11.2018 10:53:34 noguid1541155481408     936DA01F-9ABD-4D9D-80C7-02AF85C822A8
+    02.11.2018 10:53:43 op3n-93kae-903ld9-22kdl 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
+
+    .EXAMPLE
+    C:\PS> Get-WRADGroupOfUser -Reference -ShowCommonNames
+
+    Username    CommonName     CreatedDate
+    --------    ----------     -----------
+    BrunoM      Architektur    02.11.2018 10:46:29
+    BrunoM      MaurerMail     02.11.2018 10:53:34
+    RudolfK     MaurerMail     02.11.2018 10:53:43
+
+    #>
 }
 
 function New-WRADGroupOfUser {
@@ -1318,6 +1584,7 @@ function New-WRADGroupOfUser {
 	)
 	begin
 	{
+        # Prepare SQL query
         $Table = ''
         $QueryEnd = ') '
         $QueryMiddle = ' ) VALUES ('
@@ -1330,6 +1597,7 @@ function New-WRADGroupOfUser {
         $QueryValue = @()
         $QueryVariable = @()
 
+        # Loop through each parameter and add it to the INSERT statement
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
                 [String]$Value = (Get-Variable -Name $_).Value
@@ -1347,7 +1615,8 @@ function New-WRADGroupOfUser {
 	{
 		try
 		{
-            #Check for new reference in both tables (ref and refnew) should be performed!!
+            # Check for existing user to group mapping and throw error if it exists or if either user or group not exists
+            # This will be performaned for actual or reference memberships
             Write-Verbose "Checking for already existent user to group mapping and if user and group exist";
             if ($Reference) {  
                 if((Get-WRADUser -Reference -ObjectGUID $UserObjectGUID) -eq $null -or (Get-WRADGroup -Reference -ObjectGUID $GroupObjectGUID) -eq $null){
@@ -1383,6 +1652,41 @@ function New-WRADGroupOfUser {
 	End
 	{
 	}
+
+<#
+    .SYNOPSIS
+
+    Insert a new WRAD user to group membership.
+
+    .DESCRIPTION
+
+    Insert a new WRAD user to group membership into the database.
+
+    .PARAMETER Reference
+    Specifies if the insert is for a reference user to group membership instead of an actual one.
+
+    .PARAMETER UserObjectGUID
+    Specifies the Globally Unique Identifier of the user.
+
+    .PARAMETER GroupObjectGUID
+    Specifies the Globally Unique Identifier of the group.
+
+    .INPUTS
+
+    None. You cannot pipe objects to New-WRADGroupOfUser.
+
+    .OUTPUTS
+
+    Nothing. New-WRADGroupOfUser returns an error if something is wrong.
+
+    .EXAMPLE
+
+    C:\PS> New-WRADGroupOfUser -Reference -UserObjectGUID noguid1541155481408 -GroupObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
+
+    .EXAMPLE
+    C:\PS> New-WRADGroupOfUser -UserObjectGUID 738ldas-3928lasdf-29asdfkl -GroupObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
+
+    #>
 }
 
 function Remove-WRADGroupOfUser {
@@ -1405,6 +1709,7 @@ function Remove-WRADGroupOfUser {
 	)
 	begin
 	{
+        # Prepare query
         $Table = ''
         if($Reference){
             $Table = 'WRADRefUserGroup'
@@ -1414,6 +1719,7 @@ function Remove-WRADGroupOfUser {
         $Query = 'DELETE FROM '+$Table+' WHERE '
         $QueryValue = @()
 
+        # Loop through each parameter and add it to the DELETE statement
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
                 [String]$Value = (Get-Variable -Name $_).Value
@@ -1427,6 +1733,7 @@ function Remove-WRADGroupOfUser {
 	{
 		try
 		{
+            # Check if user to group mapping exists
             Write-Verbose "Checking if user is in group";
             if ($Reference) {  
                 if ((Get-WRADGroupOfUser -Reference -UserObjectGUID $UserObjectGUID -GroupObjectGUID $GroupObjectGUID) -eq $null){
@@ -1452,6 +1759,40 @@ function Remove-WRADGroupOfUser {
 	End
 	{
 	}
+<#
+    .SYNOPSIS
+
+    Delete an existing WRAD user to group membership.
+
+    .DESCRIPTION
+
+    Delete an existing WRAD user to group membership from the database.
+
+    .PARAMETER Reference
+    Specifies if the delete is for a reference user to group membership instead of an actual one.
+
+    .PARAMETER UserObjectGUID
+    Specifies the Globally Unique Identifier of the user.
+
+    .PARAMETER GroupObjectGUID
+    Specifies the Globally Unique Identifier of the group.
+
+    .INPUTS
+
+    None. You cannot pipe objects to Remove-WRADGroupOfUser.
+
+    .OUTPUTS
+
+    Nothing. Remove-WRADGroupOfUser returns an error if something is wrong.
+
+    .EXAMPLE
+
+    C:\PS> Remove-WRADGroupOfUser -Reference -UserObjectGUID noguid1541155481408 -GroupObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
+
+    .EXAMPLE
+    C:\PS> Remove-WRADGroupOfUser -UserObjectGUID 738ldas-3928lasdf-29asdfkl -GroupObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
+
+    #>
 }
 
 function Get-WRADGroupOfGroup {
@@ -1482,11 +1823,13 @@ function Get-WRADGroupOfGroup {
 	)
 	begin
 	{
+        # Prepare the SQL statements
         $Table = 'WRADGroupGroup'
         $QueryEnd = ''
         $Query = 'SELECT * FROM '+$Table;
         if($Reference){
             $Table = 'WRADRefGroupGroup'
+            # If ShowCommonNames is set the query joins the group tables to get the names instead of the GUID
             if($ShowCommonNames){
                 $QueryEnd = ' INNER JOIN WRADRefGroup AS cg ON WRADRefGroupGroup.ChildGroupObjectGUID = cg.ObjectGUID INNER JOIN WRADRefGroup AS pg ON WRADRefGroupGroup.ParentGroupObjectGUID = pg.ObjectGUID'
                 $Query = 'SELECT cg.CommonName AS ChildGroup,pg.CommonName AS ParentGroup,WRADRefGroupGroup.CreatedDate FROM '+$Table;
@@ -1494,6 +1837,7 @@ function Get-WRADGroupOfGroup {
                 $Query = 'SELECT * FROM '+$Table;
             }
   
+            # Get only valid Windows GUIDs
             if($ExistentObjectGUID){
                 $QueryEnd += ' WHERE WRADRefGroupGroup.ChildGroupObjectGUID NOT LIKE "noguid%" AND WRADRefGroupGroup.ParentGroupObjectGUID NOT LIKE "noguid%"'
                 $FirstParameter = $false
@@ -1502,6 +1846,7 @@ function Get-WRADGroupOfGroup {
         
         $FirstParameter = $true;
 
+        # Loop through each parameter and add it to the SELECT statement
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
                 $Value = (Get-Variable -Name $_ ).Value
@@ -1533,6 +1878,55 @@ function Get-WRADGroupOfGroup {
 	End
 	{
 	}
+
+<#
+    .SYNOPSIS
+
+    Gets all WRAD group to group memberships.
+
+    .DESCRIPTION
+
+    Gets all WRAD group to group memberships from the database with the specified parameters.
+
+    .PARAMETER Reference
+    Specifies if all reference group to group membership should be selected instead of an actual one.
+
+    .PARAMETER ExistentObjectGUID
+    Show only the membership which have valid Windows GUIDs.
+    
+    .PARAMETER ShowCommonName
+    Show the real names of the groups instead of the GUIDs.
+
+    .PARAMETER ChildGroupObjectGUID
+    Specifies the Globally Unique Identifier of the child group.
+
+    .PARAMETER ParentGroupObjectGUID
+    Specifies the Globally Unique Identifier of the parent group.
+
+    .INPUTS
+
+    None. You cannot pipe objects to Get-WRADGroupOfGroup.
+
+    .OUTPUTS
+
+    System.Row. Get-WRADGroupOfGroup returns all parameters from the GroupGroup table (actual or reference) in an row.
+
+    .EXAMPLE
+
+    C:\PS> Get-WRADGroupOfGroup -Reference
+
+    CreatedDate         UserObjectGUID          GroupObjectGUID
+    -----------         --------------          ---------------
+    02.11.2018 10:46:29 noguid1541155481408     noguid1541155564978
+
+    .EXAMPLE
+    C:\PS> Get-WRADGroupOfGroup -Reference -ShowCommonNames
+
+    ChildGroup ParentGroup CreatedDate
+    ---------- ----------- -----------
+    child01    parent01    02.11.2018 11:52:38
+
+    #>
 }
 
 function New-WRADGroupOfGroup {
@@ -1555,6 +1949,7 @@ function New-WRADGroupOfGroup {
 	)
 	begin
 	{
+        # Prepare the INSERT query
         $Table = ''
         $QueryEnd = ') '
         $QueryMiddle = ' ) VALUES ('
@@ -1567,6 +1962,7 @@ function New-WRADGroupOfGroup {
         $QueryValue = @()
         $QueryVariable = @()
 
+        # Loop through each parameter and add it to the INSERT statement
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
                 [String]$Value = (Get-Variable -Name $_).Value
@@ -1584,7 +1980,7 @@ function New-WRADGroupOfGroup {
 	{
 		try
 		{
-            #Check for new reference in both tables (ref and refnew) should be performed!!
+            # Check if group to group mapping exists and both groups are in the database. If not throw an error.
             Write-Verbose "Checking for already existent group to group mapping and if groups exist";
             if ($Reference) { 
                  if((Get-WRADGroup -Reference -ObjectGUID $ChildGroupObjectGUID) -eq $null -or (Get-WRADGroup -Reference -ObjectGUID $ParentGroupObjectGUID) -eq $null){
@@ -1620,6 +2016,40 @@ function New-WRADGroupOfGroup {
 	End
 	{
 	}
+<#
+    .SYNOPSIS
+
+    Insert a new WRAD group to group membership.
+
+    .DESCRIPTION
+
+    Insert a new WRAD group to group membership into the database.
+
+    .PARAMETER Reference
+    Specifies if the insert is for a reference group to group membership instead of an actual one.
+
+    .PARAMETER ChildGroupObjectGUID
+    Specifies the Globally Unique Identifier of the child group.
+
+    .PARAMETER ParentGroupObjectGUID
+    Specifies the Globally Unique Identifier of the parent group.
+
+    .INPUTS
+
+    None. You cannot pipe objects to New-WRADGroupOfGroup.
+
+    .OUTPUTS
+
+    Nothing. New-WRADGroupOfGroup returns an error if something is wrong.
+
+    .EXAMPLE
+
+    C:\PS> New-WRADGroupOfGroup -Reference -ChildGroupObjectGUID noguid1541155481408 -ParentGroupObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
+
+    .EXAMPLE
+    C:\PS> New-WRADGroupOfGroup -ChildGroupObjectGUID 738ldas-3928lasdf-29ad43kl -ParentGroupObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
+
+    #>
 }
 
 function Remove-WRADGroupOfGroup {
@@ -1642,6 +2072,7 @@ function Remove-WRADGroupOfGroup {
 	)
 	begin
 	{
+        # Prepare query for DELETE statement
         $Table = ''
         if($Reference){
             $Table = 'WRADRefGroupGroup'
@@ -1651,6 +2082,7 @@ function Remove-WRADGroupOfGroup {
         $Query = 'DELETE FROM '+$Table+' WHERE '
         $QueryValue = @()
 
+        # Loop through each parameter and add it to the DELETE statement
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
                 [String]$Value = (Get-Variable -Name $_).Value
@@ -1664,6 +2096,7 @@ function Remove-WRADGroupOfGroup {
 	{
 		try
 		{
+            # Check if mapping from child group to parent group exists
             Write-Verbose "Checking if group is in group";
             if ($Reference) {  
                 if ((Get-WRADGroupOfGroup -Reference -ChildGroupObjectGUID $ChildGroupObjectGUID -ParentGroupObjectGUID $ParentGroupObjectGUID) -eq $null){
@@ -1689,6 +2122,40 @@ function Remove-WRADGroupOfGroup {
 	End
 	{
 	}
+<#
+    .SYNOPSIS
+
+    Delete an existing WRAD group to group membership.
+
+    .DESCRIPTION
+
+    Delete an existing WRAD group to group membership from the database.
+
+    .PARAMETER Reference
+    Specifies if the delete is for a reference group to group membership instead of an actual one.
+
+    .PARAMETER ChildGroupObjectGUID
+    Specifies the Globally Unique Identifier of the child group.
+
+    .PARAMETER ParentGroupObjectGUID
+    Specifies the Globally Unique Identifier of the parent group.
+
+    .INPUTS
+
+    None. You cannot pipe objects to Remove-WRADGroupOfGroup.
+
+    .OUTPUTS
+
+    Nothing. Remove-WRADGroupOfGroup returns an error if something is wrong.
+
+    .EXAMPLE
+
+    C:\PS> Remove-WRADGroupOfGroup -Reference -ChildGroupObjectGUID noguid1541155481408 -ParentGroupObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
+
+    .EXAMPLE
+    C:\PS> Remove-WRADGroupOfGroup -ChildGroupObjectGUID 738ldas-3928lasdf-29asdfkl -ParentGroupObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
+
+    #>
 }
 
 function Get-WRADHistoryOfUser {
@@ -1718,6 +2185,31 @@ function Get-WRADHistoryOfUser {
 	End
 	{
 	}
+<#
+    .SYNOPSIS
+
+    Gets the history of a WRAD user.
+
+    .DESCRIPTION
+
+    Gets the history of a WRAD user from the database. This includes any updates or deletes on this user.
+
+    .PARAMETER ObjectGUID
+    Specifies the Globally Unique Identifier of the user.
+
+    .INPUTS
+
+    None. You cannot pipe objects to Get-WRADHistoryOfUser.
+
+    .OUTPUTS
+
+    System.Row. Get-WRADHistoryOfUser returns all parameters from the UserArchive table in an row.
+
+    .EXAMPLE
+
+    C:\PS> Get-WRADHistoryOfUser
+
+    #>
 }
 
 function Get-WRADHistoryOfGroup {
@@ -2429,4 +2921,5 @@ function New-WRADEvent {
 	}
 }
 
+# Connect to database on module import
 Connect-WRADDatabase
