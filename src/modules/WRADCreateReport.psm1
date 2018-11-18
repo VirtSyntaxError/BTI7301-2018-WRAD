@@ -9,6 +9,12 @@
 	{
 		Write-Error -Message $_.Exception.Message
 	}
+    Import-Module -Name ($PSScriptRoot+"\WRADEventText.psd1")
+    $events = Get-WRADEvent
+    $texts = Get-WRADEventText($events)
+    $90_days_date = (Get-Date).AddDays(-90).
+    $90_days_events = Get-WRADEvent | Where-Object {$_.ResolvedDate -eq "" -or $_.ResolvedDate -gt $90_days_date}
+    return $texts
 }
 function Get-WRADReportUsers{
     # import DB module
@@ -79,7 +85,12 @@ function Write-WRADReport{
     }
     # event report
     if ($events){
-        exit
+        $report = "<!DOCTYPE html><head><title>Event Report</title></head><body><h1>Events</h1></body></html>"
+        $texts = Get-WRADReportEvents
+        foreach ($t in $texts){
+            $report = $report -replace "</body>", "<p>$($t)</p></body>"
+        }
+        Write-Host $report
     } # users report
     elseif ($users){
         $usr = Get-WRADReportUsers
