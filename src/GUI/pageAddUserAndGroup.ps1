@@ -20,7 +20,7 @@ $PageAddUser = New-UDPage -Name "Add User or Group" -AuthorizedRole @("WRADadmin
                     $nbld = $false
                 }
 
-                #Usereingabe prüfen
+                #Usereingabe prÃ¼fen
                 $un = $un.trim()
                 $dn = $dn.trim()
 
@@ -40,9 +40,6 @@ $PageAddUser = New-UDPage -Name "Add User or Group" -AuthorizedRole @("WRADadmin
                     } else {
                         New-UDInputAction -Toast "The user '$un' already exists. The username must be unique." -Duration 5000
                     }
-
-
-                    
                 } else {
                     #Usereingabe falsch
                     Write-UDLog -Message "A string was empty. Username: $un Displayname: $dn Enabled: $active"
@@ -54,18 +51,12 @@ $PageAddUser = New-UDPage -Name "Add User or Group" -AuthorizedRole @("WRADadmin
         #Add Group
 		New-UDColumn -Size 6 -Content {
             New-UDInput -Title "Add Group" -Id "FormAddGroup" -Content {
-            
-                
                 New-UDInputField -Type textbox -Name 'cmnnm' -Placeholder 'Common name' 
                 New-UDInputField -Type select -Name 'grptyp' -Placeholder 'Group type' -Values @("DomainLocal", "Global", "Universal") -DefaultValue "DomainLocal"
                 New-UDInputField -Type select -Name 'grptypsec' -Placeholder 'Group type security' -Values @("Security", "Distribution") -DefaultValue "Security"
-                
-             } -Endpoint {
-                
+            } -Endpoint {
                 param($cmnnm, $grptyp, $grptypsec)
-
                 $cmnnm = $cmnnm.trim()
-
                 Write-UDLog -Message "Add group $cmnnm $grptyp $grptypsec"
 
                 if( -not [string]::IsNullOrEmpty($cmnnm)){
@@ -83,7 +74,6 @@ $PageAddUser = New-UDPage -Name "Add User or Group" -AuthorizedRole @("WRADadmin
                     Write-UDLog -Level Warning -Message "No CommonName"
                     New-UDInputAction -Toast "Please give the group a CommonName." -Duration 5000
                 }
-
             }
         }
     }

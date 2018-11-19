@@ -63,9 +63,9 @@ $ArrAO_SysLog = @(
 	New-Object PSObject	-Property @{date="2018-01-01 10:00"; usr="M. Mustermann"; descr="User1 aus Gruppe 1 entfernt."}
 	New-Object PSObject	-Property @{date="2018-01-01 10:01"; usr="M. Mustermann"; descr="User 1 zu Gruppen 2 hinzugefuegt."}
 	New-Object PSObject	-Property @{date="2018-01-02 08:00"; usr="M. Mustermann"; descr="User 2 erstellt."}
-	New-Object PSObject	-Property @{date="2018-01-02 09:00"; usr="M. Mustermann"; descr="IST-SOLL vergleich ausgeführt."}
-	New-Object PSObject	-Property @{date="2018-01-02 14:00"; usr="S. Achter"; descr="IST-SOLL vergleich ausgeführt."}
-	New-Object PSObject	-Property @{date="2018-01-03 08:00"; usr="A. Osen"; descr="IST-SOLL vergleich ausgeführt."}
+	New-Object PSObject	-Property @{date="2018-01-02 09:00"; usr="M. Mustermann"; descr="IST-SOLL vergleich ausgefï¿½hrt."}
+	New-Object PSObject	-Property @{date="2018-01-02 14:00"; usr="S. Achter"; descr="IST-SOLL vergleich ausgefï¿½hrt."}
+	New-Object PSObject	-Property @{date="2018-01-03 08:00"; usr="A. Osen"; descr="IST-SOLL vergleich ausgefï¿½hrt."}
     
 )
 
@@ -415,7 +415,7 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -AuthorizedRole @("WRADa
             } 
         }
         New-UDColumn -Size 6 -Content {
-            If($Script:EUgroup.count() -gt 0){
+            If($Script:EUgroup.count -gt 0){
                 $UsrGrp = @()
                 ForEach($group in $Scipt:EUgroup){
                     $newgroup = Get-WRADGroup -Reference -ObjectGUID $group.ObjectGUID
@@ -429,12 +429,84 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -AuthorizedRole @("WRADa
 $PageRemUsrFrmGrp = New-UDPage -URL "/RemUsrFrmGrp/:usrguid/:grpguid" -AuthorizedRole @("WRADadmin","Auditor") -Endpoint {
     param($usrguid, $grpguid)
 
-    Remove-WRADGroupOfUser -Reference -UserObjectGUID $usrguid -GroupObjectGUID $grpguid
+	#Load Module
+    if(!(get-module WRADDBCommands)){
+#WARNING: Hard Coded Path. Works only on BFH Server--------------------------------------------------------------------------------------------------------------------------------
+		Import-Module C:\Data\BTI7301-2018-WRAD\src\modules\WRADDBCommands.psm1
+#--------------------------------------------------------------------------------------------------------------------------------
+		Write-UDLog -Level Warning -Message "Import Module WRADCommands"
+	}
+	
+	Remove-WRADGroupOfUser -Reference -UserObjectGUID $usrguid -GroupObjectGUID $grpguid
 
     New-UDInputAction -RedirectUrl "/Edit-User/"
 }
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Edit Group
+$AllGroupGrid = @()
+$AllGroups = Get-WRADGroup -Reference
+Write-UDLog -Level Warning -Message "There are $($AllGroups.Count) Users"
+ForEach($Group in $AllGroups){
+    $AllGroupGrid += @{CommonName = $Group.CommonName; CreatedDate = $User.CreatedDate;  Edit =(New-UDLink -Text "Edit" -Url "/EditGroup/$($Group.ObjectGUID)")} 
+}
 
+$PageEditGroup = New-UDPage -Name "Edit Group" -AuthorizedRole @("WRADadmin","Auditor") -AutoRefresh -RefreshInterval 30 -Content {
+    
+    New-UDRow {
+        New-UDColumn -Size 3 -Content {
+
+        }
+        New-UDColumn -Size 6 -Content {
+            New-UDGrid -Title "All user" -Header @("CommonName", "Create date", "Edit") -Properties @("CommonName", "CreatedDate", "Edit") -Endpoint {
+                $AllGroupGrid | Out-UDGridData
+            }
+        }
+    }
+}
+
+$PageEditGroupDyn = New-UDPage -URL "/EditGroup/:grpguid" -AuthorizedRole @("WRADadmin","Auditor") -Endpoint {
+	param($grpguid)
+
+	#Load Module
+    if(!(get-module WRADDBCommands)){
+#WARNING: Hard Coded Path. Works only on BFH Server--------------------------------------------------------------------------------------------------------------------------------
+		Import-Module C:\Data\BTI7301-2018-WRAD\src\modules\WRADDBCommands.psm1
+#--------------------------------------------------------------------------------------------------------------------------------
+		Write-UDLog -Level Warning -Message "Import Module WRADCommands"
+	}
+
+	$Script:EGgroup = Get-WRADGroup -Reference -ObjectGUID $grpguid
+
+	New-UDRow {
+		New-UDColumn -Size 6 -Content {
+			New-UDInput -Title "Edit Group" -Id "FormEditGroup" -Content {
+                New-UDInputField -Type 'textbox' -Name 'egcn' -Placeholder 'Common Name' -DefaultValue $Script:EGgroupCommonName
+				New-UDInputField -Type select -Name 'eggrptyp' -Placeholder 'Group type' -Values @("DomainLocal", "Global", "Universal") -DefaultValue $Script:EGgroup.GroupType
+                New-UDInputField -Type select -Name 'eggrptypsec' -Placeholder 'Group type security' -Values @("Security", "Distribution") -DefaultValue $Script:EGgroup.GroupTypeSecurity
+            } -Endpoint {
+				param($egcn, $eggrptyp, $eggrptypsec)
+				
+				if(($Script:EGgroup.CommonName -ne $egcn) -or ($Script:EGgroup.GroupType -ne $eggrptyp) -or ($Script:EGgroup.GroupTypeSecurity -ne $eggrptypsec)){
+					#Load Module
+                    if(!(get-module WRADDBCommands)){
+                        Import-Module $Script:Scriptpath\..\modules\WRADDBCommands.psm1
+                        Write-UDLog -Level Warning -Message "Import Module WRADCommands"
+                    }
+
+                    #Update Group
+                    Write-UDLog -Level Warning -Message "Update Group $egcn $eggrptyp $eggrptypsec"
+                    Update-WRADUser -Reference -ObjectGUID $grpguid -CommonName $egcn -GroupType $eggrptyp -GRoupTypeSecurity $eggrptypsec
+
+                    New-UDInputAction -Toast "The user '$egcn' is edited." -Duration 5000
+				}
+			}
+		}
+		New-UDColumn -Size 6 -Content {
+			$grpfgrp = Get-WRADGroupOfGroup -Reference -GroupObjectGUID $grpguid
+		}
+	}
+}
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Get-UDDashboard | Stop-UDDashboard
 
 #Themes Azure,Blue,Default,Earth,Green,Red
