@@ -1,6 +1,8 @@
 ﻿function Get-WRADEventText{
     Param
     (
+        [Switch]$html,
+
         [Parameter(Mandatory=$True)]
 		[Object[]]$evs
     )
@@ -74,6 +76,17 @@
         }
         if ($ev.EventType -eq 14){
             $text = "User '$($ev.SrcGroupObjectGUID)' is in group '$($ev.DestGroupObjectGUID)' but should not"
+        }
+        if ($html){
+            $text = $text -replace "&", "&amp;"
+            $text = $text -replace "ö", "&ouml;"
+            $text = $text -replace "Ö", "&Ouml;"
+            $text = $text -replace "ä", "&auml;"
+            $text = $text -replace "Ä", "&Auml;"
+            $text = $text -replace "Ü", "&Uuml;"
+            $text = $text -replace "ü", "&uuml;"
+            $text = $text -replace "<", "&lt;"
+            $text = $text -replace "<", "&gt;"
         }
         $event_text_list.Add($text)
     }

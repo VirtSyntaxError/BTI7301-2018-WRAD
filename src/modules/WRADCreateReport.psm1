@@ -11,10 +11,46 @@
 	}
     Import-Module -Name ($PSScriptRoot+"\WRADEventText.psd1")
     $events = Get-WRADEvent
-    $texts = Get-WRADEventText($events)
-    $90_days_date = (Get-Date).AddDays(-90).
-    $90_days_events = Get-WRADEvent | Where-Object {$_.ResolvedDate -eq "" -or $_.ResolvedDate -gt $90_days_date}
-    return $texts
+    $texts = Get-WRADEventText -html -evs $events
+    $90_days_date = (Get-Date).AddDays(-90)
+    $90_days_events = Get-WRADEvent | Where-Object {$_.ResolvedDate -is [System.DBNull] -or $_.ResolvedDate -gt $90_days_date}
+    $event_count = @{}
+    for($i=-90;$i -le 0;$i++){
+        $str_date = (Get-Date -Date ((Get-Date).AddDays($i)) -UFormat "%Y%m%d").ToString()
+        $event_count[$str_date] = 0
+        foreach($e in $90_days_events){
+            $cr = $e.CreatedDate
+            $re = $e.ResolvedDate
+            # if not yet resolved, just set it to current day +1
+            if ($e.ResolvedDate -is [System.DBNull]){
+                $re = (Get-Date).AddDays(1)
+            }
+            if ((Get-Date).AddDays($i) -gt $cr -and (Get-Date).AddDays($i) -le $re){
+                $event_count[$str_date] += 1
+            }
+        }
+    }
+    
+    Add-Type -AssemblyName System.Windows.Forms
+    Add-Type -AssemblyName System.Windows.Forms.DataVisualization
+
+    $chart = New-Object System.Windows.Forms.DataVisualization.Charting.Chart
+    $chart.Width = 400
+    $chart.Height = 400
+    $chart.Left = 20
+    $chart.Top = 20
+
+    $chartarea = New-Object System.Windows.Forms.DataVisualization.Charting.ChartArea
+    $chart.ChartAreas.Add($chartarea)
+
+    [void]$chart.Series.Add("Data")
+
+    $chart.Series["Data"].Points.DataBindXY(($event_count.GetEnumerator() | sort -Property name).Name,($event_count.GetEnumerator() | sort -Property name).Value)
+    $chart.Series["Data"].ChartType= "Line"
+    $chart.Series["Data"]["PieLabelStyle"] = "Outside"
+    $chart.Series["Data"]["PieLineColor"] = "Black"
+
+    return @($texts,$chart)
 }
 function Get-WRADReportUsers{
     # import DB module
@@ -86,10 +122,14 @@ function Write-WRADReport{
     # event report
     if ($events){
         $report = "<!DOCTYPE html><head><title>Event Report</title></head><body><h1>Events</h1></body></html>"
-        $texts = Get-WRADReportEvents
+        $evs = Get-WRADReportEvents
+        $texts = $evs[0]
+        $chart = $evs[1]
+        $report = $report -replace "</body>", "<h2>Number of Events</h2><img src='C:\TEMP\pic.png'><h2>Current Events</h2></body>"
         foreach ($t in $texts){
             $report = $report -replace "</body>", "<p>$($t)</p></body>"
         }
+        $chart.SaveImage("C:\TEMP\pic.png","PNG")
         Write-Host $report
     } # users report
     elseif ($users){
@@ -113,7 +153,39 @@ function Write-WRADReport{
         
     } # full report
     else {
-        exit
+        # get user stuff
+        $usr = Get-WRADReportUsers
+        $disabled = $usr[0]
+        $users_30_90 = $usr[1]
+        $users_90_X = $usr[2]
+        $users_never = $usr[3]
+        $usr_chart = $usr[4]
+        # get event stuff
+        $evs = Get-WRADReportEvents
+        $texts = $evs[0]
+        $evs_chart = $evs[1]
+
+        # do user stuff
+        $report = $disabled | ConvertTo-Html -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName
+        $report = $report -replace "<body>", "<body><h1>Disabled Users</h1>"
+        $report = $report -replace "</body>", "<h1>Inactive Users</h1><img src='C:\TEMP\USRpic.png'></body>"
+        $usr_chart.SaveImage("C:\TEMP\USRpic.png", "PNG")
+        $users_30_90_html = $users_30_90 | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
+        $users_90_X_html = $users_90_X | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
+        $users_never_html = $users_never | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
+        $report = $report -replace "</body>", "<h2>30d &gt; Last Logon &lt; 90d</h2>$($users_30_90_html)</body>"
+        $report = $report -replace "</body>", "<h2>90d &lt; Last Logon</h2>$($users_90_X_html)</body>"
+        $report = $report -replace "</body>", "<h2>Never logged in</h2>$($users_never_html)</body>"
+
+        # do event stuff        
+        $evs_chart.SaveImage("C:\TEMP\EVSpic.png","PNG")
+        $report = $report -replace "</body>", "<h1>Events</h1></body>"
+        $report = $report -replace "</body>", "<h2>Number of Events</h2><img src='C:\TEMP\EVSpic.png'><h2>Current Events</h2></body>"
+        foreach ($t in $texts){
+            $report = $report -replace "</body>", "<p>$($t)</p></body>"
+        }
+
+        Write-Host $report
     }
 
     <#
