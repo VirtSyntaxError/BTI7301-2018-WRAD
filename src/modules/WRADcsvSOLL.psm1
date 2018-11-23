@@ -236,7 +236,21 @@ function Export-WRADcsv
             {
                 ### do an export from Reference DB
                 $DBgroups = Get-WRADGroup -Reference | Select-Object ObjectGUID,CommonName,GroupTypeSecurity,GroupType
-                # tbd. append group membership to variable
+                # append group membership to variable
+                foreach($group in $DBgroups){
+                    $members = Get-WRADGroupofGroup -Reference -ChildGroupObjectGUID:$group.ObjectGUID
+                    $FirstParameter = $true
+                    foreach($member in $members){
+                        $memberName = Get-WRADGroup -Reference -ObjectGUID:$member.ParentGroupObjectGUID | Select-Object CommonName
+                        if($FirstParameter){
+                            $memberNames += $memberName
+                            $FirstParameter = $false
+                        } else {
+                            $memberNames += ";"+$memberName
+                        }
+                        $DBgroups.Membership = $memberNames
+                    }
+                }
             }
         }
         if($ExportOf -eq 'Users')
@@ -251,6 +265,20 @@ function Export-WRADcsv
             {
                 $DBusers = Get-WRADUser -Reference | Select-Object ObjectGUID,UserName,DisplayName,Enabled
                 # tbd. append group membership to variable
+                foreach($user in $DBusers){
+                    $members = Get-WRADGroupofUser -Reference -UserObjectGUID:$user.ObjectGUID
+                    $FirstParameter = $true
+                    foreach($member in $members){
+                        $memberName = Get-WRADGroup -Reference -ObjectGUID:$member.GroupObjectGUID | Select-Object CommonName
+                        if($FirstParameter){
+                            $memberNames += $memberName
+                            $FirstParameter = $false
+                        } else {
+                            $memberNames += ";"+$memberName
+                        }
+                        $DBusers.Membership = $memberNames
+                    }
+                }
             }
         }
     }
