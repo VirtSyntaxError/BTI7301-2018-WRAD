@@ -464,6 +464,8 @@ $PageEditGroup = New-UDPage -Name "Edit Group" -AuthorizedRole @("WRADadmin","Au
     }
 }
 
+$AllGrpFGrp = @();
+$AllGrpFUsr = @();
 $PageEditGroupDyn = New-UDPage -URL "/EditGroup/:grpguid" -AuthorizedRole @("WRADadmin","Auditor") -Endpoint {
 	param($grpguid)
 
@@ -502,8 +504,36 @@ $PageEditGroupDyn = New-UDPage -URL "/EditGroup/:grpguid" -AuthorizedRole @("WRA
 			}
 		}
 		New-UDColumn -Size 6 -Content {
-			$grpfgrp = Get-WRADGroupOfGroup -Reference -GroupObjectGUID $grpguid
+			$grpfgrp = Get-WRADGroupOfGroup -Reference -GroupObjectGUID $grpguid 
+			#Name allocation
+
+			New-UDGrid -Title "Group of Groups" -Header @("CommonName", "Create date", "Edit") -Properties @("CommonName", "CreatedDate", "Edit") -Endpoint {
+                $AllGroupGrid | Out-UDGridData
+            }
 		}
+	}
+	New-UDRow {
+		New-UDColumn -Size 3 -Content {
+
+		}
+		New-UDColumn -Size 6 -Content {
+			$grpfusr = Get-WRADGroupOfUser -Reference -GroupObjectGUID $grpguid
+			ForEach($user in $grpfusr){
+				$UsrInGrp = Get-WRADUser -ObjectGUID $user.UserObjectGUID
+
+				if($UsrInGrp.Enabled){
+					$nbld = Yes;
+				} else {
+					$nbld = No;
+				}
+
+				$AllGrpFUsr += @{Username = $UsrInGrp.UserName; DisplayName = $UsrInGrp.DisplayName; Enabled = $nbld}
+			}
+			New-UDGrid -Title "User in Group" -Header @("Username", "DisplayName", "Enabled") -Properties @("Username", "DisplayName", "Enabled") -Endpoint {
+                $AllGrpFUsr | Out-UDGridData
+            }
+		}
+	
 	}
 }
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
