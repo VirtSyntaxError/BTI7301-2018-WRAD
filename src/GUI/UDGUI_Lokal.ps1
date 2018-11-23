@@ -415,12 +415,13 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -AuthorizedRole @("WRADa
             } 
         }
         New-UDColumn -Size 6 -Content {
-            If($Script:EUgroup.count -gt 0){
-                $UsrGrp = @()
-                ForEach($group in $Scipt:EUgroup){
-                    $newgroup = Get-WRADGroup -Reference -ObjectGUID $group.ObjectGUID
-                    $UsrGrp += @{ GroupName = $newgroup.CommonName; Edit =(New-UDLink -Text "Remove" -Url "/RemUsrFrmGrp/$($Script:EUuser.ObjectGUID)/$($group.ObjectGUID)")}
-                }
+            $UsrGrp = @()
+            ForEach($group in $Script:EUgroup){
+                $newgroup = Get-WRADGroup -Reference -ObjectGUID $group.GroupObjectGUID
+                $UsrGrp += @{ GroupName = $newgroup.CommonName; Edit =(New-UDLink -Text "Remove" -Url "/RemUsrFrmGrp/$($Script:EUuser.ObjectGUID)/$($group.GroupObjectGUID)")}
+            }
+            New-UDGrid -Title "Member of" -Header @("GroupName", "Edit") -Properties @("GroupName", "Edit") -Endpoint {
+                $UsrGrp | Out-UDGridData
             }
         } 
     } 
@@ -428,6 +429,11 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -AuthorizedRole @("WRADa
 
 $PageRemUsrFrmGrp = New-UDPage -URL "/RemUsrFrmGrp/:usrguid/:grpguid" -AuthorizedRole @("WRADadmin","Auditor") -Endpoint {
     param($usrguid, $grpguid)
+    #10:52:32 ExecutionService Error executing endpoint script. The variable '$Global:WRADDBConnection' cannot be retrieved because it has not been set.
+    $date = Get-Date -UFormat "%Y%m%d"
+    Enable-UDLogging -FilePath "C:\Data\Logs\UDLog_$date.txt" -Level Warning
+    Write-UDLog -Level Warning -Message "Delete Group $usrguid from User $grpguid"
+
 
 	#Load Module
     if(!(get-module WRADDBCommands)){
@@ -437,6 +443,7 @@ $PageRemUsrFrmGrp = New-UDPage -URL "/RemUsrFrmGrp/:usrguid/:grpguid" -Authorize
 		Write-UDLog -Level Warning -Message "Import Module WRADCommands"
 	}
 	
+    Write-UDLog -Level Warning -Message "Remove now"
 	Remove-WRADGroupOfUser -Reference -UserObjectGUID $usrguid -GroupObjectGUID $grpguid
 
     New-UDInputAction -RedirectUrl "/Edit-User/"
@@ -549,7 +556,7 @@ $theme = New-UDTheme -Name "AzureChngBtn" -Definition @{
 
 Start-UDDashboard -Port 10000 -AllowHttpForLogin -Content {
     
-    New-UDDashboard -Login $login -Pages @($PageALDashboard, $PageAtDashboard, $PageSADashboard, $PageAODashboard, $PageASDashboard, $UsrAGrp, $PageSettings, $PageAddUser, $PageEditUser, $PageEditUserDyn) -Title "Mock up Dashboards" -Color 'Black' -Theme $theme
+    New-UDDashboard -Login $login -Pages @($PageALDashboard, $PageAtDashboard, $PageSADashboard, $PageAODashboard, $PageASDashboard, $UsrAGrp, $PageSettings, $PageAddUser, $PageEditUser, $PageEditUserDyn, $PageRemUsrFrmGrp) -Title "Mock up Dashboards" -Color 'Black' -Theme $theme
     
 }
 #-Verbose -debug
