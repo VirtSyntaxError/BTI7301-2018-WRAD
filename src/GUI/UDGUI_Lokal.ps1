@@ -1,5 +1,5 @@
 <#
-Was geht nicht oder wurde keine Lösung gefunden:
+Was geht nicht oder wurde keine LÃ¶sung gefunden:
 
 Windows Server 2016
 .Net 4.7.2
@@ -8,7 +8,7 @@ UniversalDashboard 2.1.0
 1)
 New-UDDashboard -EndpointInitialization
 --> New-UDEndpointInitialization -Modul OK -Function OK -Variable Error
-Fehler
+Fehler:
 New-UDEndpointInitialization : Access to the path 'C:\Data\BTI7301-2018-WRAD\src\GUI' is denied.
 At C:\Data\BTI7301-2018-WRAD\src\GUI\UDGUI_Lokal.ps1:51 char:25
 + ... DEndpoint = New-UDEndpointInitialization -Module $PSScriptRoot\..\mod ...
@@ -16,18 +16,12 @@ At C:\Data\BTI7301-2018-WRAD\src\GUI\UDGUI_Lokal.ps1:51 char:25
     + CategoryInfo          : NotSpecified: (:) [New-UDEndpointInitialization], UnauthorizedAccessException
     + FullyQualifiedErrorId : System.UnauthorizedAccessException,UniversalDashboard.Cmdlets.NewEndpointInitializationCommand
 
-Sobald man die Variable auskommentiert gibt es keinen Fehler mehr. Möchte dort den Pfad zum Script angeben ($PSScriptRoot)
+Sobald man die Variable auskommentiert gibt es keinen Fehler mehr. MÃ¶chte dort den Pfad zum Script angeben ($PSScriptRoot)
 
 2)
-Button oder ähnliches in einem New-UDGrid Element einbinden, funktioniert nicht. Mit dem New-UDLink Element funktioniert es.
+Button in einem New-UDGrid Element einbinden, funktioniert nicht. Mit dem New-UDLink Element funktioniert es.
 Sowohl Version UniversalDashboard 2.1.0  wie auch UniversalDashboard 2.2.0-beta1
-We need a Element in a Grid per row which can run a function with different variables. 
-
-3) New-UDInput ... -Endpoint {} -ArgumentList
-Beim Endpoint einesInput Element gibt es keine Argument List Property
-
-4)
-Ich weiss nicht wie ich ein Grid neu laden kann. Wenn man zum Beispiel ein User löscht soll dieser aus der Tabelle verschwinden.
+Auf jeder Zeile des Grids soll ein Button oder Ã¤hnliches sein, dass eine Funktion auslÃ¶sen kann. Vielleicht auch ein Link mit einer OnClick-Action, da man den Button nicht umdesignen kann.
 
 Code: 
 ForEach($User in $AllUser){
@@ -35,6 +29,19 @@ ForEach($User in $AllUser){
 }
 
 Error: this.state.events.map is not a function
+
+3) New-UDInput ... -Endpoint {} -ArgumentList
+Beim Endpoint einesInput Element gibt es keine Argument List Property
+
+4)Endpoint einer Dynamischen Seite hat keinen Zugriff auf die $Script oder $Global Variablen
+
+Beim Versuch das Modul WRADDBCommands zuladen oder beim auslesen von daten Ã¼ber das Modul.
+
+#10:52:32 ExecutionService Error executing endpoint script. The variable '$Global:WRADDBConnection' cannot be retrieved because it has not been set.
+
+5)
+Ich weiss nicht wie ich ein Grid neu laden kann. Wenn man zum Beispiel ein User lÃ¶scht soll dieser aus der Tabelle verschwinden. FÃ¼r Prototyp nicht wichtig.
+
 #>
 
 $Script:ScriptPath = $PSScriptRoot
