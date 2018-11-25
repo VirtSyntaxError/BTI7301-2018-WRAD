@@ -68,7 +68,7 @@ $PageAddUser = New-UDPage -Name "Add User or Group" -AuthorizedRole @("WRADadmin
 
                     #Save Group
                     New-WRADGroup -Reference -CommonName "$cmnnm" -GroupType $grptyp -GroupTypeSecurity $grptypsec
-                    Write-UDLog -Level Warning -Message "Group Added"
+                    Write-UDLog -Level Warning -Message "Group Added $cmnnm"
                     New-UDInputAction -Toast "The group '$cmnnm' is saved." -ClearInput -Duration 5000
                 } else {
                     Write-UDLog -Level Warning -Message "No CommonName"

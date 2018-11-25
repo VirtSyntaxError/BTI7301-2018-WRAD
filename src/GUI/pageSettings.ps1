@@ -73,7 +73,7 @@ $PageSettings = New-UDPage -Name "Settings" -AuthorizedRole @("WRADadmin","Audit
                 }
                           
                 Write-UDLog -Level Warning -Message "End of code 'insert settings'"
-                New-UDInputAction -RedirectUrl "/Einstellungen"
+                New-UDInputAction -RedirectUrl "/Settings"
 
             }
 		}

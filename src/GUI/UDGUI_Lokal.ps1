@@ -80,12 +80,21 @@ function enable-WRADLogging {
     }
 }
 
+function reload-WRADGUIContent {
+    Param()
+    try {
+        $AllUser = Get-WRADUser -Reference
+        $AllGroups = Get-WRADGroup -Reference
+    }
+    catch {
+        Write-Error -Message $_.Exception.Message
+        Write-UDLog -Level Warning -Message "Could not load UD Logging."
+    }
+}
+
 load-WRADUDDashboard
 enable-WRADLogging
 load-WRADDBCommands
-
-$date = Get-Date -UFormat "%Y%m%d"
-Enable-UDLogging -FilePath "C:\Data\Logs\UDLog_$date.txt" -Level Warning
 
 $InitiateWRADEndpoint = New-UDEndpointInitialization -Module $PSScriptRoot\..\modules\WRADDBCommands.psm1 -Function enable-WRADLogging,load-WRADDBCommands #-Variable $ScrptRt
 
@@ -152,14 +161,16 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -AuthorizedRole @("WRADa
     param($usrguid)
 
     #Load Module
-    <#/*if(!(get-module WRADDBCommands)){
+    if(!(get-module WRADDBCommands)){
 #WARNING: Hard Coded Path. Works only on BFH Server--------------------------------------------------------------------------------------------------------------------------------
         Import-Module C:\Data\BTI7301-2018-WRAD\src\modules\WRADDBCommands.psm1
 #--------------------------------------------------------------------------------------------------------------------------------
         Write-UDLog -Level Warning -Message "Import Module WRADCommands"
-    }#>
+    }#
 
-    load-WRADDBCommands
+    #load-WRADDBCommands
+    $Script:Scriptpath = $ArgumentList[0]
+    $Global:WRADDBConnection = $ArgumentList[1]
 
     #Get User and make him editable
     Write-UDLog -Level Warning -Message "Get User: $usrguid"
@@ -190,13 +201,13 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -AuthorizedRole @("WRADa
 
                 if(($Script:EUuser.Username -ne $euun) -or ($Script:EUuser.DisplayName -ne $eudn) -or ($Script:EUuser.Enabled -ne $eunbld)){
                 
-                    <#Load Module
+                    Load Module
                     if(!(get-module WRADDBCommands)){
                         Import-Module $Script:Scriptpath\..\modules\WRADDBCommands.psm1
                         Write-UDLog -Level Warning -Message "Import Module WRADCommands"
-                    }#>
+                    }
 
-                    load-WRADDBCommands
+                    #load-WRADDBCommands
 
                     #Update User
                     Write-UDLog -Level Warning -Message "Update User $euun $eudn $eunbld"
@@ -220,7 +231,7 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -AuthorizedRole @("WRADa
             }
         } 
     } 
-}  
+} -ArgumentList $PSScriptRoot,$Global:WRADDBConnection
 
 $PageRemUsrFrmGrp = New-UDPage -URL "/RemUsrFrmGrp/:usrguid/:grpguid" -AuthorizedRole @("WRADadmin","Auditor") -Endpoint {
     param($usrguid, $grpguid)
@@ -248,7 +259,7 @@ $PageRemUsrFrmGrp = New-UDPage -URL "/RemUsrFrmGrp/:usrguid/:grpguid" -Authorize
     Write-UDLog -Level Warning -Message "Remove now"
 	Remove-WRADGroupOfUser -Reference -UserObjectGUID $usrguid -GroupObjectGUID $grpguid
 
-    New-UDInputAction -RedirectUrl "/Edit-User/"
+    New-UDInputAction -RedirectUrl "/Edit-User"
 } -ArgumentList $PSScriptRoot,$Global:WRADDBConnection
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #Edit Group
@@ -312,20 +323,7 @@ $PageEditGroupDyn = New-UDPage -URL "/EditGroup/:grpguid" -AuthorizedRole @("WRA
 				}
 			}
 		}
-		New-UDColumn -Size 6 -Content {
-			$grpfgrp = Get-WRADGroupOfGroup -Reference -GroupObjectGUID $grpguid 
-			#Name allocation
-
-			New-UDGrid -Title "Group of Groups" -Header @("CommonName", "Create date", "Edit") -Properties @("CommonName", "CreatedDate", "Edit") -Endpoint {
-                $AllGroupGrid | Out-UDGridData
-            }
-		}
-	}
-	New-UDRow {
-		New-UDColumn -Size 3 -Content {
-
-		}
-		New-UDColumn -Size 6 -Content {
+        New-UDColumn -Size 6 -Content {
 			$grpfusr = Get-WRADGroupOfUser -Reference -GroupObjectGUID $grpguid
 			ForEach($user in $grpfusr){
 				$UsrInGrp = Get-WRADUser -ObjectGUID $user.UserObjectGUID
@@ -340,6 +338,24 @@ $PageEditGroupDyn = New-UDPage -URL "/EditGroup/:grpguid" -AuthorizedRole @("WRA
 			}
 			New-UDGrid -Title "User in Group" -Header @("Username", "DisplayName", "Enabled") -Properties @("Username", "DisplayName", "Enabled") -Endpoint {
                 $AllGrpFUsr | Out-UDGridData
+            }
+		}
+	}
+	New-UDRow {
+		
+		New-UDColumn -Size 6 -Content {
+			$grpchldgrp = Get-WRADGroupOfGroup -Reference -ChildGroupObjectGUID $grpguid 
+
+			New-UDGrid -Title "Member of Groups" -Header @("CommonName", "Create date", "Edit") -Properties @("CommonName", "CreatedDate", "Edit") -Endpoint {
+                $grpchldgrp | Out-UDGridData
+            }
+		}
+		
+		New-UDColumn -Size 6 -Content {
+			$grpprntgrp = Get-WRADGroupOfGroup -Reference -ParentGroupObjectGUID $grpguid 
+
+			New-UDGrid -Title "Groups in Group" -Header @("CommonName", "Create date", "Edit") -Properties @("CommonName", "CreatedDate", "Edit") -Endpoint {
+                $grpprntgrp | Out-UDGridData
             }
 		}
 	
