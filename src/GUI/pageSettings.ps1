@@ -44,7 +44,7 @@ $PageSettings = New-UDPage -Name "Settings" -AuthorizedRole @("WRADadmin","Audit
                 For($i=0; $i -le $WRADSettingsNew.length-1; $i++) {
                    
                     if($Script:ActualWRADSettings[$i].SettingValue -ne $WRADSettingsNew[$i]){
-                        Write-UDLog -Level Info -Message "New Setting $($WRADSettingsNew[$i])" -Level Info
+                        Write-UDLog -Level Warning -Message "New Setting $($WRADSettingsNew[$i])" 
                         #$Script:ActualWRADSettings[$i].SettingValue = $WRADSettingsNew[$i]
                         $ns = 1
 
@@ -73,7 +73,7 @@ $PageSettings = New-UDPage -Name "Settings" -AuthorizedRole @("WRADadmin","Audit
                 }
                           
                 Write-UDLog -Level Warning -Message "End of code 'insert settings'"
-                New-UDInputAction -RedirectUrl "/Einstellungen"
+                New-UDInputAction -RedirectUrl "/Settings"
 
             }
 		}
