@@ -230,7 +230,25 @@ function Export-WRADcsv
             {
                 ### do an initial Export directly from AD
                 $ADgroups = Get-WRADADGroups | Select-Object ObjectGUID,Name,GroupScope,GroupCategory,MemberOf
-                $ADgroups | Export-Csv -Path:$csvPath
+                foreach ($group in $ADgroups){
+                    $FirstParameter = $true
+                    $MemberOf =  $group.MemberOf.Split(",")
+                    foreach($t in $MemberOf){
+                        if($t.StartsWith("CN=")){
+                            $MemberName = $t.trim("CN=")
+                            if($FirstParameter){
+                                $memberNames = $memberName
+                                $FirstParameter = $false
+                            } else {
+                                $memberNames += ";"+$memberName
+                            }
+                        }
+                    }
+                    $group.Membership = $memberNames
+                    $group.PsObject.Members.Remove('MemberOf')
+                    $ExportGroups += $group
+                }
+                $ExportGroups | Export-Csv -Path:$csvPath
             }
             else 
             {
@@ -243,14 +261,16 @@ function Export-WRADcsv
                     foreach($member in $members){
                         $memberName = Get-WRADGroup -Reference -ObjectGUID:$member.ParentGroupObjectGUID | Select-Object CommonName
                         if($FirstParameter){
-                            $memberNames += $memberName
+                            $memberNames = $memberName
                             $FirstParameter = $false
                         } else {
                             $memberNames += ";"+$memberName
                         }
-                        $DBgroups.Membership = $memberNames
                     }
+                    $group.Membership = $memberNames
+                    $ExportGroups += $group
                 }
+                $ExportGroups | Export-Csv -Path:$csvPath
             }
         }
         if($ExportOf -eq 'Users')
@@ -259,7 +279,25 @@ function Export-WRADcsv
             {
                 ### do an initial Export directly from AD
                 $ADusers = Get-WRADADUsers -filter * -searchbase:$((Get-ADRootDSE).rootDomainNamingContext) | Select-Object ObjectGUID,DisplayName,UserPrincipalName,Enabled,MemberOf
-                $ADusers | Export-Csv -Path:$csvPath
+                foreach ($user in $ADusers){
+                    $FirstParameter = $true
+                    $MemberOf =  $user.MemberOf.Split(",")
+                    foreach($t in $MemberOf){
+                        if($t.StartsWith("CN=")){
+                            $MemberName = $t.trim("CN=")
+                            if($FirstParameter){
+                                $memberNames = $memberName
+                                $FirstParameter = $false
+                            } else {
+                                $memberNames += ";"+$memberName
+                            }
+                        }
+                    }
+                    $user.Membership = $memberNames
+                    $user.PsObject.Members.Remove('MemberOf')
+                    $ExportUsers += $user
+                }
+                $ExportUsers | Export-Csv -Path:$csvPath
             }
             else 
             {
@@ -271,14 +309,16 @@ function Export-WRADcsv
                     foreach($member in $members){
                         $memberName = Get-WRADGroup -Reference -ObjectGUID:$member.GroupObjectGUID | Select-Object CommonName
                         if($FirstParameter){
-                            $memberNames += $memberName
+                            $memberNames = $memberName
                             $FirstParameter = $false
                         } else {
                             $memberNames += ";"+$memberName
                         }
-                        $DBusers.Membership = $memberNames
                     }
+                    $user.Membership = $memberNames
+                    $ExportUsers += $user
                 }
+                $ExportUsers | Export-Csv -Path:$csvPath
             }
         }
     }

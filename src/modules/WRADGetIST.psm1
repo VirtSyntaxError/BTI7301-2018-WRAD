@@ -209,4 +209,26 @@ function Write-WRADISTtoDB
 		Write-Error -Message $_.Exception.Message
 		Write-WRADLog 'failed to updates IST DB from AD' 2
 	}
+	<#
+    .SYNOPSIS
+
+    Exports Data from AD to a DB
+
+    .DESCRIPTION
+
+    Exports the actual User and Group Data from Active Directory to the WRAD DB.
+
+    .INPUTS
+    
+    None. You cannot pipe objects to this function.
+
+    .OUTPUTS
+
+    No direct output, but Data gets Stored in DB
+
+    .EXAMPLE
+
+    C:\PS> Write-WRADISTtoDB
+
+    #>
 }
