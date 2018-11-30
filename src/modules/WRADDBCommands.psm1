@@ -2207,7 +2207,45 @@ function Get-WRADHistoryOfUser {
 
     .EXAMPLE
 
-    C:\PS> Get-WRADHistoryOfUser
+    C:\PS> Get-WRADHistoryOfUser -ObjectGUID op3n-93kae-903ld9-22kdl
+    ArchiveID         : 1
+    userPrincipalName : RudolfK@example.local
+    SAMAccountName    : RudolfK
+    DistinguishedName : CN="RudolfK",CN="Users",CN="example",CN="local"
+    ObjectGUID        : op3n-93kae-903ld9-22kdl
+    OperationType     : u
+    VersionStartTime  : 02.11.2018 10:20:29
+    VersionEndTime    : 02.11.2018 10:24:48
+    DisplayName       : RudolfK
+    Description       : 
+    Enabled           : False
+    Expired           : False
+
+    ArchiveID         : 2
+    userPrincipalName : RudolfK@example.local
+    SAMAccountName    : RudolfK
+    DistinguishedName : CN="RudolfK",CN="Users",CN="example",CN="local"
+    ObjectGUID        : op3n-93kae-903ld9-22kdl
+    OperationType     : u
+    VersionStartTime  : 02.11.2018 10:24:48
+    VersionEndTime    : 02.11.2018 10:25:23
+    DisplayName       : RudolfK
+    Description       : 
+    Enabled           : True
+    Expired           : False
+
+    ArchiveID         : 3
+    userPrincipalName : RudolfK@example.local
+    SAMAccountName    : RudolfK
+    DistinguishedName : CN="RudolfK",CN="Users",CN="example",CN="local"
+    ObjectGUID        : op3n-93kae-903ld9-22kdl
+    OperationType     : d
+    VersionStartTime  : 02.11.2018 10:25:23
+    VersionEndTime    : 02.11.2018 10:27:17
+    DisplayName       : RudolfK
+    Description       : 
+    Enabled           : True
+    Expired           : False
 
     #>
 }
@@ -2239,6 +2277,54 @@ function Get-WRADHistoryOfGroup {
 	End
 	{
 	}
+<#
+    .SYNOPSIS
+
+    Gets the history of a WRAD group.
+
+    .DESCRIPTION
+
+    Gets the history of a WRAD group from the database. This includes any updates or deletes on this group.
+
+    .PARAMETER ObjectGUID
+    Specifies the Globally Unique Identifier of the group.
+
+    .INPUTS
+
+    None. You cannot pipe objects to Get-WRADHistoryOfGroup.
+
+    .OUTPUTS
+
+    System.Row. Get-WRADHistoryOfGroup returns all parameters from the GroupArchive table in an row.
+
+    .EXAMPLE
+
+    C:\PS> Get-WRADHistoryOfGroup -ObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
+    ArchiveID         : 1
+    ObjectGUID        : 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
+    CommonName        : MaurerMail
+    SAMAccountName    : MaurerMail
+    GroupType         : DomainLocal
+    GroupTypeSecurity : Distribution
+    VersionStartTime  : 18.11.2018 12:44:05
+    OperationType     : u
+    VersionEndTime    : 18.11.2018 12:46:50
+    DistinguishedName : CN="MaurerMail", CN="example", CN="local"
+    Description       : 
+
+    ArchiveID         : 2
+    ObjectGUID        : 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
+    CommonName        : MaurerMail
+    SAMAccountName    : MaurerMail
+    GroupType         : DomainLocal
+    GroupTypeSecurity : Distribution
+    VersionStartTime  : 18.11.2018 12:46:50
+    OperationType     : d
+    VersionEndTime    : 18.11.2018 12:47:00
+    DistinguishedName : CN="MaurerMail", CN="Groups", CN="example", CN="local"
+    Description       : 
+
+    #>
 }
 
 function Get-WRADDeletedUser {
@@ -2265,6 +2351,41 @@ function Get-WRADDeletedUser {
 	End
 	{
 	}
+<#
+    .SYNOPSIS
+
+    Gets all deleted WRAD users.
+
+    .DESCRIPTION
+
+    Gets all deleted WRAD users from the database. These are users which have exist in Active Directory but have been deleted later on.
+
+    .INPUTS
+
+    None. You cannot pipe objects to Get-WRADDeletedUser.
+
+    .OUTPUTS
+
+    System.Row. Get-WRADDeletedUser returns all parameters from all deleted user in the UserArchive table in an row.
+
+    .EXAMPLE
+
+    C:\PS> Get-WRADDeletedUser
+
+    ArchiveID         : 3
+    userPrincipalName : RudolfK@example.local
+    SAMAccountName    : RudolfK
+    DistinguishedName : CN="RudolfK",CN="Users",CN="example",CN="local"
+    ObjectGUID        : op3n-93kae-903ld9-22kdl
+    OperationType     : d
+    VersionStartTime  : 02.11.2018 10:25:23
+    VersionEndTime    : 02.11.2018 10:27:17
+    DisplayName       : RudolfK
+    Description       : 
+    Enabled           : True
+    Expired           : False
+
+    #>
 }
 
 function Get-WRADDeletedGroup {
@@ -2291,6 +2412,39 @@ function Get-WRADDeletedGroup {
 	End
 	{
 	}
+<#
+    .SYNOPSIS
+
+    Gets all deleted WRAD groups.
+
+    .DESCRIPTION
+
+    Gets all deleted WRAD groups from the database. These are groups which have exist in Active Directory but have been deleted later on.
+
+    .INPUTS
+
+    None. You cannot pipe objects to Get-WRADDeletedGroup.
+
+    .OUTPUTS
+
+    System.Row. Get-WRADDeletedGroup returns all parameters from all deleted group in the GroupArchive table in an row.
+
+    .EXAMPLE
+
+    C:\PS> Get-WRADDeletedGroup
+    ArchiveID         : 2
+    ObjectGUID        : 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
+    CommonName        : MaurerMail
+    SAMAccountName    : MaurerMail
+    GroupType         : DomainLocal
+    GroupTypeSecurity : Distribution
+    VersionStartTime  : 18.11.2018 12:46:50
+    OperationType     : d
+    VersionEndTime    : 18.11.2018 12:47:00
+    DistinguishedName : CN="MaurerMail", CN="Groups", CN="example", CN="local"
+    Description       : 
+
+    #>
 }
 
 function Get-WRADDeletedGroupOfUser {
@@ -2383,6 +2537,49 @@ function Get-WRADSetting {
 	End
 	{
 	}
+<#
+    .SYNOPSIS
+
+    Gets WRAD application settings.
+
+    .DESCRIPTION
+
+    Gets WRAD application settings which are stored in the database.
+
+    .PARAMETER SettingName
+    Filters only the settings which match SettingName
+
+    .INPUTS
+
+    None. You cannot pipe objects to Get-WRADSetting.
+
+    .OUTPUTS
+
+    System.Row. Get-WRADSetting returns all settings in an row.
+
+    .EXAMPLE
+
+    C:\PS> Get-WRADSetting
+
+    SettingID SettingName             SettingValue
+    --------- -----------             ------------
+            1 ADRoleDepartmentLead                
+            2 ADRoleAuditor                       
+            3 ADRoleSysAdmin                      
+            4 ADRoleApplOwner                     
+            5 LogExternal             none        
+            6 LogFilePath                         
+            7 LogSyslogServer                     
+            8 LogSyslogServerProtocol udp         
+            9 SearchBase                         
+
+    .EXAMPLE
+    C:\PS> Get-WRADSetting -SettingName LogExternal
+
+    SettingID SettingName SettingValue
+    --------- ----------- ------------
+            5 LogExternal none
+    #>
 }
 
 function Update-WRADSetting {
@@ -2429,6 +2626,7 @@ function Update-WRADSetting {
         $Table = 'WRADSetting'
         $Query = 'UPDATE '+$Table+' SET `SettingValue` = CASE ';
         $Settings = @()
+        # Replace all double quotes and backslashes to represent them in the database
         if($SearchBase){
             $SearchBase = $SearchBase.Replace('"','&DQ&')
         }
@@ -2448,10 +2646,12 @@ function Update-WRADSetting {
             $ADRoleApplOwner = $ADRoleApplOwner.Replace('\','&BS&')
         }
 
+        # Loop through each parameter and add it to the UPDATE statement
         $PSBoundParameters.Keys | ForEach {
             if ($BuiltinParameters -notcontains $_) {
                 $Value = (Get-Variable -Name $_).Value
 
+                # Insert the escaped double quotes and backslashes 
                 $Query += ' WHEN `SettingName` = "'+$_+'" THEN "'+$Value.Replace('&DQ&','\"').Replace('&BS&','\\')+'" '
                 $Settings += '"'+$_+'"'
             }
@@ -2479,6 +2679,55 @@ function Update-WRADSetting {
 	End
 	{
 	}
+<#
+    .SYNOPSIS
+
+    Updates WRAD application settings.
+
+    .DESCRIPTION
+
+    Updates WRAD application settings which are stored in the database.
+
+    .PARAMETER ADRoleDepartmentLead
+    Changes the setting ADRoleDepartmentLead
+
+    .PARAMETER ADRoleAuditor
+    Changes the setting ADRoleAuditor
+
+    .PARAMETER ADRoleSysAdmin
+    Changes the setting ADRoleSysAdmin
+
+    .PARAMETER ADRoleApplOwner
+    Changes the setting ADRoleApplOwner
+
+    .PARAMETER LogExternal
+    Changes the setting LogExternal. Allowed options are none, file or syslog.
+
+    .PARAMETER LogFilePath
+    Changes the setting LogFilePath
+
+    .PARAMETER LogSyslogServer
+    Changes the setting LogSyslogServer
+    
+    .PARAMETER LogSyslogServerProtocol
+    Changes the setting LogSyslogServerProtocol. Allowed options are tcp and udp
+    
+    .PARAMETER SearchBase
+    Changes the setting SearchBase
+
+    .INPUTS
+
+    None. You cannot pipe objects to Update-WRADSetting.
+
+    .OUTPUTS
+
+    Nothing.
+
+    .EXAMPLE
+
+    C:\PS> Update-WRADSetting -LogExternal file -LogFilePath "C:\WRADLogs"
+
+    #>
 }
 
 function Get-WRADLog {
