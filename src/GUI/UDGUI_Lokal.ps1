@@ -42,6 +42,11 @@ Beim Versuch das Modul WRADDBCommands zuladen oder beim auslesen von daten über
 5)
 Ich weiss nicht wie ich ein Grid neu laden kann. Wenn man zum Beispiel ein User löscht soll dieser aus der Tabelle verschwinden. Für Prototyp nicht wichtig.
 
+
+30.11.2016
+New-UDInputAction -RedirectURL not redirecting
+
+
 #>
 
 $Script:ScriptPath = $PSScriptRoot
@@ -103,7 +108,7 @@ load-WRADUDDashboard
 enable-WRADLogging
 load-WRADDBCommands
 
-$InitiateWRADEndpoint = New-UDEndpointInitialization -Module $PSScriptRoot\..\modules\WRADDBCommands.psm1 -Function enable-WRADLogging,load-WRADDBCommands #-Variable $ScrptRt
+$InitiateWRADEndpoint = New-UDEndpointInitialization -Function enable-WRADLogging,load-WRADDBCommands #-Variable $ScrptRt -Module $PSScriptRoot\..\modules\WRADDBCommands.psm1
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -208,13 +213,11 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -AuthorizedRole @("WRADa
 
                 if(($Script:EUuser.Username -ne $euun) -or ($Script:EUuser.DisplayName -ne $eudn) -or ($Script:EUuser.Enabled -ne $eunbld)){
                 
-                    Load Module
+                    #Load Module
                     if(!(get-module WRADDBCommands)){
                         Import-Module $Script:Scriptpath\..\modules\WRADDBCommands.psm1
                         Write-UDLog -Level Warning -Message "Import Module WRADCommands"
                     }
-
-                    #load-WRADDBCommands
 
                     #Update User
                     Write-UDLog -Level Warning -Message "Update User $euun $eudn $eunbld"
@@ -255,18 +258,22 @@ $PageRemUsrFrmGrp = New-UDPage -URL "/RemUsrFrmGrp/:usrguid/:grpguid" -Authorize
     load-WRADDBCommands
     enable-WRADLogging
     
-	<#Load Module 
+	#Load Module 
     if(!(get-module WRADDBCommands)){
 #WARNING: Hard Coded Path. Works only on BFH Server--------------------------------------------------------------------------------------------------------------------------------
 		Import-Module C:\Data\BTI7301-2018-WRAD\src\modules\WRADDBCommands.psm1
 #--------------------------------------------------------------------------------------------------------------------------------
 		Write-UDLog -Level Warning -Message "Import Module WRADCommands"
-	}#>
+	}
 	
     Write-UDLog -Level Warning -Message "Remove now"
 	Remove-WRADGroupOfUser -Reference -UserObjectGUID $usrguid -GroupObjectGUID $grpguid
 
-    New-UDInputAction -RedirectUrl "/Edit-User"
+
+    #ERROR: Link redirection doesn't work
+    New-UDInput -Endpoint {
+        New-UDInputAction -RedirectUrl "/Edit-User"
+    }
 } -ArgumentList $PSScriptRoot,$Global:WRADDBConnection
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #Edit Group
@@ -309,7 +316,7 @@ $PageEditGroupDyn = New-UDPage -URL "/EditGroup/:grpguid" -AuthorizedRole @("WRA
 	New-UDRow {
 		New-UDColumn -Size 6 -Content {
 			New-UDInput -Title "Edit Group" -Id "FormEditGroup" -Content {
-                New-UDInputField -Type 'textbox' -Name 'egcn' -Placeholder 'Common Name' -DefaultValue $Script:EGgroupCommonName
+                New-UDInputField -Type 'textbox' -Name 'egcn' -Placeholder 'Common Name' -DefaultValue $Script:EGgroup.CommonName
 				New-UDInputField -Type select -Name 'eggrptyp' -Placeholder 'Group type' -Values @("DomainLocal", "Global", "Universal") -DefaultValue $Script:EGgroup.GroupType
                 New-UDInputField -Type select -Name 'eggrptypsec' -Placeholder 'Group type security' -Values @("Security", "Distribution") -DefaultValue $Script:EGgroup.GroupTypeSecurity
             } -Endpoint {
@@ -326,24 +333,27 @@ $PageEditGroupDyn = New-UDPage -URL "/EditGroup/:grpguid" -AuthorizedRole @("WRA
                     Write-UDLog -Level Warning -Message "Update Group $egcn $eggrptyp $eggrptypsec"
                     Update-WRADUser -Reference -ObjectGUID $grpguid -CommonName $egcn -GroupType $eggrptyp -GRoupTypeSecurity $eggrptypsec
 
-                    New-UDInputAction -Toast "The user '$egcn' is edited." -Duration 5000
+                    
+                    
+                    New-UDInputAction -Toast "The Group '$egcn' is edited." -Duration 5000
 				}
 			}
 		}
         New-UDColumn -Size 6 -Content {
 			$grpfusr = Get-WRADGroupOfUser -Reference -GroupObjectGUID $grpguid
+            Write-UDLog -Level Warning -Message "There are $($grpfusr.Count) Useres in the Group $($Script:EGgroup.CommonName)."
 			ForEach($user in $grpfusr){
-				$UsrInGrp = Get-WRADUser -ObjectGUID $user.UserObjectGUID
+				$UsrInGrp = Get-WRADUser -Reference -ObjectGUID $user.UserObjectGUID
 
 				if($UsrInGrp.Enabled){
-					$nbld = Yes;
+					$nbld = "Yes";
 				} else {
-					$nbld = No;
+					$nbld = "No";
 				}
 
 				$AllGrpFUsr += @{Username = $UsrInGrp.UserName; DisplayName = $UsrInGrp.DisplayName; Enabled = $nbld}
 			}
-			New-UDGrid -Title "User in Group" -Header @("Username", "DisplayName", "Enabled") -Properties @("Username", "DisplayName", "Enabled") -Endpoint {
+			New-UDGrid -Title "User in $($Script:EGgroup.CommonName)" -Header @("Username", "DisplayName", "Enabled") -Properties @("Username", "DisplayName", "Enabled") -Endpoint {
                 $AllGrpFUsr | Out-UDGridData
             }
 		}
@@ -352,20 +362,35 @@ $PageEditGroupDyn = New-UDPage -URL "/EditGroup/:grpguid" -AuthorizedRole @("WRA
 		
 		New-UDColumn -Size 6 -Content {
 			$grpchldgrp = Get-WRADGroupOfGroup -Reference -ChildGroupObjectGUID $grpguid 
+            
+            Write-UDLog -Level Warning -Message "Group is Memeber in $($grpchldgrp.Count) Groups $grpguid"
 
-			New-UDGrid -Title "Member of Groups" -Header @("CommonName", "Create date", "Edit") -Properties @("CommonName", "CreatedDate", "Edit") -Endpoint {
-                $grpchldgrp | Out-UDGridData
+            $allpgrps = @{}
+            ForEach($group in $grpchldgrp){
+                $tg = Get-WRADGroup -Reference -ObjectGUID $group.ParentGroupObjectGUID
+                $allpgrps += @{CommonName = $tg.CommonName; CreateDate = $group.CreatedDate; Edit = (New-UDLink -Text "Remove" -URL "/RemGrpofGrp/$($group.ParentGroupObjectGUID)/$($grpguid )")}
+            }
+
+			New-UDGrid -Title "$($Script:EGgroup.CommonName) is Member of" -Header @("CommonName", "Create date", "Edit") -Properties @("CommonName", "CreateDate", "Edit") -Endpoint {
+                $allpgrps | Out-UDGridData
             }
 		}
 		
 		New-UDColumn -Size 6 -Content {
 			$grpprntgrp = Get-WRADGroupOfGroup -Reference -ParentGroupObjectGUID $grpguid 
+            
+            Write-UDLog -Level Warning -Message "Group $grpguid has $($grpprntgrp.Count) Childgroups"
 
-			New-UDGrid -Title "Groups in Group" -Header @("CommonName", "Create date", "Edit") -Properties @("CommonName", "CreatedDate", "Edit") -Endpoint {
-                $grpprntgrp | Out-UDGridData
+            $allcgrps = @{}
+            ForEach($group in $grpprntgrp){
+                $tg = Get-WRADGroup -Reference -ObjectGUID $group.ChildGroupObjectGUID
+                $allcgrps += @{CommonName = $tg.CommonName; CreateDate = $group.CreatedDate; Edit = (New-UDLink -Text "Remove" -URL "/RemGrpofGrp/$($grpguid )/$($group.ChildGroupObjectGUID)")}
+            }
+
+			New-UDGrid -Title "Groups in $($Script:EGgroup.CommonName)" -Header @("CommonName", "Create date", "Edit") -Properties @("CommonName", "CreateDate", "Edit") -Endpoint {
+                $allcgrps | Out-UDGridData
             }
 		}
-	
 	}
 }
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -381,7 +406,7 @@ $theme = New-UDTheme -Name "AzureChngBtn" -Definition @{
 
 Start-UDDashboard -Port 10000 -AllowHttpForLogin -Content {
     
-    New-UDDashboard -Login $login -Pages @($PageSettings, $PageAddUser, $PageEditUser, $PageEditUserDyn, $PageRemUsrFrmGrp) -Title "Mock up Dashboards" -Color 'Black' -Theme $theme -EndpointInitialization $InitiateWRADEndpoint
+    New-UDDashboard -Login $login -Pages @($PageSettings, $PageAddUser, $PageEditUser, $PageEditUserDyn, $PageRemUsrFrmGrp, $PageEditGroup, $PageEditGroupDyn) -Title "Project WRAD" -Color 'Black' -Theme $theme -EndpointInitialization $InitiateWRADEndpoint
     
 }
 #-Verbose -debug
