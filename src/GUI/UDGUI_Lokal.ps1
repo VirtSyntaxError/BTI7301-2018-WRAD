@@ -392,6 +392,20 @@ $PageEditGroupDyn = New-UDPage -URL "/EditGroup/:grpguid" -AuthorizedRole @("WRA
             }
 		}
 	}
+    New-UDRow {
+        New-UDColumn -Size 6 -Content {
+            New-UDInput -ID "FrmAddGrpToGrp" {
+                $allgrp = Get-WRADGroup -Reference
+
+                #Remove already linked groups
+
+                ForEach($group in $allgrp) {
+
+                }
+            }
+        }
+    }
+
 }
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Get-UDDashboard | Stop-UDDashboard
