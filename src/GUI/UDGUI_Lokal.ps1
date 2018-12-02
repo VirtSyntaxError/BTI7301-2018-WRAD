@@ -212,11 +212,13 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -ArgumentList $WRADEndpo
 
                 if(($Script:EUuser.Username -ne $euun) -or ($Script:EUuser.DisplayName -ne $eudn) -or ($Script:EUuser.Enabled -ne $eunbld)){
                 
-                    #Load Module
+                    <#Load Module
                     if(!(get-module WRADDBCommands)){
                         Import-Module $Script:Scriptpath\..\modules\WRADDBCommands.psm1
                         Write-UDLog -Level Warning -Message "Import Module WRADCommands"
-                    }
+                    }#>
+
+                    load-WRADDBCommands
 
                     #Update User
                     Write-UDLog -Level Warning -Message "Update User $euun $eudn $eunbld"
@@ -387,7 +389,7 @@ $PageEditGroupDyn = New-UDPage -URL "/EditGroup/:grpguid" -ArgumentList $WRADEnd
             $childgrpsguid = (Get-WRADGroupOfGroup -Reference -ParentGroupObjectGUID $grpguid).ChildGroupObjectGUID
                 
             #Remove already linked groups
-            $allgrpguidfiltered = $allgrpsguid | where {$childgrpsguid -notcontains $_}
+            $allgrpguidfilteredtemp = $allgrpsguid | where {$childgrpsguid -notcontains $_}
             $allgrpguidfiltered = $allgrpguidfilteredtemp | where {$grpguid -notcontains $_}
               
             $allgrps = @()
@@ -409,25 +411,33 @@ $PageEditGroupDyn = New-UDPage -URL "/EditGroup/:grpguid" -ArgumentList $WRADEnd
             $allusrguidfiltered = $allusrguid | where {$childusrguid -notcontains $_}
             
             $allusrs = @()
+
+            $WRADLinkObject = New-Object -TypeName psobject 
+            $WRADLinkObject | Add-Member -MemberType NoteProperty -Name dbwradconnect -Value $Global:WRADDBConnection
+
             ForEach($usr in $allusrguidfiltered){
                 $tu = Get-WRADUser -Reference -ObjectGUID $usr
 
-                $link = New-UDElement -Tag "a" -Attributes @{
-                  className = "btn"
-                  onClick = {
-                  #Smoe
-                    Write-UDLog -Level Warning -Message "Test $usr $grpguid"
+                $link = New-UDElement -Tag "a" -ArgumentList $WRADLinkObject -Attributes @{
+                    className = "btn"
+                    target = "_self"
+                    href = "$grpguid"
+                    onClick = {
 
-                    Update-UDDashboard -Url "localhost:10000/EditGroup/$grpguid"
-
-                  }
-                } -Content {"Add"}
+                        #load-WRADDBCommands
+                        #$Global:WRADDBConnection = $ArgumentList[0].dbconnection
+                        $Global:WRADDBConnection = $ArgumentList[0].dbwradconnect
+                        Write-UDLog -Level Warning -Message "On CLick Add $usr to $grpguid"
+                        Write-UDLog -Level Warning -Message $Global:WRADDBConnection
+                        #New-WRADGroupOfUser -Reference -UserObjectGUID $usr -GroupObjectGUID $grpguid
+                    }
+                } -Content {"Add"} 
                
                 $allusrs += @{UserName = $tu.Username; DisplayName = $tu.DisplayName; Add = $link}#(New-UDLink -Text "Add" -Url "/addusrtgrp/$grpguid/$usr")}
             }
             
             #Display remaining groups
-            New-UDGrid -Title "Add Users to $($Script:EGgroup.CommonName)" -Header @("Uaername", "Displayname", "Edit") -Properties @("UserName", "DisplayName", "Add") -Endpoint {
+            New-UDGrid -Title "Add Users to $($Script:EGgroup.CommonName)" -Header @("Username", "Displayname", "Edit") -Properties @("UserName", "DisplayName", "Add") -Endpoint {
                 $allusrs | Out-UDGridData
             }
         }
@@ -486,5 +496,5 @@ Start-UDDashboard -Port 10000 -AllowHttpForLogin -Content {
     
     New-UDDashboard -Login $login -Pages @($PageSettings, $PageAddUser, $PageEditUser, $PageEditUserDyn, $PageRemUsrFrmGrp, $PageEditGroup, $PageEditGroupDyn, $PageAddUsrtGrp) -Title "Project WRAD" -Color 'Black' -Theme $theme -EndpointInitialization $InitiateWRADEndpoint
     
-}
+} -UpdateToken 23180104
 #-Verbose -debug
