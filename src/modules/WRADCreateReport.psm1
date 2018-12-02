@@ -109,6 +109,9 @@ function Write-WRADReport{
 	{
 		Write-Verbose "Loading PS Module WRADDBCommands and WRADEvent Class"
 		Import-Module -Name ($PSScriptRoot+"\WRADDBCommands.psd1")
+        Write-Verbose "Loading PDF Module"
+		Add-Type -Path "$PSScriptRoot\itextsharp.dll"
+        Import-Module "$PSScriptRoot\WRADPDF.psm1"
 	}
 	catch 
 	{
@@ -119,18 +122,34 @@ function Write-WRADReport{
         Write-Error "Do not set both users and events."
         exit
     }
+
+    # temp dir creation
+    $new_guid = [System.Guid]::NewGuid()
+    $target_path = "$env:Temp\$new_guid"
+
+    New-Item -ItemType Directory -Path $target_path
+
+    $pdf = New-Object iTextSharp.text.Document
+    Create-PDF -Document $pdf -File "$target_path\report.pdf" -TopMargin 20 -BottomMargin 20 -LeftMargin 20 -RightMargin 20 -Author "WRAD"
+    $pdf.Open()
+
     # event report
     if ($events){
-        $report = "<!DOCTYPE html><head><title>Event Report</title></head><body><h1>Events</h1></body></html>"
         $evs = Get-WRADReportEvents
         $texts = $evs[0]
         $chart = $evs[1]
-        $report = $report -replace "</body>", "<h2>Number of Events</h2><img src='C:\TEMP\pic.png'><h2>Current Events</h2></body>"
+        $chart.SaveImage("$target_path\pic.png","PNG")
+        $report = "<!DOCTYPE html><head><title>Event Report</title></head><body><h1>Events</h1></body></html>"
+        Add-Title -Document $pdf -Text "Event Report" -Color "black" -Centered
+        $report = $report -replace "</body>", "<h2>Number of Events</h2><img src='$target_path\pic.png'><h2>Current Events</h2></body>"
+        Add-Title -Document $pdf -Text "Number of Events" -Color "blue" -FontSize 10
+        Add-Image -Document $pdf -File "$target_path\pic.png"
+        Add-Title -Document $pdf -Text "Current Events" -Color "blue" -FontSize 10
         foreach ($t in $texts){
             $report = $report -replace "</body>", "<p>$($t)</p></body>"
+            Add-Text -Document $pdf -Text "$t"
         }
-        $chart.SaveImage("C:\TEMP\pic.png","PNG")
-        Write-Host $report
+        $report | Out-File "$target_path\report.html"
     } # users report
     elseif ($users){
         $usr = Get-WRADReportUsers
@@ -139,18 +158,78 @@ function Write-WRADReport{
         $users_90_X = $usr[2]
         $users_never = $usr[3]
         $chart = $usr[4]
+        $chart.SaveImage("$target_path\pic.png", "PNG")
+        Add-Title -Document $pdf -Text "User Report" -Color "black" -Centered
+        Add-Title -Document $pdf -Text "Inactive Users" -FontSize 10
+        Add-Image -Document $pdf -File "$target_path\pic.png"
+        Add-Title -Document $pdf -Text "Disabled Users" -FontSize 10
+        $set_to_write = New-Object System.Collections.Generic.List[System.Object]
+        $set_to_write.Add("ObjectGUID")
+        $set_to_write.Add("userPrincipalName")
+        $set_to_write.Add("LastLogonTimestamp")
+        $set_to_write.Add("DisplayName")
+        foreach ($d in $disabled){
+            $set_to_write.Add($d.ObjectGUID)
+            $set_to_write.Add($d.userPrincipalName)
+            $set_to_write.Add($d.LastLogonTimestamp)
+            $set_to_write.Add($d.DisplayName)
+        }
+        Add-Table -Document $pdf -Dataset $set_to_write -Cols 4
         $report = $disabled | ConvertTo-Html -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName
         $report = $report -replace "<body>", "<body><h1>Disabled Users</h1>"
-        $report = $report -replace "</body>", "<h1>Inactive Users</h1><img src='C:\TEMP\pic.png'></body>"
-        $chart.SaveImage("C:\TEMP\pic.png", "PNG")
+        $report = $report -replace "</body>", "<h1>Inactive Users</h1><img src='$target_path\pic.png'></body>"
         $users_30_90_html = $users_30_90 | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
         $users_90_X_html = $users_90_X | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
         $users_never_html = $users_never | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
         $report = $report -replace "</body>", "<h2>30d &gt; Last Logon &lt; 90d</h2>$($users_30_90_html)</body>"
         $report = $report -replace "</body>", "<h2>90d &lt; Last Logon</h2>$($users_90_X_html)</body>"
         $report = $report -replace "</body>", "<h2>Never logged in</h2>$($users_never_html)</body>"
-        Write-Host $report
-        
+        Add-Title -Document $pdf -Text "30d > Last Logon < 90d" -FontSize 10
+        $set_to_write = New-Object System.Collections.Generic.List[System.Object]
+        $set_to_write.Add("ObjectGUID")
+        $set_to_write.Add("userPrincipalName")
+        $set_to_write.Add("LastLogonTimestamp")
+        $set_to_write.Add("DisplayName")
+        $set_to_write.Add("Enabled")
+        foreach ($u in $users_30_90){
+            $set_to_write.Add($u.ObjectGUID)
+            $set_to_write.Add($u.userPrincipalName)
+            $set_to_write.Add($u.LastLogonTimestamp)
+            $set_to_write.Add($u.DisplayName)
+            $set_to_write.Add($u.Enabled)
+        }
+        Add-Table -Document $pdf -Dataset $set_to_write -Cols 5
+        Add-Title -Document $pdf -Text "90d > Last Logon" -FontSize 10
+        $set_to_write = New-Object System.Collections.Generic.List[System.Object]
+        $set_to_write.Add("ObjectGUID")
+        $set_to_write.Add("userPrincipalName")
+        $set_to_write.Add("LastLogonTimestamp")
+        $set_to_write.Add("DisplayName")
+        $set_to_write.Add("Enabled")
+        foreach ($u in $users_90_X){
+            $set_to_write.Add($u.ObjectGUID)
+            $set_to_write.Add($u.userPrincipalName)
+            $set_to_write.Add($u.LastLogonTimestamp)
+            $set_to_write.Add($u.DisplayName)
+            $set_to_write.Add($u.Enabled)
+        }
+        Add-Table -Document $pdf -Dataset $set_to_write -Cols 5
+        Add-Title -Document $pdf -Text "Never Logged in" -FontSize 10
+        $set_to_write = New-Object System.Collections.Generic.List[System.Object]
+        $set_to_write.Add("ObjectGUID")
+        $set_to_write.Add("userPrincipalName")
+        $set_to_write.Add("LastLogonTimestamp")
+        $set_to_write.Add("DisplayName")
+        $set_to_write.Add("Enabled")
+        foreach ($u in $users_never){
+            $set_to_write.Add($u.ObjectGUID)
+            $set_to_write.Add($u.userPrincipalName)
+            $set_to_write.Add($u.LastLogonTimestamp)
+            $set_to_write.Add($u.DisplayName)
+            $set_to_write.Add($u.Enabled)
+        }
+        Add-Table -Document $pdf -Dataset $set_to_write -Cols 5
+        $report | Out-File "$target_path\report.html"
     } # full report
     else {
         # get user stuff
@@ -164,50 +243,130 @@ function Write-WRADReport{
         $evs = Get-WRADReportEvents
         $texts = $evs[0]
         $evs_chart = $evs[1]
+        Add-Title -Document $pdf -Text "Full Report" -Color "black" -Centered
 
         # do user stuff
+        $usr_chart.SaveImage("$target_path\USRpic.png", "PNG")
+        Add-Title -Document $pdf -Text "Inactive Users" -FontSize 10
+        Add-Image -Document $pdf -File "$target_path\USRpic.png"
+        Add-Title -Document $pdf -Text "Disabled Users" -FontSize 10
+        $set_to_write = New-Object System.Collections.Generic.List[System.Object]
+        $set_to_write.Add("ObjectGUID")
+        $set_to_write.Add("userPrincipalName")
+        $set_to_write.Add("LastLogonTimestamp")
+        $set_to_write.Add("DisplayName")
+        foreach ($d in $disabled){
+            $set_to_write.Add($d.ObjectGUID)
+            $set_to_write.Add($d.userPrincipalName)
+            $set_to_write.Add($d.LastLogonTimestamp)
+            $set_to_write.Add($d.DisplayName)
+        }
+        Add-Table -Document $pdf -Dataset $set_to_write -Cols 4
         $report = $disabled | ConvertTo-Html -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName
         $report = $report -replace "<body>", "<body><h1>Disabled Users</h1>"
-        $report = $report -replace "</body>", "<h1>Inactive Users</h1><img src='C:\TEMP\USRpic.png'></body>"
-        $usr_chart.SaveImage("C:\TEMP\USRpic.png", "PNG")
+        $report = $report -replace "</body>", "<h1>Inactive Users</h1><img src='$target_path\USRpic.png'></body>"
         $users_30_90_html = $users_30_90 | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
         $users_90_X_html = $users_90_X | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
         $users_never_html = $users_never | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
         $report = $report -replace "</body>", "<h2>30d &gt; Last Logon &lt; 90d</h2>$($users_30_90_html)</body>"
         $report = $report -replace "</body>", "<h2>90d &lt; Last Logon</h2>$($users_90_X_html)</body>"
         $report = $report -replace "</body>", "<h2>Never logged in</h2>$($users_never_html)</body>"
+        Add-Title -Document $pdf -Text "30d > Last Logon < 90d" -FontSize 10
+        $set_to_write = New-Object System.Collections.Generic.List[System.Object]
+        $set_to_write.Add("ObjectGUID")
+        $set_to_write.Add("userPrincipalName")
+        $set_to_write.Add("LastLogonTimestamp")
+        $set_to_write.Add("DisplayName")
+        $set_to_write.Add("Enabled")
+        foreach ($u in $users_30_90){
+            $set_to_write.Add($u.ObjectGUID)
+            $set_to_write.Add($u.userPrincipalName)
+            $set_to_write.Add($u.LastLogonTimestamp)
+            $set_to_write.Add($u.DisplayName)
+            $set_to_write.Add($u.Enabled)
+        }
+        Add-Table -Document $pdf -Dataset $set_to_write -Cols 5
+        Add-Title -Document $pdf -Text "90d > Last Logon" -FontSize 10
+        $set_to_write = New-Object System.Collections.Generic.List[System.Object]
+        $set_to_write.Add("ObjectGUID")
+        $set_to_write.Add("userPrincipalName")
+        $set_to_write.Add("LastLogonTimestamp")
+        $set_to_write.Add("DisplayName")
+        $set_to_write.Add("Enabled")
+        foreach ($u in $users_90_X){
+            $set_to_write.Add($u.ObjectGUID)
+            $set_to_write.Add($u.userPrincipalName)
+            $set_to_write.Add($u.LastLogonTimestamp)
+            $set_to_write.Add($u.DisplayName)
+            $set_to_write.Add($u.Enabled)
+        }
+        Add-Table -Document $pdf -Dataset $set_to_write -Cols 5
+        Add-Title -Document $pdf -Text "Never Logged in" -FontSize 10
+        $set_to_write = New-Object System.Collections.Generic.List[System.Object]
+        $set_to_write.Add("ObjectGUID")
+        $set_to_write.Add("userPrincipalName")
+        $set_to_write.Add("LastLogonTimestamp")
+        $set_to_write.Add("DisplayName")
+        $set_to_write.Add("Enabled")
+        foreach ($u in $users_never){
+            $set_to_write.Add($u.ObjectGUID)
+            $set_to_write.Add($u.userPrincipalName)
+            $set_to_write.Add($u.LastLogonTimestamp)
+            $set_to_write.Add($u.DisplayName)
+            $set_to_write.Add($u.Enabled)
+        }
+        Add-Table -Document $pdf -Dataset $set_to_write -Cols 5
 
         # do event stuff        
-        $evs_chart.SaveImage("C:\TEMP\EVSpic.png","PNG")
+        $evs_chart.SaveImage("$target_path\EVSpic.png","PNG")
         $report = $report -replace "</body>", "<h1>Events</h1></body>"
-        $report = $report -replace "</body>", "<h2>Number of Events</h2><img src='C:\TEMP\EVSpic.png'><h2>Current Events</h2></body>"
+        $report = $report -replace "</body>", "<h2>Number of Events</h2><img src='$target_path\EVSpic.png'><h2>Current Events</h2></body>"
+        Add-Title -Document $pdf -Text "Current Events" -Color "blue" -FontSize 10
         foreach ($t in $texts){
             $report = $report -replace "</body>", "<p>$($t)</p></body>"
+            Add-Text -Document $pdf -Text "$t"
         }
-
-        Write-Host $report
+        Add-Title -Document $pdf -Text "Number of Events" -Color "blue" -FontSize 10
+        Add-Image -Document $pdf -File "$target_path\EVSpic.png"
+        $report | Out-File "$target_path\report.html"
     }
+
+    $pdf.Close()
+
+    # create ZIP
+    Compress-Archive -Path "$target_path\*" -CompressionLevel Fastest -DestinationPath "$target_path\report.zip"
+
+    return "$target_path\report.zip"
 
     <#
     .SYNOPSIS
 
-    
+    Creates Reports (HTML and PDF)
 
     .DESCRIPTION
 
-    
+    Gets the Events and Userdata from the Database and creates appropriate Reports in HTML or PDF.
+
+    .PARAMETER users
+    Create only User Report
+
+    .PARAMETER events
+    Create only Event Report
 
     .INPUTS
 
-
+    None.
 
     .OUTPUTS
 
-    
+    In the last Position of the Output, there's a path to the ZIP file containing all needed resources for the report.
 
     .EXAMPLE
 
-    C:\PS> 
+    C:\PS> $report = Write-WRADReport -users
+    C:\PS> $zippath = $report[-1]
+    C:\PS> $zippath
+    C:\Users\WRADAD~2\AppData\Local\Temp\2\19373114-d81e-40c9-8971-1f8a1cc1d7c9\report.zip
     
     #>
 }
