@@ -50,7 +50,11 @@ New-UDInputAction -RedirectURL not redirecting
 #>
 
 $Script:ScriptPath = $PSScriptRoot
-$ScrptRt = $PSScriptRoot
+
+#Save Variables for Enpoint-Runspaces
+$WRADEndpointVar = New-Object -TypeName psobject 
+$WRADEndpointVar | Add-Member -MemberType NoteProperty -Name dbconnection -Value $Global:WRADDBConnection
+$WRADEndpointVar | Add-Member -MemberType NoteProperty -Name scrptroot -Value $PSScriptRoot
 
 function load-WRADUDDashboard {
     Param()
@@ -108,7 +112,7 @@ load-WRADUDDashboard
 enable-WRADLogging
 load-WRADDBCommands
 
-$InitiateWRADEndpoint = New-UDEndpointInitialization -Function enable-WRADLogging,load-WRADDBCommands #-Variable $ScrptRt -Module $PSScriptRoot\..\modules\WRADDBCommands.psm1
+$InitiateWRADEndpoint = New-UDEndpointInitialization -Module $PSScriptRoot\..\modules\WRADDBCommands.psm1 -Function enable-WRADLogging,load-WRADDBCommands #-Variable $ScrptRt 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -169,7 +173,7 @@ $PageEditUser = New-UDPage -Name "Edit User" -AuthorizedRole @("WRADadmin","Audi
     }
 }
 
-$PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -AuthorizedRole @("WRADadmin","Auditor") -Endpoint {
+$PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","Auditor") -Endpoint {
     param($usrguid)
 
     #Load Module
@@ -181,8 +185,14 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -AuthorizedRole @("WRADa
     }#
 
     #load-WRADDBCommands
-    $Script:Scriptpath = $ArgumentList[0]
-    $Global:WRADDBConnection = $ArgumentList[1]
+    $Global:WRADDBConnection = $ArgumentList[0].dbconnection
+    $Script:Scriptpath = $ArgumentList[0].scrptroot
+
+    load-WRADDBCommands
+    enable-WRADLogging
+    
+    $Global:WRADDBConnection = $ArgumentList[0].dbconnection
+    $Script:Scriptpath = $ArgumentList[0].scrptroot
 
     #Get User and make him editable
     Write-UDLog -Level Warning -Message "Get User: $usrguid"
@@ -243,28 +253,32 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -AuthorizedRole @("WRADa
     } 
 } -ArgumentList $PSScriptRoot,$Global:WRADDBConnection
 
-$PageRemUsrFrmGrp = New-UDPage -URL "/RemUsrFrmGrp/:usrguid/:grpguid" -AuthorizedRole @("WRADadmin","Auditor") -Endpoint {
+$PageRemUsrFrmGrp = New-UDPage -URL "/RemUsrFrmGrp/:usrguid/:grpguid" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","Auditor") -Endpoint {
     param($usrguid, $grpguid)
     #10:52:32 ExecutionService Error executing endpoint script. The variable '$Global:WRADDBConnection' cannot be retrieved because it has not been set.
     <#$date = Get-Date -UFormat "%Y%m%d"
     Enable-UDLogging -FilePath "C:\Data\Logs\UDLog_$date.txt" -Level Warning
     Write-UDLog -Level Warning -Message "Delete Group $usrguid from User $grpguid"#>
-    enable-WRADLogging
+    #enable-WRADLogging
 
-
-    $Script:Scriptpath = $ArgumentList[0]
-    $Global:WRADDBConnection = $ArgumentList[1]
+    
+    $Global:WRADDBConnection = $ArgumentList[0].dbconnection
+    $Script:Scriptpath = $ArgumentList[0].scrptroot
 
     load-WRADDBCommands
     enable-WRADLogging
     
-	#Load Module 
+    $Global:WRADDBConnection = $ArgumentList[0].dbconnection
+    $Script:Scriptpath = $ArgumentList[0].scrptroot
+
+
+	<#Load Module 
     if(!(get-module WRADDBCommands)){
 #WARNING: Hard Coded Path. Works only on BFH Server--------------------------------------------------------------------------------------------------------------------------------
 		Import-Module C:\Data\BTI7301-2018-WRAD\src\modules\WRADDBCommands.psm1
 #--------------------------------------------------------------------------------------------------------------------------------
 		Write-UDLog -Level Warning -Message "Import Module WRADCommands"
-	}
+	}#>
 	
     Write-UDLog -Level Warning -Message "Remove now"
 	Remove-WRADGroupOfUser -Reference -UserObjectGUID $usrguid -GroupObjectGUID $grpguid
@@ -274,7 +288,7 @@ $PageRemUsrFrmGrp = New-UDPage -URL "/RemUsrFrmGrp/:usrguid/:grpguid" -Authorize
     New-UDInput -Endpoint {
         New-UDInputAction -RedirectUrl "/Edit-User"
     }
-} -ArgumentList $PSScriptRoot,$Global:WRADDBConnection
+} 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #Edit Group
 $AllGroupGrid = @()
@@ -300,16 +314,23 @@ $PageEditGroup = New-UDPage -Name "Edit Group" -AuthorizedRole @("WRADadmin","Au
 
 $AllGrpFGrp = @();
 $AllGrpFUsr = @();
-$PageEditGroupDyn = New-UDPage -URL "/EditGroup/:grpguid" -AuthorizedRole @("WRADadmin","Auditor") -Endpoint {
+$PageEditGroupDyn = New-UDPage -URL "/EditGroup/:grpguid" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","Auditor") -Endpoint {
 	param($grpguid)
 
-	#Load Module
+    $Global:WRADDBConnection = $ArgumentList[0].dbconnection
+    $Script:Scriptpath = $ArgumentList[0].scrptroot
+
+    load-WRADDBCommands
+
+    $Global:WRADDBConnection = $ArgumentList[0].dbconnection
+    $Script:Scriptpath = $ArgumentList[0].scrptroot
+	<#Load Module
     if(!(get-module WRADDBCommands)){
 #WARNING: Hard Coded Path. Works only on BFH Server--------------------------------------------------------------------------------------------------------------------------------
 		Import-Module C:\Data\BTI7301-2018-WRAD\src\modules\WRADDBCommands.psm1
 #--------------------------------------------------------------------------------------------------------------------------------
 		Write-UDLog -Level Warning -Message "Import Module WRADCommands"
-	}
+	}#>
 
 	$Script:EGgroup = Get-WRADGroup -Reference -ObjectGUID $grpguid
 
@@ -333,8 +354,6 @@ $PageEditGroupDyn = New-UDPage -URL "/EditGroup/:grpguid" -AuthorizedRole @("WRA
                     Write-UDLog -Level Warning -Message "Update Group $egcn $eggrptyp $eggrptypsec"
                     Update-WRADUser -Reference -ObjectGUID $grpguid -CommonName $egcn -GroupType $eggrptyp -GRoupTypeSecurity $eggrptypsec
 
-                    
-                    
                     New-UDInputAction -Toast "The Group '$egcn' is edited." -Duration 5000
 				}
 			}
