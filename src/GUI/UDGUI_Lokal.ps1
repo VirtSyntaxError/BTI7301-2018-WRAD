@@ -176,13 +176,6 @@ $PageEditUser = New-UDPage -Name "Edit User" -AuthorizedRole @("WRADadmin","Audi
 $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","Auditor") -Endpoint {
     param($usrguid)
 
-    #Load Module
-    if(!(get-module WRADDBCommands)){
-#WARNING: Hard Coded Path. Works only on BFH Server--------------------------------------------------------------------------------------------------------------------------------
-        Import-Module C:\Data\BTI7301-2018-WRAD\src\modules\WRADDBCommands.psm1
-#--------------------------------------------------------------------------------------------------------------------------------
-        Write-UDLog -Level Warning -Message "Import Module WRADCommands"
-    }#
 
     #load-WRADDBCommands
     $Global:WRADDBConnection = $ArgumentList[0].dbconnection
@@ -191,9 +184,6 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -ArgumentList $WRADEndpo
     load-WRADDBCommands
     enable-WRADLogging
     
-    $Global:WRADDBConnection = $ArgumentList[0].dbconnection
-    $Script:Scriptpath = $ArgumentList[0].scrptroot
-
     #Get User and make him editable
     Write-UDLog -Level Warning -Message "Get User: $usrguid"
     $Script:EUuser = Get-WRADUser -Reference -ObjectGUID $usrguid
@@ -214,7 +204,6 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -ArgumentList $WRADEndpo
             } -Endpoint {
                 param($euun, $eudn, $euactive)
                 
-
                 if($euactive -eq "Yes"){
                     $eunbld = $true
                 } else {
@@ -251,7 +240,7 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -ArgumentList $WRADEndpo
             }
         } 
     } 
-} -ArgumentList $PSScriptRoot,$Global:WRADDBConnection
+}
 
 $PageRemUsrFrmGrp = New-UDPage -URL "/RemUsrFrmGrp/:usrguid/:grpguid" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","Auditor") -Endpoint {
     param($usrguid, $grpguid)
@@ -267,19 +256,7 @@ $PageRemUsrFrmGrp = New-UDPage -URL "/RemUsrFrmGrp/:usrguid/:grpguid" -ArgumentL
 
     load-WRADDBCommands
     enable-WRADLogging
-    
-    $Global:WRADDBConnection = $ArgumentList[0].dbconnection
-    $Script:Scriptpath = $ArgumentList[0].scrptroot
-
-
-	<#Load Module 
-    if(!(get-module WRADDBCommands)){
-#WARNING: Hard Coded Path. Works only on BFH Server--------------------------------------------------------------------------------------------------------------------------------
-		Import-Module C:\Data\BTI7301-2018-WRAD\src\modules\WRADDBCommands.psm1
-#--------------------------------------------------------------------------------------------------------------------------------
-		Write-UDLog -Level Warning -Message "Import Module WRADCommands"
-	}#>
-	
+    	
     Write-UDLog -Level Warning -Message "Remove now"
 	Remove-WRADGroupOfUser -Reference -UserObjectGUID $usrguid -GroupObjectGUID $grpguid
 
@@ -322,16 +299,6 @@ $PageEditGroupDyn = New-UDPage -URL "/EditGroup/:grpguid" -ArgumentList $WRADEnd
 
     load-WRADDBCommands
 
-    $Global:WRADDBConnection = $ArgumentList[0].dbconnection
-    $Script:Scriptpath = $ArgumentList[0].scrptroot
-	<#Load Module
-    if(!(get-module WRADDBCommands)){
-#WARNING: Hard Coded Path. Works only on BFH Server--------------------------------------------------------------------------------------------------------------------------------
-		Import-Module C:\Data\BTI7301-2018-WRAD\src\modules\WRADDBCommands.psm1
-#--------------------------------------------------------------------------------------------------------------------------------
-		Write-UDLog -Level Warning -Message "Import Module WRADCommands"
-	}#>
-
 	$Script:EGgroup = Get-WRADGroup -Reference -ObjectGUID $grpguid
 
 	New-UDRow {
@@ -352,7 +319,7 @@ $PageEditGroupDyn = New-UDPage -URL "/EditGroup/:grpguid" -ArgumentList $WRADEnd
 
                     #Update Group
                     Write-UDLog -Level Warning -Message "Update Group $egcn $eggrptyp $eggrptypsec"
-                    Update-WRADUser -Reference -ObjectGUID $grpguid -CommonName $egcn -GroupType $eggrptyp -GRoupTypeSecurity $eggrptypsec
+                    Update-WRADGroup -Reference -ObjectGUID $grpguid -CommonName $egcn -GroupType $eggrptyp -GRoupTypeSecurity $eggrptypsec
 
                     New-UDInputAction -Toast "The Group '$egcn' is edited." -Duration 5000
 				}
@@ -360,9 +327,11 @@ $PageEditGroupDyn = New-UDPage -URL "/EditGroup/:grpguid" -ArgumentList $WRADEnd
 		}
         New-UDColumn -Size 6 -Content {
 			$grpfusr = Get-WRADGroupOfUser -Reference -GroupObjectGUID $grpguid
-            Write-UDLog -Level Warning -Message "There are $($grpfusr.Count) Useres in the Group $($Script:EGgroup.CommonName)."
-			ForEach($user in $grpfusr){
-				$UsrInGrp = Get-WRADUser -Reference -ObjectGUID $user.UserObjectGUID
+            Write-UDLog -Level Warning -Message "There are $(($grpfusr).Count) Useres in the Group $($Script:EGgroup.CommonName)."
+			$AllGrpFUsr = @()
+            ForEach($user in $grpfusr){
+                 Write-UDLog -Level Warning -Message ($user).UserObjectGUID
+				$UsrInGrp = Get-WRADUser -Reference -ObjectGUID ($user).UserObjectGUID
 
 				if($UsrInGrp.Enabled){
 					$nbld = "Yes";
@@ -382,7 +351,7 @@ $PageEditGroupDyn = New-UDPage -URL "/EditGroup/:grpguid" -ArgumentList $WRADEnd
 		New-UDColumn -Size 6 -Content {
 			$grpchldgrp = Get-WRADGroupOfGroup -Reference -ChildGroupObjectGUID $grpguid 
             
-            Write-UDLog -Level Warning -Message "Group is Memeber in $($grpchldgrp.Count) Groups $grpguid"
+            Write-UDLog -Level Warning -Message "Group is Memeber in $(($grpchldgrp).Count) Groups $grpguid"
 
             $allpgrps = @{}
             ForEach($group in $grpchldgrp){
@@ -398,7 +367,7 @@ $PageEditGroupDyn = New-UDPage -URL "/EditGroup/:grpguid" -ArgumentList $WRADEnd
 		New-UDColumn -Size 6 -Content {
 			$grpprntgrp = Get-WRADGroupOfGroup -Reference -ParentGroupObjectGUID $grpguid 
             
-            Write-UDLog -Level Warning -Message "Group $grpguid has $($grpprntgrp.Count) Childgroups"
+            Write-UDLog -Level Warning -Message "Group $grpguid has $(($grpprntgrp).Count) Childgroups"
 
             $allcgrps = @{}
             ForEach($group in $grpprntgrp){
@@ -413,19 +382,95 @@ $PageEditGroupDyn = New-UDPage -URL "/EditGroup/:grpguid" -ArgumentList $WRADEnd
 	}
     New-UDRow {
         New-UDColumn -Size 6 -Content {
-            New-UDInput -ID "FrmAddGrpToGrp" {
-                $allgrp = Get-WRADGroup -Reference
+        
+            $allgrpsguid = (Get-WRADGroup -Reference).ObjectGUID
+            $childgrpsguid = (Get-WRADGroupOfGroup -Reference -ParentGroupObjectGUID $grpguid).ChildGroupObjectGUID
+                
+            #Remove already linked groups
+            $allgrpguidfiltered = $allgrpsguid | where {$childgrpsguid -notcontains $_}
+            $allgrpguidfiltered = $allgrpguidfilteredtemp | where {$grpguid -notcontains $_}
+              
+            $allgrps = @()
+            ForEach($group in $allgrpguidfiltered) {
+                $tg = Get-WRADGroup -Reference -ObjectGUID $group
+                $allgrps += @{CommonName = $tg.CommonName; CreatedDate = $tg.CreatedDate; Add = (New-UDLink -Text "Add" -Url "/addgrptgrp/$grpguid/$group")}
+            }
+             
+            #Display remaining groups
+            New-UDGrid -Title "Add Groups to $($Script:EGgroup.CommonName)" -Header @("CommonName", "Create date", "Edit") -Properties @("CommonName", "CreatedDate", "Add") -Endpoint {
+                $allgrps | Out-UDGridData
+            } 
+        } 
+        New-UDColumn -Size 6 -Content {
+            $allusrguid = (Get-WRADUser -Reference).ObjectGUID
+            $childusrguid = (Get-WRADGroupOfUser -Reference -GroupObjectGUID $grpguid).UserObjectGUID
+             
+            #Remove already linked User
+            $allusrguidfiltered = $allusrguid | where {$childusrguid -notcontains $_}
+            
+            $allusrs = @()
+            ForEach($usr in $allusrguidfiltered){
+                $tu = Get-WRADUser -Reference -ObjectGUID $usr
 
-                #Remove already linked groups
+                $link = New-UDElement -Tag "a" -Attributes @{
+                  className = "btn"
+                  onClick = {
+                  #Smoe
+                    Write-UDLog -Level Warning -Message "Test $usr $grpguid"
 
-                ForEach($group in $allgrp) {
+                    Update-UDDashboard -Url "localhost:10000/EditGroup/$grpguid"
 
-                }
+                  }
+                } -Content {"Add"}
+               
+                $allusrs += @{UserName = $tu.Username; DisplayName = $tu.DisplayName; Add = $link}#(New-UDLink -Text "Add" -Url "/addusrtgrp/$grpguid/$usr")}
+            }
+            
+            #Display remaining groups
+            New-UDGrid -Title "Add Users to $($Script:EGgroup.CommonName)" -Header @("Uaername", "Displayname", "Edit") -Properties @("UserName", "DisplayName", "Add") -Endpoint {
+                $allusrs | Out-UDGridData
             }
         }
     }
-
 }
+
+
+#Page Add User to Group
+$PageAddUsrtGrp = New-UDPage -URL "/addusrtgrp/:grpguid/:usrguid" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","Auditor") -Endpoint {
+    param($grpguid, $usrguid)
+        
+    $Global:WRADDBConnection = $ArgumentList[0].dbconnection
+    $Script:Scriptpath = $ArgumentList[0].scrptroot
+    $Script:rdrgrpguid = $grpguid
+
+    load-WRADDBCommands
+    enable-WRADLogging
+    	
+    Write-UDLog -Level Warning -Message "Add User $usrguid to Group $grpguid"
+	New-WRADGroupOfUser -Reference -UserObjectGUID $usrguid -GroupObjectGUID $grpguid
+
+    New-UDRow {
+        New-UDColumn -Size 4 -Content {
+
+        }
+        New-UDColumn -Size 4 -Content {
+            New-UDInput -Title "Redirect" -Id "FrmRdrGrptgrp" -Content {
+                New-UDInputField -Type textbox -DefaultValue "User '$usrguid' is now in Group '$grpguid'" -Name "smth"
+    
+            } -Endpoint {
+                param($smth)
+
+                Write-UDLog -Level Warning -Message "Redirect now"
+                Write-UDLog -Level Warning -Message $Script:rdrgrpguid
+
+                New-UDInputAction -RedirectUrl "/EditGroup/$Script:rdrgrpguid"
+            }
+        }
+        New-UDColumn -Size 4 -Content {
+
+        }
+    }
+} 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Get-UDDashboard | Stop-UDDashboard
 
@@ -439,7 +484,7 @@ $theme = New-UDTheme -Name "AzureChngBtn" -Definition @{
 
 Start-UDDashboard -Port 10000 -AllowHttpForLogin -Content {
     
-    New-UDDashboard -Login $login -Pages @($PageSettings, $PageAddUser, $PageEditUser, $PageEditUserDyn, $PageRemUsrFrmGrp, $PageEditGroup, $PageEditGroupDyn) -Title "Project WRAD" -Color 'Black' -Theme $theme -EndpointInitialization $InitiateWRADEndpoint
+    New-UDDashboard -Login $login -Pages @($PageSettings, $PageAddUser, $PageEditUser, $PageEditUserDyn, $PageRemUsrFrmGrp, $PageEditGroup, $PageEditGroupDyn, $PageAddUsrtGrp) -Title "Project WRAD" -Color 'Black' -Theme $theme -EndpointInitialization $InitiateWRADEndpoint
     
 }
 #-Verbose -debug
