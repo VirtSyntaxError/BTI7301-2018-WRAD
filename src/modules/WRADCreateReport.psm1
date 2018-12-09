@@ -109,6 +109,8 @@ function Write-WRADReport{
 	{
 		Write-Verbose "Loading PS Module WRADDBCommands and WRADEvent Class"
 		Import-Module -Name ($PSScriptRoot+"\WRADDBCommands.psd1")
+        Write-Verbose "Loading WRADLogging Module"
+        Import-Module -Name ($PSScriptRoot+"\WRADLogging.psd1")
         Write-Verbose "Loading PDF Module"
 		Add-Type -Path "$PSScriptRoot\itextsharp.dll"
         Import-Module "$PSScriptRoot\WRADPDF.psm1"
@@ -335,6 +337,8 @@ function Write-WRADReport{
 
     # create ZIP
     Compress-Archive -Path "$target_path\*" -CompressionLevel Fastest -DestinationPath "$target_path\report.zip"
+    
+    Write-WRADLog -logtext "Wrote Report Files to $target_path" -level 0
 
     return "$target_path\report.zip"
 
