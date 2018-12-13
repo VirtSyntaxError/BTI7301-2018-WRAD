@@ -30,17 +30,17 @@ function load-WRADModules {
         #load WRADEventText
         if(!(get-module WRADEventText)){
             Import-Module $Script:ScriptPath\..\modules\WRADEventText.psm1
-            write-host "Import Module WRADCommands"
+            write-host "Import Module WRADEventText"
         }
         #load WRADLogging
         if(!(get-module WRADLogging)){
             Import-Module $Script:ScriptPath\..\modules\WRADLogging.psm1
-            write-host "Import Module WRADCommands"
+            write-host "Import Module WRADLogging"
         }
     }
     catch {
         Write-Error -Message $_.Exception.Message
-        Write-UDLog -Level Warning -Message "Could not load WRAD DB Commands. $($_.Exception.Message)"
+        Write-UDLog -Level Warning -Message "Could not load WRAD Modules. $($_.Exception.Message)"
     }
 }
 

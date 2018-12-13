@@ -4,8 +4,8 @@ $PageSettings = New-UDPage -Name "Settings" -AuthorizedRole @("WRADadmin","Audit
         New-UDColumn -size 3 -Content {
 			
 		}
-        #Alle User
 		New-UDColumn -size 6 -Content {
+            #Show Settings
             $Script:ActualWRADSettings = Get-WRADSetting
 
 			New-UDInput -Title "Settings" -Id "FormSettings" -Content {
@@ -63,7 +63,6 @@ $PageSettings = New-UDPage -Name "Settings" -AuthorizedRole @("WRADadmin","Audit
                     try {
                         Write-UDLog -Level Warning -Message $newSettings
                         Invoke-Expression $newSettings
-                        
                     } 
                     catch {
                         Write-UDLog -Level Warning -Message "CATCH: $($_.Exception.Message)"
@@ -77,10 +76,6 @@ $PageSettings = New-UDPage -Name "Settings" -AuthorizedRole @("WRADadmin","Audit
                 New-UDInputAction -RedirectUrl "/Settings"
 
             }
-		}
-        #Alle gruppen
-		New-UDColumn -size 3 -Content {
-			
 		}
     }
 }

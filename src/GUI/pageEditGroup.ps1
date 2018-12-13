@@ -45,17 +45,11 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
 				param($egcn, $eggrptyp, $eggrptypsec)
 				
 				if(($Script:EGgroup.CommonName -ne $egcn) -or ($Script:EGgroup.GroupType -ne $eggrptyp) -or ($Script:EGgroup.GroupTypeSecurity -ne $eggrptypsec)){
-					<#Load Module
-                    if(!(get-module WRADDBCommands)){
-                        Import-Module $Script:Scriptpath\..\modules\WRADDBCommands.psm1
-                        Write-UDLog -Level Warning -Message "Import Module WRADCommands"
-                    }#>
-
-                    load-WRADModules
+					load-WRADModules
 
                     #Update Group
-                    Write-UDLog -Level Warning -Message "Update Group $egcn $eggrptyp $eggrptypsec"
                     Update-WRADGroup -Reference -ObjectGUID $grpguid -CommonName $egcn -GroupType $eggrptyp -GRoupTypeSecurity $eggrptypsec
+                    Write-WRADLog -logtext "Updated Group $egcn" -level 0
 
                     New-UDInputAction -Toast "The Group '$egcn' is edited." -Duration 5000
 				}
@@ -66,8 +60,6 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
             #Selected group is Member of
 			$grpchldgrp = Get-WRADGroupOfGroup -Reference -ChildGroupObjectGUID $grpguid
             
-            Write-UDLog -Level Warning -Message "Group $grpguid is Memeber in $($($grpchldgrp).Count) Groups"
-
             $allpgrps = @()
             ForEach($group in $grpchldgrp){
                 $tg = Get-WRADGroup -Reference -ObjectGUID $group.ParentGroupObjectGUID
@@ -82,8 +74,8 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
                             $Global:WRADDBConnection = $DBConnect
                         }
 
-                        Write-UDLog -Level Warning -Message "Remove Gorup $grpguid from Group $($tg.ObjectGUID)"
                         Remove-WRADGroupOfGroup -Reference -ChildGroupObjectGUID $grpguid -ParentGroupObjectGUID $tg.ObjectGUID
+                        Write-WRADLog -logtext "Removed Group $grpguid from Group $($tg.CommonName)"
                     } 
                 } -Content {"Leave"}
 
@@ -100,8 +92,7 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
             #Groups in selcted Group
 			$grpprntgrp = Get-WRADGroupOfGroup -Reference -ParentGroupObjectGUID $grpguid 
             
-            Write-UDLog -Level Warning -Message "Group $grpguid has $($($grpprntgrp).Count) Childgroups"
-
+            #Prepare DisplayData
             $allcgrps = @()
             ForEach($group in $grpprntgrp){
                 $tg = Get-WRADGroup -Reference -ObjectGUID $group.ChildGroupObjectGUID
@@ -116,8 +107,8 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
                             $Global:WRADDBConnection = $DBConnect
                         }
 
-                        Write-UDLog -Level Warning -Message "Remove Group $($tg.ObjectGUID) from Group $grpguid"
                         Remove-WRADGroupOfGroup -Reference -ChildGroupObjectGUID $tg.ObjectGUID -ParentGroupObjectGUID $grpguid
+                        Write-WRADLog -logtext "Removed Group $($tg.CommonName) from $grpguid"
                     } 
                 } -Content {"Remove"}
 
@@ -132,8 +123,8 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
         New-UDColumn -Size 6 -Content {
             #User in Group
 			$grpfusr = Get-WRADGroupOfUser -Reference -GroupObjectGUID $grpguid
-            Write-UDLog -Level Warning -Message "There are $(($grpfusr).Count) Useres in the Group $($Script:EGgroup.CommonName)."
-			$AllGrpFUsr = @()
+            
+            $AllGrpFUsr = @()
             ForEach($user in $grpfusr){
 				$UsrInGrp = Get-WRADUser -Reference -ObjectGUID ($user).UserObjectGUID
 
@@ -156,6 +147,7 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
 
                         Write-UDLog -Level Warning -Message "Remove User $($UsrInGrp.ObjectGUID) from Group $grpguid"
                         Remove-WRADGroupOfUser -Reference -UserObjectGUID $($UsrInGrp.ObjectGUID) -GroupObjectGUID $grpguid
+                        Write-WRADLog -logtext "Removed User $($UsrInGrp.UserName) from $grpguid" -level 0
                     } 
                 } -Content {"Remove"}
 
@@ -191,8 +183,8 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
                             $Global:WRADDBConnection = $DBConnect
                         }
 
-                        Write-UDLog -Level Warning -Message "Add Group $group to Group $grpguid"
                         New-WRADGroupOfGroup -Reference -ChildGroupObjectGUID $group -ParentGroupObjectGUID $grpguid
+                        Write-WRADLog -logtext "Added Group $group to Group $grpguid" -level 0
                     } 
                 } -Content {"Add"}
 
@@ -227,8 +219,8 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
                             $Global:WRADDBConnection = $DBConnect
                         }
 
-                        Write-UDLog -Level Warning -Message "Add User $usr to Group $grpguid"
                         New-WRADGroupOfUser -Reference -UserObjectGUID $usr -GroupObjectGUID $grpguid
+                        Write-WRADLog -logtext "Added User $($tu.UserName) to Group $grpguid" -level 0
                     } 
                 } -Content {"Add"}
 

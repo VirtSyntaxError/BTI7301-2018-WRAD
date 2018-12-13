@@ -36,10 +36,6 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -ArgumentList $WRADEndpo
     load-WRADModules
     enable-WRADLogging
     
-    #Get User and make him editable
-    Write-UDLog -Level Warning -Message "Get User: $usrguid"
-    
-
     New-UDRow {
         New-UDColumn -Size 6 -Content {
             #Detailed View of User
@@ -66,9 +62,9 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -ArgumentList $WRADEndpo
 
                 if(($Script:EUuser.Username -ne $euun) -or ($Script:EUuser.DisplayName -ne $eudn) -or ($Script:EUuser.Enabled -ne $eunbld)){
                     #Update User
-                    Write-UDLog -Level Warning -Message "Update User $euun $eudn $eunbld"
-                    Update-WRADUser -Reference -ObjectGUID $usrguid -UserName $euun -DisplayName $eudn -Enabled $eunbld
 
+                    Update-WRADUser -Reference -ObjectGUID $usrguid -UserName $euun -DisplayName $eudn -Enabled $eunbld
+                    Write-WRADLog -logtext "Update User $euun" -level 0
                     New-UDInputAction -Toast "The user '$euun' is edited." -Duration 5000
                 } else {
                     New-UDInputAction -Toast "The user '$euun' didn't change." -Duration 5000
@@ -94,8 +90,8 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -ArgumentList $WRADEndpo
                             $Global:WRADDBConnection = $DBConnect
                         }
 
-                        Write-UDLog -Level Warning -Message "Remove User $usrguid from Group $($newgroup.ObjectGUID)"
                         Remove-WRADGroupOfUser -Reference -UserObjectGUID $usrguid -GroupObjectGUID $newgroup.ObjectGUID
+                        Write-WRADLog -logtext "Removed User $usrguid from Group $($newgroup.CommonName)" -level 0
                     } 
                 } -Content {"Leave"}
 
@@ -125,8 +121,8 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -ArgumentList $WRADEndpo
                             $Global:WRADDBConnection = $DBConnect
                         }
 
-                        Write-UDLog -Level Warning -Message "Add User $usrguid to Group $($tg.ObjectGUID)"
                         New-WRADGroupOfUser -Reference -UserObjectGUID $usrguid -GroupObjectGUID $tg.ObjectGUID
+                        Write-WRADLog -logtext "Added User $usrguid to Group $($tg.CommonName)" -level 0
                     } 
                 } -Content {"Add"}
 
