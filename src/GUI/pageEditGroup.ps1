@@ -6,14 +6,14 @@ $PageEditGroup = New-UDPage -Name "Edit Group" -AuthorizedRole @("WRADadmin","Au
 
         }
         New-UDColumn -Size 6 -Content {
-            New-UDGrid -Title "All user" -Header @("CommonName", "Create date", "Edit") -Properties @("CommonName", "CreatedDate", "Edit") -Endpoint {
+            New-UDGrid -Title "All user" -Header @("CommonName", "Create date", "Group Type", "Security Type", "Edit") -Properties @("CommonName", "CreatedDate", "GroupType", "SecurityType", "Edit") -Endpoint {
                 
                 $Global:WRADDBConnection = $ArgumentList[0].dbconnection
 
                 $AllGroupGrid = @()
                 $AllGroups = Get-WRADGroup -Reference
                 ForEach($Group in $AllGroups){
-                    $AllGroupGrid += @{CommonName = $Group.CommonName; CreatedDate = $User.CreatedDate;  Edit =(New-UDLink -Text "Edit" -Url "/EditGroup/$($Group.ObjectGUID)")} 
+                    $AllGroupGrid += @{CommonName = $Group.CommonName; CreatedDate = $Group.CreatedDate; GroupType = $Group.GroupType; SecurityType = $Group.GroupTypeSecurity;  Edit =(New-UDLink -Text "Edit" -Url "/EditGroup/$($Group.ObjectGUID)")} 
                 }
 
                 $AllGroupGrid | Out-UDGridData
@@ -31,7 +31,7 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
     $DBConnect = $Global:WRADDBConnection
     $Script:Scriptpath = $ArgumentList[0].scrptroot
 
-    load-WRADDBCommands
+    load-WRADModules
 
 	$Script:EGgroup = Get-WRADGroup -Reference -ObjectGUID $grpguid
 
@@ -45,11 +45,13 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
 				param($egcn, $eggrptyp, $eggrptypsec)
 				
 				if(($Script:EGgroup.CommonName -ne $egcn) -or ($Script:EGgroup.GroupType -ne $eggrptyp) -or ($Script:EGgroup.GroupTypeSecurity -ne $eggrptypsec)){
-					#Load Module
+					<#Load Module
                     if(!(get-module WRADDBCommands)){
                         Import-Module $Script:Scriptpath\..\modules\WRADDBCommands.psm1
                         Write-UDLog -Level Warning -Message "Import Module WRADCommands"
-                    }
+                    }#>
+
+                    load-WRADModules
 
                     #Update Group
                     Write-UDLog -Level Warning -Message "Update Group $egcn $eggrptyp $eggrptypsec"

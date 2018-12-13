@@ -1,4 +1,3 @@
-$Script:ActualWRADSettings = Get-WRADSetting
 
 $PageSettings = New-UDPage -Name "Settings" -AuthorizedRole @("WRADadmin","Auditor") -Content {
     New-UDRow {
@@ -7,6 +6,8 @@ $PageSettings = New-UDPage -Name "Settings" -AuthorizedRole @("WRADadmin","Audit
 		}
         #Alle User
 		New-UDColumn -size 6 -Content {
+            $Script:ActualWRADSettings = Get-WRADSetting
+
 			New-UDInput -Title "Settings" -Id "FormSettings" -Content {
                 
                 New-UDInputField -Type 'textbox' -Name $Script:ActualWRADSettings[8].SettingName -Placeholder 'AD Base' -DefaultValue $Script:ActualWRADSettings[8].SettingValue

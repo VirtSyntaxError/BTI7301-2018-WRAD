@@ -25,16 +25,19 @@ $PageAddUser = New-UDPage -Name "Add User or Group" -AuthorizedRole @("WRADadmin
                 $dn = $dn.trim()
 
                 if(-not ([string]::IsNullOrEmpty($un) -or [string]::IsNullOrEmpty($dn))){
-                    #Load Module
+                    <#Load Module
                     if(!(get-module WRADDBCommands)){
                         Import-Module $Script:ScriptPath\..\modules\WRADDBCommands.psm1
                         Write-UDLog -Level Warning -Message "Import Module WRADCommands"
-                    }
+                    }#>
+
+                    load-WRADModules
 
                     #Check for unique Username
                     if((Get-WRADUser -Reference -UserName $un).count -eq 0){
-                        Write-UDLog -Level Warning -Message "Add user $un $dn $active $nbld"
+                        #Write-UDLog -Level Warning -Message "Add user $un $dn $active $nbld"
                         New-WRADUser -Reference -Username "$un" -DisplayName "$dn" -Enabled $nbld
+                        Write-WRADLog -logtext "Added user $un $dn $active $nbld" -level 1
 
                         New-UDInputAction -Toast "The user '$un' was added." -Duration 5000 -ClearInput
                     } else {
@@ -60,11 +63,13 @@ $PageAddUser = New-UDPage -Name "Add User or Group" -AuthorizedRole @("WRADadmin
                 Write-UDLog -Message "Add group $cmnnm $grptyp $grptypsec"
 
                 if( -not [string]::IsNullOrEmpty($cmnnm)){
-                    #Load Module
+                    <#Load Module
                     if(!(get-module WRADDBCommands)){
                         Import-Module $Script:ScriptPath\..\modules\WRADDBCommands.psm1
                         Write-UDLog -Level Warning -Message "Import Module WRADCommands"
-                    }
+                    }#>
+
+                    load-WRADModules
 
                     #Save Group
                     New-WRADGroup -Reference -CommonName "$cmnnm" -GroupType $grptyp -GroupTypeSecurity $grptypsec

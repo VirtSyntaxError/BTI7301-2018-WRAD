@@ -19,17 +19,28 @@ function load-WRADUDDashboard {
     }
 }
 
-function load-WRADDBCommands {
+function load-WRADModules {
     Param()
     try {
+        #load WRADDBCommands
         if(!(get-module WRADDBCommands)){
             Import-Module $Script:ScriptPath\..\modules\WRADDBCommands.psm1
+            write-host "Import Module WRADCommands"
+        }
+        #load WRADEventText
+        if(!(get-module WRADEventText)){
+            Import-Module $Script:ScriptPath\..\modules\WRADEventText.psm1
+            write-host "Import Module WRADCommands"
+        }
+        #load WRADLogging
+        if(!(get-module WRADLogging)){
+            Import-Module $Script:ScriptPath\..\modules\WRADLogging.psm1
             write-host "Import Module WRADCommands"
         }
     }
     catch {
         Write-Error -Message $_.Exception.Message
-        Write-UDLog -Level Warning -Message "Could not load WRAD DB Commands."
+        Write-UDLog -Level Warning -Message "Could not load WRAD DB Commands. $($_.Exception.Message)"
     }
 }
 
@@ -59,9 +70,9 @@ function reload-WRADGUIContent {
 
 load-WRADUDDashboard
 enable-WRADLogging
-load-WRADDBCommands
+load-WRADModules
 
-$InitiateWRADEndpoint = New-UDEndpointInitialization -Module $PSScriptRoot\..\modules\WRADDBCommands.psm1 -Function enable-WRADLogging,load-WRADDBCommands #-Variable $ScrptRt 
+$InitiateWRADEndpoint = New-UDEndpointInitialization -Module $PSScriptRoot\..\modules\WRADDBCommands.psm1 -Function enable-WRADLogging,load-WRADModules #-Variable $ScrptRt 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -95,6 +106,8 @@ $login = new-UDLoginPage -AuthenticationMethod $auth -WelcomeText "Welcome to WR
 . .\pageEditUser.ps1
 . .\pageEditGroup.ps1
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #Close runnig Dashboards

@@ -33,7 +33,7 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -ArgumentList $WRADEndpo
     $Script:Scriptpath = $ArgumentList[0].scrptroot
     $DBConnect = $Global:WRADDBConnection
 
-    load-WRADDBCommands
+    load-WRADModules
     enable-WRADLogging
     
     #Get User and make him editable
@@ -105,5 +105,37 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -ArgumentList $WRADEndpo
                 $UsrGrp | Out-UDGridData
             }
         } 
+    }
+    New-UDRow {
+        New-UDColumn -Size 6 -Content {
+            $allgrps = (Get-WRADGroup -Reference).ObjectGUID
+            $usringrp = (Get-WRADGroupOfUser -Reference -UserObjectGUID $usrguid).GroupObjectGUID
+
+            $filteredgrps = $allgrps | where {$usringrp -notcontains $_}
+            $grpforusr = @()
+            ForEach($Group in $filteredgrps){
+                $tg = Get-WRADGroup -Reference -ObjectGUID $Group
+                $lnkremusr = New-UDElement -Tag "a" -Attributes @{
+                    className = "btn"
+                    target = "_self"
+                    href = "$usrguid"
+                    onClick = {
+                        #Remove selected Group from Group
+                        if([string]::IsNullOrEmpty($Global:WRADDBConnection)){
+                            $Global:WRADDBConnection = $DBConnect
+                        }
+
+                        Write-UDLog -Level Warning -Message "Add User $usrguid to Group $($tg.ObjectGUID)"
+                        New-WRADGroupOfUser -Reference -UserObjectGUID $usrguid -GroupObjectGUID $tg.ObjectGUID
+                    } 
+                } -Content {"Add"}
+
+                $grpforusr += @{CommonName = $tg.CommonName; CreatedDate = $tg.CreatedDate; Edit = $lnkremusr}
+            }
+
+            New-UDGrid -Title "Add $($Script:EUuser.DisplayName) to Group" -Header @("CommonName", "Create date", "Edit") -Properties @("CommonName", "CreatedDate", "Edit") -Endpoint {
+                $grpforusr | Out-UDGridData
+            }
+        }
     } 
 }
