@@ -1,5 +1,27 @@
 # Meetings
 
+## 2018-12-14
+### Attendees
+* Beat Schärz (pidu2)
+* Dario Furigo (VirtSyntaxError)
+* Philipp Köfer (kofep1)
+* Nicola Michaelis (michn2)
+* Christof Jungo
+
+### Agenda
+* Demo
+* Timeplan
+* Review Milestones
+
+### Decisions
+
+### ToDo
+* Beat -> Installation documentation
+* Nicola -> GUI
+* Philipp -> Technical documentation
+* Dario -> Milestones, Controlling
+
+
 ## 2018-11-14
 ### Attendees
 * Beat Schärz (pidu2)

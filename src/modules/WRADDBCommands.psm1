@@ -2735,11 +2735,32 @@ function Get-WRADLog {
 	(
         [Parameter(Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
-		[Int]$LogSeverity
+		[Int]$LogSeverity,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[Int]$Last,
+
+        [Parameter(Mandatory=$false)]
+		[ValidateNotNullOrEmpty()]
+		[Int]$First
 	)
 	begin
 	{
         $Query = 'SELECT * FROM WRADLog';	
+
+        if($LogSeverity) {
+            $Query += ' WHERE `LogSeverity` = '+$LogSeverity
+        }
+
+        if($Last -gt 0) {
+            $Query += ' ORDER BY `LogTimestamp` DESC LIMIT '+$Last
+        }
+
+        if($First -gt 0) {
+            $Query += ' ORDER BY `LogTimestamp` ASC LIMIT '+$First
+        }
+
 	}
 	Process
 	{
