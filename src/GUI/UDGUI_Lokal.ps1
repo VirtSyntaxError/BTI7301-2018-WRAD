@@ -106,8 +106,62 @@ $login = new-UDLoginPage -AuthenticationMethod $auth -WelcomeText "Welcome to WR
 . .\pageEditUser.ps1
 . .\pageEditGroup.ps1
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Dashboard Auditor/Abteilungsleiter
+$pageDBAuditorDepLead = New-UDPage -Name "Dashboard" -AuthorizedRole @("WRADadmin","Auditor", "DepLead") -AutoRefresh -RefreshInterval 30 -Content {
+    New-UDRow {
+        New-UDColumn -Size 6 -Content {
+            #False rights (SollIstVergleich)
+            
+            #get Event Texts
+            $events = Get-WRADEvent -NotResolved
 
+            #Prepare DisplayData
+            $opText = @()
+            ForEach($event in $events){
+                $eventText = Get-WRADEventText -evs $event
+                $opText += @{Text = $eventText; Date = $event.CreatedDate}
+            }
 
+            New-UDGrid -Title "False rights" -Header @("Text", "Date") -Properties @("Text", "Date") -Endpoint {
+                $opText | Out-UDGridData
+            }
+            
+        }
+        New-UDColumn -Size 6 -Content {
+            #Last changes (Log)
+
+            #Get LOg
+            $log = Get-WRADLog
+
+            $entries = @()
+            ForEach($entry in  $log){
+                if($entry.LogSeverity -eq 2){
+                    $severity = "Error"
+                } elseif ($entry.LogSeverity -eq 1){
+                    $severity = "Warning"
+                } elseif ($entry.LogSeverity -eq 0){
+                    $severity = "Information"
+                } else {
+                    $severity = "Uknown Severity"
+                }
+
+                $entries += @{Date = $entry.LogTimestamp; Severity = $severity; Text = $entry.LogText}
+            }
+
+            New-UDGrid -Title "Last changes" -Header @("Date", "Severity", "Text") -Properties @("Date", "Severity", "Text") -Endpoint {
+                $entries | Out-UDGridData
+            }
+        }
+    } 
+    New-UDRow {
+        New-UDColumn -Size 6 -Content {
+
+        }
+        New-UDColumn -Size 6 -Content {
+
+        }
+    } 
+}
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #Close runnig Dashboards
@@ -119,7 +173,7 @@ $theme = Get-UDTheme -Name "Azure"
 #Start Dashboard
 Start-UDDashboard -Port 10000 -AllowHttpForLogin -Content {
     
-    New-UDDashboard -Login $login -Pages @($PageSettings, $PageAddUser, $PageEditUser, $PageEditUserDyn, $PageEditGroup, $PageEditGroupDyn) -Title "Project WRAD" -Color 'Black' -Theme $theme -EndpointInitialization $InitiateWRADEndpoint
+    New-UDDashboard -Login $login -Pages @($PageSettings, $PageAddUser, $PageEditUser, $PageEditUserDyn, $PageEditGroup, $PageEditGroupDyn, $pageDBAuditorDepLead) -Title "Project WRAD" -Color 'Black' -Theme $theme -EndpointInitialization $InitiateWRADEndpoint
     
 }
 #-Verbose -debug
