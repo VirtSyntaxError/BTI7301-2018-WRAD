@@ -173,7 +173,7 @@ $theme = Get-UDTheme -Name "Azure"
 #Start Dashboard
 Start-UDDashboard -Port 10000 -AllowHttpForLogin -Content {
     
-    New-UDDashboard -Login $login -Pages @($PageSettings, $PageAddUser, $PageEditUser, $PageEditUserDyn, $PageEditGroup, $PageEditGroupDyn, $pageDBAuditorDepLead) -Title "Project WRAD" -Color 'Black' -Theme $theme -EndpointInitialization $InitiateWRADEndpoint
+    New-UDDashboard -Login $login -Pages @($pageDBAuditorDepLead, $PageSettings, $PageAddUser, $PageEditUser, $PageEditUserDyn, $PageEditGroup, $PageEditGroupDyn) -Title "Project WRAD" -Color 'Black' -Theme $theme -EndpointInitialization $InitiateWRADEndpoint
     
 }
 #-Verbose -debug
