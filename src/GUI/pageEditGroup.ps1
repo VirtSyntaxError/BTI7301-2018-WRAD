@@ -145,7 +145,6 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
                             $Global:WRADDBConnection = $DBConnect
                         }
 
-                        Write-UDLog -Level Warning -Message "Remove User $($UsrInGrp.ObjectGUID) from Group $grpguid"
                         Remove-WRADGroupOfUser -Reference -UserObjectGUID $($UsrInGrp.ObjectGUID) -GroupObjectGUID $grpguid
                         Write-WRADLog -logtext "Removed User $($UsrInGrp.UserName) from $grpguid" -level 0
                     } 
