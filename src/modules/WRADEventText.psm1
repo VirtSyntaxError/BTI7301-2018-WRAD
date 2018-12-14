@@ -24,58 +24,70 @@
     foreach ($ev in $events){
         $text = ""
         if ($ev.EventType -eq 1){
-            $text = "User '$($ev.SrcUserObjectGUID)' not in SOLL" 
+            $usrIST = Get-WRADUser -ObjectGUID $ev.SrcUserObjectGUID
+            $text = "User '$($usrIST.userPrincipalName)' not in SOLL" 
         }
         if ($ev.EventType -eq 2){
-            $text = "User '$($ev.SrcRefUserObjectGUID)' not in IST" 
+            $usrSOLL = Get-WRADUser -Reference -ObjectGUID $ev.SrcRefUserObjectGUID
+            $text = "User '$($usrSoll.Username)' not in IST" 
         }
         if ($ev.EventType -eq 3){
             $usrIST = Get-WRADUser -ObjectGUID $ev.SrcUserObjectGUID
             $usrSOLL = Get-WRADUser -Reference -ObjectGUID $ev.SrcRefUserObjectGUID
-            $text = "Username wrong: '$($ev.SrcUserObjectGUID)' -> '$($usrIST.userPrincipalName)' != '$($usrSOLL.Username)'" 
+            $text = "Username wrong: IST: '$($usrIST.userPrincipalName)' != SOLL: '$($usrSOLL.Username)'" 
         }
         if ($ev.EventType -eq 4){
             $usrIST = Get-WRADUser -ObjectGUID $ev.SrcUserObjectGUID
             $usrSOLL = Get-WRADUser -Reference -ObjectGUID $ev.SrcRefUserObjectGUID
-            $text = "DisplayName wrong: '$($ev.SrcUserObjectGUID)' -> '$($usrIST.DisplayName)' != '$($usrSOLL.DisplayName)'"
+            $text = "DisplayName wrong: IST: '$($usrIST.DisplayName)' != SOLL: '$($usrSOLL.DisplayName)'"
         }
         if ($ev.EventType -eq 5){
             $usrIST = Get-WRADUser -ObjectGUID $ev.SrcUserObjectGUID
             $usrSOLL = Get-WRADUser -Reference -ObjectGUID $ev.SrcRefUserObjectGUID
-            $text = "Enabled/Disabled: '$($ev.SrcUserObjectGUID)' -> '$($usrIST.Enabled)' != '$($usrSOLL.Enabled)'"
+            $text = "Enabled/Disabled: '$($usrIST.userPrincipalName)' IST: '$($usrIST.Enabled)' != SOLL: '$($usrSOLL.Enabled)'"
         }
         if ($ev.EventType -eq 6){
-            $text = "Group '$($ev.SrcGroupObjectGUID)' not in SOLL"
+            $grpIST = Get-WRADGroup -ObjectGUID $ev.SrcGroupObjectGUID
+            $text = "Group '$($grpIST.CommonName)' not in SOLL"
         }
         if ($ev.EventType -eq 7){
-            $text = "Group '$($ev.SrcRefGroupObjectGUID)' not in IST"
+            $grpSOLL = Get-WRADGroup -Reference -ObjectGUID $ev.SrcRefGroupObjectGUID
+            $text = "Group '$($grpSOLL.CommonName)' not in IST"
         }
         if ($ev.EventType -eq 8){
             $grpIST = Get-WRADGroup -ObjectGUID $ev.SrcGroupObjectGUID
             $grpSOLL = Get-WRADGroup -Reference -ObjectGUID $ev.SrcRefGroupObjectGUID
-            $text = "CommonName wrong: '$($ev.SrcGroupObjectGUID)' -> '$($grpIST.CommonName)' != '$($grpSOLL.CommonName)'"
+            $text = "CommonName wrong: IST: '$($grpIST.CommonName)' != SOLL: '$($grpSOLL.CommonName)'"
         }
         if ($ev.EventType -eq 9){
             $grpIST = Get-WRADGroup -ObjectGUID $ev.SrcGroupObjectGUID
             $grpSOLL = Get-WRADGroup -Reference -ObjectGUID $ev.SrcRefGroupObjectGUID
-            $text = "GroupType wrong: '$($ev.SrcGroupObjectGUID)' -> '$($grpIST.GroupType)' != '$($grpSOLL.GroupType)'"
+            $text = "GroupType wrong: '$($grpIST.CommonName)' IST: '$($grpIST.GroupType)' != SOLL: '$($grpSOLL.GroupType)'"
         }
         if ($ev.EventType -eq 10){
             $grpIST = Get-WRADGroup -ObjectGUID $ev.SrcGroupObjectGUID
             $grpSOLL = Get-WRADGroup -Reference -ObjectGUID $ev.SrcRefGroupObjectGUID
-            $text = "GroupTypeSecurity wrong: '$($ev.SrcGroupObjectGUID)' -> '$($grpIST.GroupTypeSecurity)' != '$($grpSOLL.GroupTypeSecurity)'"
+            $text = "GroupTypeSecurity wrong: '$($grpIST.CommonName)' IST: '$($grpIST.GroupTypeSecurity)' != SOLL: '$($grpSOLL.GroupTypeSecurity)'"
         }
         if ($ev.EventType -eq 11){
-            $text = "User '$($ev.SrcUserObjectGUID)' should be in group '$($ev.DestRefGroupObjectGUID)' but is not" 
+            $usrIST = Get-WRADUser -ObjectGUID $ev.SrcUserObjectGUID
+            $grpSOLL = Get-WRADGroup -Reference -ObjectGUID $ev.DestRefGroupObjectGUID
+            $text = "User '$($usrIST.userPrincipalName)' should be in group '$($grpSOLL.CommonName)' but is not" 
         }
         if ($ev.EventType -eq 12){
-            $text = "User '$($ev.SrcUserObjectGUID)' is in group '$($ev.DestGroupObjectGUID)' but should not" 
+            $usrIST = Get-WRADUser -ObjectGUID $ev.SrcUserObjectGUID
+            $grpIST = Get-WRADGroup -ObjectGUID $ev.DestGroupObjectGUID
+            $text = "User '$($usrIST.userPrincipalName)' is in group '$($grpIST.CommonName)' but should not" 
         }
         if ($ev.EventType -eq 13){
-            $text = "Group '$($ev.SrcGroupObjectGUID)' should be in group '$($ev.DestRefGroupObjectGUID)' but is not" 
+            $grpIST = Get-WRADGroup -ObjectGUID $ev.SrcGroupObjectGUID
+            $grpSOLL = Get-WRADGroup -Reference -ObjectGUID $ev.DestRefGroupObjectGUID
+            $text = "Group '$($grpIST.CommonName)' should be in group '$($grpSOLL.CommonName)' but is not" 
         }
         if ($ev.EventType -eq 14){
-            $text = "User '$($ev.SrcGroupObjectGUID)' is in group '$($ev.DestGroupObjectGUID)' but should not"
+            $grpIST = Get-WRADGroup -ObjectGUID $ev.SrcGroupObjectGUID
+            $grpSOLL = Get-WRADGroup -ObjectGUID $ev.DestGroupObjectGUID
+            $text = "User '$($grpIST.CommonName)' is in group '$($grpSOLL.CommonName)' but should not"
         }
         if ($html){
             $text = $text -replace "&", "&amp;"
