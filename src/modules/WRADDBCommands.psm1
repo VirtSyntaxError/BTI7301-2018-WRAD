@@ -2731,17 +2731,19 @@ function Update-WRADSetting {
 }
 
 function Get-WRADLog {
+[CmdletBinding(DefaultParameterSetName="LAST")]
     Param
 	(
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="LAST", Mandatory=$false)]
+        [Parameter(ParameterSetName="FIRST", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
-		[Int]$LogSeverity,
+		[Int]$LogSeverity = -1,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="LAST", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[Int]$Last,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName="FIRST", Mandatory=$false)]
 		[ValidateNotNullOrEmpty()]
 		[Int]$First
 	)
@@ -2749,7 +2751,7 @@ function Get-WRADLog {
 	{
         $Query = 'SELECT * FROM WRADLog';	
 
-        if($LogSeverity) {
+        if($LogSeverity -ge 0) {
             $Query += ' WHERE `LogSeverity` = '+$LogSeverity
         }
 
