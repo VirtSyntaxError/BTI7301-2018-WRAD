@@ -72,8 +72,9 @@ function Write-WRADISTtoDB
 
 	try 
 	{
-		Write-Verbose "Loading WRAD Custom PS Module WRADDBCommands";
+		Write-Verbose "Loading WRAD Custom PS Modules";
 		Import-Module $PSScriptRoot\WRADDBCommands.psd1
+		Import-Module $PSScriptRoot\WRADLogging.psd1
 		Write-Verbose "Loading PS Module ActiveDirectory";
 		Import-Module ActiveDirectory
 	}
@@ -140,6 +141,7 @@ function Write-WRADISTtoDB
 			}
 		}
 		Write-Verbose "FINISHED writing Group of Group Membership to DB"
+		Write-WRADLog 'Updated Groups IST DB from AD' 0
 
 		### Write Users from AD to DB
 		Write-Verbose "START writing Users from AD to DB";
@@ -200,9 +202,33 @@ function Write-WRADISTtoDB
 			}
 		}
 		Write-Verbose "FINISHED cleaning up DB";
+		Write-WRADLog 'Updated Users IST DB from AD' 0
 	}
 	catch 
 	{
 		Write-Error -Message $_.Exception.Message
+		Write-WRADLog 'failed to updates IST DB from AD' 2
 	}
+	<#
+    .SYNOPSIS
+
+    Exports Data from AD to a DB
+
+    .DESCRIPTION
+
+    Exports the actual User and Group Data from Active Directory to the WRAD DB.
+
+    .INPUTS
+    
+    None. You cannot pipe objects to this function.
+
+    .OUTPUTS
+
+    No direct output, but Data gets Stored in DB
+
+    .EXAMPLE
+
+    C:\PS> Write-WRADISTtoDB
+
+    #>
 }

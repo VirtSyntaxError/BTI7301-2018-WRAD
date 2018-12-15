@@ -1,12 +1,13 @@
-$Script:ActualWRADSettings = Get-WRADSetting
 
 $PageSettings = New-UDPage -Name "Settings" -AuthorizedRole @("WRADadmin","Auditor") -Content {
     New-UDRow {
         New-UDColumn -size 3 -Content {
 			
 		}
-        #Alle User
 		New-UDColumn -size 6 -Content {
+            #Show Settings
+            $Script:ActualWRADSettings = Get-WRADSetting
+
 			New-UDInput -Title "Settings" -Id "FormSettings" -Content {
                 
                 New-UDInputField -Type 'textbox' -Name $Script:ActualWRADSettings[8].SettingName -Placeholder 'AD Base' -DefaultValue $Script:ActualWRADSettings[8].SettingValue
@@ -44,7 +45,7 @@ $PageSettings = New-UDPage -Name "Settings" -AuthorizedRole @("WRADadmin","Audit
                 For($i=0; $i -le $WRADSettingsNew.length-1; $i++) {
                    
                     if($Script:ActualWRADSettings[$i].SettingValue -ne $WRADSettingsNew[$i]){
-                        Write-UDLog -Level Info -Message "New Setting $($WRADSettingsNew[$i])" -Level Info
+                        Write-UDLog -Level Warning -Message "New Setting $($WRADSettingsNew[$i])" 
                         #$Script:ActualWRADSettings[$i].SettingValue = $WRADSettingsNew[$i]
                         $ns = 1
 
@@ -62,7 +63,6 @@ $PageSettings = New-UDPage -Name "Settings" -AuthorizedRole @("WRADadmin","Audit
                     try {
                         Write-UDLog -Level Warning -Message $newSettings
                         Invoke-Expression $newSettings
-                        
                     } 
                     catch {
                         Write-UDLog -Level Warning -Message "CATCH: $($_.Exception.Message)"
@@ -73,13 +73,9 @@ $PageSettings = New-UDPage -Name "Settings" -AuthorizedRole @("WRADadmin","Audit
                 }
                           
                 Write-UDLog -Level Warning -Message "End of code 'insert settings'"
-                New-UDInputAction -RedirectUrl "/Einstellungen"
+                New-UDInputAction -RedirectUrl "/Settings"
 
             }
-		}
-        #Alle gruppen
-		New-UDColumn -size 3 -Content {
-			
 		}
     }
 }

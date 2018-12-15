@@ -15,6 +15,8 @@ function Invoke-WRADSOLLISTVergleich{
 	{
 		Write-Verbose "Loading PS Module WRADDBCommands and WRADEvent Class"
 		Import-Module -Name ($PSScriptRoot+"\WRADDBCommands.psd1")
+        Write-Verbose "Loading WRADLogging Module"
+        Import-Module -Name ($PSScriptRoot+"\WRADLogging.psd1")
 	}
 	catch 
 	{
@@ -232,16 +234,20 @@ function Invoke-WRADSOLLISTVergleich{
             $ERR_old = $ERR_old | Where-Object {$_.EventID -ne $ev_old.EventID}
         } else {
             # else add the event
-            Write-Host 'Adding event: with New-WRADEvent -SrcUserObjectGUID'$ev_new.SrcUser'-SrcGroupObjectGUID'$ev_new.SrcGroup'-SrcRefUserObjectGUID'$ev_new.SrcRefUser'-SrcRefGroupObjectGUID'$ev_new.SrcRefGroup'-DestGroupObjectGUID'$ev_new.DestGroup'-DestRefGroupObjectGUID'$ev_new.DestRefGroup'-EventType'$ev_new.EventType
+            #Write-Host 'Adding event: with New-WRADEvent -SrcUserObjectGUID'$ev_new.SrcUser'-SrcGroupObjectGUID'$ev_new.SrcGroup'-SrcRefUserObjectGUID'$ev_new.SrcRefUser'-SrcRefGroupObjectGUID'$ev_new.SrcRefGroup'-DestGroupObjectGUID'$ev_new.DestGroup'-DestRefGroupObjectGUID'$ev_new.DestRefGroup'-EventType'$ev_new.EventType
             New-WRADEvent -SrcUserObjectGUID $ev_new.SrcUser -SrcGroupObjectGUID $ev_new.SrcGroup -SrcRefUserObjectGUID $ev_new.SrcRefUser -SrcRefGroupObjectGUID $ev_new.SrcRefGroup -DestGroupObjectGUID $ev_new.DestGroup -DestRefGroupObjectGUID $ev_new.DestRefGroup -EventType $ev_new.EventType
         }
     }
 
+    Write-WRADLog -logtext "Created New Events" -level 0
+
     # go through left old events and set them resolved
     foreach ($ev_old in $ERR_old){
-        Write-Host "Setting event to resolved with: Set-WRADEventResolved -EventID"$ev_old.EventID
+        #Write-Host "Setting event to resolved with: Set-WRADEventResolved -EventID"$ev_old.EventID
         Set-WRADEventResolved -EventID $ev_old.EventID
     }
+
+    Write-WRADLog -logtext "Set old events to resolved" -level 0
     
     <#
     .SYNOPSIS

@@ -1,5 +1,64 @@
 # Meetings
 
+## 2018-12-14
+### Attendees
+* Beat Schärz (pidu2)
+* Dario Furigo (VirtSyntaxError)
+* Philipp Köfer (kofep1)
+* Nicola Michaelis (michn2)
+* Christof Jungo
+
+### Agenda
+* Demo
+* Timeplan
+* Review Milestones
+
+### Decisions
+
+### ToDo
+* Beat -> Installation documentation
+* Nicola -> GUI
+* Philipp -> Technical documentation
+* Dario -> Milestones, Controlling
+
+
+## 2018-11-14
+### Attendees
+* Beat Schärz (pidu2)
+* Dario Furigo (VirtSyntaxError)
+* Christof Jungo
+
+### Agenda
+* Comments
+* Timeplan
+
+### Decisions
+* comment: get-help is enough for small functions, bigger ones need comment in code
+
+### ToDo
+* Beat -> Reports
+* Nicola -> GUI
+* Philipp -> SOLL export, IST export
+
+
+## 2018-11-07
+### Attendees
+* Beat Schärz (pidu2)
+* Philipp Köfer (kofep1)
+* Nicola Michaelis (michn2)
+* Christof Jungo
+
+### Agenda
+
+### Decisions
+* No Polling from AD
+
+### ToDo
+* Beat -> SOLL-IST comparison, Reports
+* Nicola -> GUI
+* Philipp -> SOLL import
+
+
 ## 2018-10-31
 ### Attendees
 * Beat Schärz (pidu2)
