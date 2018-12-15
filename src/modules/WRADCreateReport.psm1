@@ -1,4 +1,17 @@
-﻿function Get-WRADReportEvents{
+﻿#helper function to make text html-compatible (umlaute)
+function toHtml([String] $text){
+    $text = $text -replace "&", "&amp;"
+    $text = $text -replace "ö", "&ouml;"
+    $text = $text -replace "Ö", "&Ouml;"
+    $text = $text -replace "ä", "&auml;"
+    $text = $text -replace "Ä", "&Auml;"
+    $text = $text -replace "Ü", "&Uuml;"
+    $text = $text -replace "ü", "&uuml;"
+    $text = $text -replace "<", "&lt;"
+    $text = $text -replace ">", "&gt;"
+    return $text
+}
+function Get-WRADReportEvents{
     # import DB module
     try
 	{
@@ -11,7 +24,7 @@
 	}
     Import-Module -Name ($PSScriptRoot+"\WRADEventText.psd1")
     $events = Get-WRADEvent
-    $texts = Get-WRADEventText -html -evs $events
+    $texts = Get-WRADEventText -evs $events
     $90_days_date = (Get-Date).AddDays(-90)
     $90_days_events = Get-WRADEvent | Where-Object {$_.ResolvedDate -is [System.DBNull] -or $_.ResolvedDate -gt $90_days_date}
     $event_count = @{}
@@ -88,10 +101,32 @@ function Get-WRADReportUsers{
 
     [void]$chart.Series.Add("Data")
 
-    $chart.Series["Data"].Points.DataBindXY(@("< 30 days","< 90 days","> 90 days","Never"),@($users_0_30_c,$users_30_90_c,$users_90_X_c,$users_never_c))
+    # Only add values to the chart that are not 0
+    $names = New-Object System.Collections.Generic.List[System.Object]
+    $values = New-Object System.Collections.Generic.List[System.Object]
+
+    if ($users_0_30_c -ne 0){
+        $names.add("< 30 days")
+        $values.add($users_0_30_c)
+    }
+    if ($users_30_90_c -ne 0){
+        $names.add("< 90 days")
+        $values.add($users_30_90_c)
+    }
+    if ($users_90_X_c -ne 0){
+        $names.add("> 90 days")
+        $values.add($users_90_X_c)
+    }
+    if ($users_never_c -ne 0){
+        $names.add("Never")
+        $values.add($users_never_c)
+    }
+
+    $chart.Series["Data"].Points.DataBindXY($names,$values)
     $chart.Series["Data"].ChartType= "Pie"
     $chart.Series["Data"]["PieLabelStyle"] = "Outside"
     $chart.Series["Data"]["PieLineColor"] = "Black"
+    $chart.GetType().FullName
 
     return @($disabled, $users_30_90, $users_90_X, $users_never, $chart)
 }
@@ -148,7 +183,7 @@ function Write-WRADReport{
         Add-Image -Document $pdf -File "$target_path\pic.png"
         Add-Title -Document $pdf -Text "Current Events" -Color "blue" -FontSize 10
         foreach ($t in $texts){
-            $report = $report -replace "</body>", "<p>$($t)</p></body>"
+            $report = $report -replace "</body>", "<p>$(toHtml($t))</p></body>"
             Add-Text -Document $pdf -Text "$t"
         }
         $report | Out-File "$target_path\report.html"
@@ -325,7 +360,7 @@ function Write-WRADReport{
         $report = $report -replace "</body>", "<h2>Number of Events</h2><img src='$target_path\EVSpic.png'><h2>Current Events</h2></body>"
         Add-Title -Document $pdf -Text "Current Events" -Color "blue" -FontSize 10
         foreach ($t in $texts){
-            $report = $report -replace "</body>", "<p>$($t)</p></body>"
+            $report = $report -replace "</body>", "<p>$(toHtml($t))</p></body>"
             Add-Text -Document $pdf -Text "$t"
         }
         Add-Title -Document $pdf -Text "Number of Events" -Color "blue" -FontSize 10

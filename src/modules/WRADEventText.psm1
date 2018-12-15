@@ -98,7 +98,7 @@
             $text = $text -replace "Ü", "&Uuml;"
             $text = $text -replace "ü", "&uuml;"
             $text = $text -replace "<", "&lt;"
-            $text = $text -replace "<", "&gt;"
+            $text = $text -replace ">", "&gt;"
         }
         $event_text_list.Add($text)
     }
