@@ -23,11 +23,15 @@ function Get-WRADReportEvents{
 		Write-Error -Message $_.Exception.Message
 	}
     Import-Module -Name ($PSScriptRoot+"\WRADEventText.psd1")
+    # get events from DB and then convert eventID to actual message
     $events = Get-WRADEvent
     $texts = Get-WRADEventText -evs $events
+    # get events that are newer than 90 days
     $90_days_date = (Get-Date).AddDays(-90)
     $90_days_events = Get-WRADEvent | Where-Object {$_.ResolvedDate -is [System.DBNull] -or $_.ResolvedDate -gt $90_days_date}
     $event_count = @{}
+    # create values that are used to build the chart (number of events over time)
+    # pretty much just check wheter a certain date was between created and resolved and then count up
     for($i=-90;$i -le 0;$i++){
         $str_date = (Get-Date -Date ((Get-Date).AddDays($i)) -UFormat "%Y%m%d").ToString()
         $event_count[$str_date] = 0
@@ -44,6 +48,7 @@ function Get-WRADReportEvents{
         }
     }
     
+    # chart stuff...
     Add-Type -AssemblyName System.Windows.Forms
     Add-Type -AssemblyName System.Windows.Forms.DataVisualization
 
@@ -63,6 +68,7 @@ function Get-WRADReportEvents{
     $chart.Series["Data"]["PieLabelStyle"] = "Outside"
     $chart.Series["Data"]["PieLineColor"] = "Black"
 
+    # return event texts and the created chart
     return @($texts,$chart)
 }
 function Get-WRADReportUsers{
@@ -76,12 +82,14 @@ function Get-WRADReportUsers{
 	{
 		Write-Error -Message $_.Exception.Message
 	}
+    # get users from DB and save them to different variables according to when they last logged in
     $users = Get-WRADUser
     $disabled = $users | Where-Object {-not $_.Enabled}
     $users_0_30 = $users |Where-Object {$_.LastLogonTimestamp.ToString() -ne "" -and (New-TimeSpan -Start $_.LastLogonTimestamp -End (Get-Date)).Days -lt 30}
     $users_30_90 = $users |Where-Object {$_.LastLogonTimestamp.ToString() -ne "" -and (New-TimeSpan -Start $_.LastLogonTimestamp -End (Get-Date)).Days -ge 30 -and (New-TimeSpan -Start $_.LastLogonTimestamp -End (Get-Date)).Days -lt 90}
     $users_90_X = $users |Where-Object {$_.LastLogonTimestamp.ToString() -ne "" -and (New-TimeSpan -Start $_.LastLogonTimestamp -End (Get-Date)).Days -ge 90}
     $users_never = $users |Where-Object {$_.LastLogonTimestamp.ToString() -eq ""}
+    # count the users per variable
     $users_0_30_c = ($users_0_30 | measure).Count
     $users_30_90_c = ($users_30_90 | measure).Count
     $users_90_X_c = ($users_90_X | measure).Count
@@ -128,6 +136,7 @@ function Get-WRADReportUsers{
     $chart.Series["Data"]["PieLineColor"] = "Black"
     $chart.GetType().FullName
 
+    # return the variables seperately and also the created chart
     return @($disabled, $users_30_90, $users_90_X, $users_never, $chart)
 }
 function Write-WRADReport{
@@ -166,16 +175,20 @@ function Write-WRADReport{
 
     New-Item -ItemType Directory -Path $target_path
 
+    # user iTextSharp to create and open a PDF file
     $pdf = New-Object iTextSharp.text.Document
     Create-PDF -Document $pdf -File "$target_path\report.pdf" -TopMargin 20 -BottomMargin 20 -LeftMargin 20 -RightMargin 20 -Author "WRAD"
     $pdf.Open()
 
     # event report
     if ($events){
+        # Use the function to get the needed information
         $evs = Get-WRADReportEvents
         $texts = $evs[0]
         $chart = $evs[1]
+        # save chart to file
         $chart.SaveImage("$target_path\pic.png","PNG")
+        # add text and image to pdf and html
         $report = "<!DOCTYPE html><head><title>Event Report</title></head><body><h1>Events</h1></body></html>"
         Add-Title -Document $pdf -Text "Event Report" -Color "black" -Centered
         $report = $report -replace "</body>", "<h2>Number of Events</h2><img src='$target_path\pic.png'><h2>Current Events</h2></body>"
@@ -183,23 +196,28 @@ function Write-WRADReport{
         Add-Image -Document $pdf -File "$target_path\pic.png"
         Add-Title -Document $pdf -Text "Current Events" -Color "blue" -FontSize 10
         foreach ($t in $texts){
+            # use toHtml to handle umlaute
             $report = $report -replace "</body>", "<p>$(toHtml($t))</p></body>"
             Add-Text -Document $pdf -Text "$t"
         }
         $report | Out-File "$target_path\report.html"
     } # users report
     elseif ($users){
+        # use the function to get the needed information
         $usr = Get-WRADReportUsers
         $disabled = $usr[0]
         $users_30_90 = $usr[1]
         $users_90_X = $usr[2]
         $users_never = $usr[3]
         $chart = $usr[4]
+        # save chart to file
         $chart.SaveImage("$target_path\pic.png", "PNG")
+        # add text and image to pdf and html
         Add-Title -Document $pdf -Text "User Report" -Color "black" -Centered
         Add-Title -Document $pdf -Text "Inactive Users" -FontSize 10
         Add-Image -Document $pdf -File "$target_path\pic.png"
         Add-Title -Document $pdf -Text "Disabled Users" -FontSize 10
+        # PDF needs a dataset to write tables -> create list
         $set_to_write = New-Object System.Collections.Generic.List[System.Object]
         $set_to_write.Add("ObjectGUID")
         $set_to_write.Add("userPrincipalName")
@@ -269,20 +287,21 @@ function Write-WRADReport{
         $report | Out-File "$target_path\report.html"
     } # full report
     else {
-        # get user stuff
+        # get user stuff from function
         $usr = Get-WRADReportUsers
         $disabled = $usr[0]
         $users_30_90 = $usr[1]
         $users_90_X = $usr[2]
         $users_never = $usr[3]
         $usr_chart = $usr[4]
-        # get event stuff
+        # get event stuff from function
         $evs = Get-WRADReportEvents
         $texts = $evs[0]
         $evs_chart = $evs[1]
         Add-Title -Document $pdf -Text "Full Report" -Color "black" -Centered
 
         # do user stuff
+        # additional comments in the above sections
         $usr_chart.SaveImage("$target_path\USRpic.png", "PNG")
         Add-Title -Document $pdf -Text "Inactive Users" -FontSize 10
         Add-Image -Document $pdf -File "$target_path\USRpic.png"
@@ -354,7 +373,8 @@ function Write-WRADReport{
         }
         Add-Table -Document $pdf -Dataset $set_to_write -Cols 5
 
-        # do event stuff        
+        # do event stuff
+        # additional comments in the above sections      
         $evs_chart.SaveImage("$target_path\EVSpic.png","PNG")
         $report = $report -replace "</body>", "<h1>Events</h1></body>"
         $report = $report -replace "</body>", "<h2>Number of Events</h2><img src='$target_path\EVSpic.png'><h2>Current Events</h2></body>"

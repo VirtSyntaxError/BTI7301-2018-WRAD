@@ -17,10 +17,12 @@
 	{
 		Write-Error -Message $_.Exception.Message
 	}
-
+    # create list for the texts
     $event_text_list = New-Object System.Collections.Generic.List[System.Object]
+    # sort the input events by eventtype
     $events = $evs |Sort-Object EventType
 
+    # loop through the events and create the appropriate text for every eventtype (id)
     foreach ($ev in $events){
         $text = ""
         if ($ev.EventType -eq 1){
@@ -89,6 +91,7 @@
             $grpSOLL = Get-WRADGroup -ObjectGUID $ev.DestGroupObjectGUID
             $text = "User '$($grpIST.CommonName)' is in group '$($grpSOLL.CommonName)' but should not"
         }
+        # if the html flag is set, replace umlaute
         if ($html){
             $text = $text -replace "&", "&amp;"
             $text = $text -replace "ö", "&ouml;"
@@ -107,21 +110,23 @@
     <#
     .SYNOPSIS
 
-    
+    Create a list of event-texts using a list of WRADEvents
 
     .DESCRIPTION
 
-    
+    Create a list of event-texts using a list of WRADEvents
 
     .INPUTS
 
-
+    List of events
 
     .OUTPUTS
 
-    
+    List of Event Texts
 
     .EXAMPLE
+
+    Get-WRADEventText -evs $eventlist
 
     C:\PS> 
     
