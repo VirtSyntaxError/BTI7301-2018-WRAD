@@ -34,6 +34,8 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
     load-WRADModules
 
 	$Script:EGgroup = Get-WRADGroup -Reference -ObjectGUID $grpguid
+    $logGrpName = (Get-WRADGroup -Reference -ObjectGUID $grpguid).CommonName
+
 
 	New-UDRow {
 		New-UDColumn -Size 6 -Content {
@@ -75,7 +77,7 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
                         }
 
                         Remove-WRADGroupOfGroup -Reference -ChildGroupObjectGUID $grpguid -ParentGroupObjectGUID $tg.ObjectGUID
-                        Write-WRADLog -logtext "Removed Group $grpguid from Group $($tg.CommonName)"
+                        Write-WRADLog -logtext "Removed Group $logGrpName from Group $($tg.CommonName)"
                     } 
                 } -Content {"Leave"}
 
@@ -91,6 +93,7 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
 		New-UDColumn -Size 6 -Content {
             #Groups in selcted Group
 			$grpprntgrp = Get-WRADGroupOfGroup -Reference -ParentGroupObjectGUID $grpguid 
+
             
             #Prepare DisplayData
             $allcgrps = @()
@@ -108,11 +111,11 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
                         }
 
                         Remove-WRADGroupOfGroup -Reference -ChildGroupObjectGUID $tg.ObjectGUID -ParentGroupObjectGUID $grpguid
-                        Write-WRADLog -logtext "Removed Group $($tg.CommonName) from $grpguid"
+                        Write-WRADLog -logtext "Removed Group $($tg.CommonName) from $logGrpName" -level 0
                     } 
                 } -Content {"Remove"}
 
-                $allcgrps += @{CommonName = $tg.CommonName; CreateDate = $group.CreatedDate; Edit = $lnkremchldgrp}#(New-UDLink -Text "Remove" -URL "/RemGrpofGrp/$($grpguid )/$($group.ChildGroupObjectGUID)")}
+                $allcgrps += @{CommonName = $tg.CommonName; CreateDate = $group.CreatedDate; Edit = $lnkremchldgrp}
             }
 
 			New-UDGrid -Title "Groups in $($Script:EGgroup.CommonName)" -Header @("CommonName", "Create date", "Edit") -Properties @("CommonName", "CreateDate", "Edit") -Endpoint {
@@ -146,7 +149,7 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
                         }
 
                         Remove-WRADGroupOfUser -Reference -UserObjectGUID $($UsrInGrp.ObjectGUID) -GroupObjectGUID $grpguid
-                        Write-WRADLog -logtext "Removed User $($UsrInGrp.UserName) from $grpguid" -level 0
+                        Write-WRADLog -logtext "Removed User $($UsrInGrp.UserName) from $logGrpName" -level 0
                     } 
                 } -Content {"Remove"}
 
@@ -183,7 +186,7 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
                         }
 
                         New-WRADGroupOfGroup -Reference -ChildGroupObjectGUID $group -ParentGroupObjectGUID $grpguid
-                        Write-WRADLog -logtext "Added Group $group to Group $grpguid" -level 0
+                        Write-WRADLog -logtext "Added Group $($tg.CommonName) to Group $logGrpName" -level 0
                     } 
                 } -Content {"Add"}
 
@@ -219,7 +222,7 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
                         }
 
                         New-WRADGroupOfUser -Reference -UserObjectGUID $usr -GroupObjectGUID $grpguid
-                        Write-WRADLog -logtext "Added User $($tu.UserName) to Group $grpguid" -level 0
+                        Write-WRADLog -logtext "Added User $($tu.UserName) to Group $logGrpName" -level 0
                     } 
                 } -Content {"Add"}
 
