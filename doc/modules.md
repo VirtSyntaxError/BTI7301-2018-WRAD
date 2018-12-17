@@ -48,7 +48,7 @@ Kurzbeschrieb: Der aktuell gewünschte Berechtigungs-Zustand (SOLL) wird im Date
 Wichtige Funktionen: Bereitstellen des Soll-Zustandes
 Abhängigkeiten: Datencontainer
 
-**Modulname: (OPTION) Einlesen Daten SOLL**<br>
+**Modulname: Einlesen Daten SOLL**<br>
 Kurzbeschrieb: Die Daten des gewünschten Berechtigungs-Zustands (SOLL) können von den Anwendern importiert/aktualisiert werden. Diese Daten sind in Form eines .CSV-Files vorhanden.
 Wichtige Funktionen: Einlesen von .CSV-Files in den Daten SOLL
 Abhängigkeiten: Datencontainer, Daten SOLL
@@ -58,7 +58,7 @@ Kurzbeschrieb: Der aktuell in der Applikation hinterlegte Berechtigungs-Zustands
 Wichtige Funktionen: Exportieren des Daten SOLL in ein .CSV-File
 Abhängigkeiten: Datencontainer, Daten SOLL
 
-**Modulname: Alarmierung**<br>
+**Modulname: (OPTION) Alarmierung**<br>
 Kurzbeschrieb: Ein Modul zur aktiven Alarmierung von bestimmten Administratoren bei Veränderung von Berechtigungen im AD.
 Wichtige Funktionen: Alarmierung von Administratoren
 Abhängigkeiten: keine
