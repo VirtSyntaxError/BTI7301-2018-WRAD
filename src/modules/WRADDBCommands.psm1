@@ -303,6 +303,7 @@ function Get-WRADUser {
     .EXAMPLE
 
     C:\PS> Get-WRADUser -Reference -UserName furid
+
     ObjectGUID         : noguid1541155481408
     Username           : furid
     DisplayName        : Dario Furigo
@@ -312,6 +313,7 @@ function Get-WRADUser {
     .EXAMPLE
 
     C:\PS> Get-WRADUser -SAMAccountName furid
+
     ObjectGUID         : testid
     SAMAccountName     : furid
     DistinguishedName  : CN="dario",CN="example",CN="local"
@@ -327,6 +329,7 @@ function Get-WRADUser {
     .EXAMPLE
 
     C:\PS> Get-WRADUser -Disabled
+
     ObjectGUID         : testid2
     SAMAccountName     : pidu
     DistinguishedName  : CN="pidu",CN="example",CN="local"
@@ -1552,6 +1555,7 @@ function Get-WRADGroupOfUser {
     02.11.2018 10:53:43 op3n-93kae-903ld9-22kdl 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
 
     .EXAMPLE
+
     C:\PS> Get-WRADGroupOfUser -Reference -ShowCommonNames
 
     Username    CommonName     CreatedDate
@@ -1684,6 +1688,7 @@ function New-WRADGroupOfUser {
     C:\PS> New-WRADGroupOfUser -Reference -UserObjectGUID noguid1541155481408 -GroupObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
 
     .EXAMPLE
+
     C:\PS> New-WRADGroupOfUser -UserObjectGUID 738ldas-3928lasdf-29asdfkl -GroupObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
 
     #>
@@ -1790,6 +1795,7 @@ function Remove-WRADGroupOfUser {
     C:\PS> Remove-WRADGroupOfUser -Reference -UserObjectGUID noguid1541155481408 -GroupObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
 
     .EXAMPLE
+
     C:\PS> Remove-WRADGroupOfUser -UserObjectGUID 738ldas-3928lasdf-29asdfkl -GroupObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
 
     #>
@@ -1920,6 +1926,7 @@ function Get-WRADGroupOfGroup {
     02.11.2018 10:46:29 noguid1541155481408     noguid1541155564978
 
     .EXAMPLE
+
     C:\PS> Get-WRADGroupOfGroup -Reference -ShowCommonNames
 
     ChildGroup ParentGroup CreatedDate
@@ -2047,6 +2054,7 @@ function New-WRADGroupOfGroup {
     C:\PS> New-WRADGroupOfGroup -Reference -ChildGroupObjectGUID noguid1541155481408 -ParentGroupObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
 
     .EXAMPLE
+
     C:\PS> New-WRADGroupOfGroup -ChildGroupObjectGUID 738ldas-3928lasdf-29ad43kl -ParentGroupObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
 
     #>
@@ -2153,6 +2161,7 @@ function Remove-WRADGroupOfGroup {
     C:\PS> Remove-WRADGroupOfGroup -Reference -ChildGroupObjectGUID noguid1541155481408 -ParentGroupObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
 
     .EXAMPLE
+
     C:\PS> Remove-WRADGroupOfGroup -ChildGroupObjectGUID 738ldas-3928lasdf-29asdfkl -ParentGroupObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
 
     #>
@@ -2208,6 +2217,7 @@ function Get-WRADHistoryOfUser {
     .EXAMPLE
 
     C:\PS> Get-WRADHistoryOfUser -ObjectGUID op3n-93kae-903ld9-22kdl
+
     ArchiveID         : 1
     userPrincipalName : RudolfK@example.local
     SAMAccountName    : RudolfK
@@ -2300,6 +2310,7 @@ function Get-WRADHistoryOfGroup {
     .EXAMPLE
 
     C:\PS> Get-WRADHistoryOfGroup -ObjectGUID 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
+
     ArchiveID         : 1
     ObjectGUID        : 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
     CommonName        : MaurerMail
@@ -2432,6 +2443,7 @@ function Get-WRADDeletedGroup {
     .EXAMPLE
 
     C:\PS> Get-WRADDeletedGroup
+
     ArchiveID         : 2
     ObjectGUID        : 936DA01F-9ABD-4D9D-80C7-02AF85C822A8
     CommonName        : MaurerMail
@@ -2780,6 +2792,46 @@ function Get-WRADLog {
 	End
 	{
 	}
+<#
+    .SYNOPSIS
+
+    Gets WRAD logs.
+
+    .DESCRIPTION
+
+    Gets WRAD logs which are stored in the database.
+
+    .PARAMETER LogSeverity
+    Filters only the which match LogSeverity
+
+    .PARAMETER Last
+    Gets the newest amount of entries
+    
+    .PARAMETER Last
+    Gets the oldest amount of entries
+
+    .INPUTS
+
+    None. You cannot pipe objects to Get-WRADLog.
+
+    .OUTPUTS
+
+    System.Row. Get-WRADLog returns all logs in an row.
+
+    .EXAMPLE
+
+    C:\PS> Get-WRADLog
+
+    LogID LogTimestamp        LogSeverity LogText
+    ----- ------------        ----------- -------
+        3 14.12.2018 11:58:32           2 Added new user sebastian.vettel
+        4 14.12.2018 15:58:45           2 Added new group formula1
+        5 15.12.2018 15:58:50           2 Added sebastian.vettel to group formula1
+        6 15.12.2018 15:58:51           2 Added new group ferrari
+        7 18.12.2018 15:58:51           0 Deleted user sebastian.vettel
+        8 19.12.2018 15:58:53           0 Deleted group ferrari                        
+
+    #>
 }
 
 function New-WRADLog {
@@ -2814,6 +2866,34 @@ function New-WRADLog {
 	End
 	{
 	}
+<#
+    .SYNOPSIS
+
+    Insert a new WRAD log entry.
+
+    .DESCRIPTION
+
+    Insert a new WRAD log entry into the Database.
+
+    .PARAMETER LogSeverity
+    Specify the log severity
+
+    .PARAMETER LogText
+    Specify log text
+
+    .INPUTS
+
+    None. You cannot pipe objects to New-WRADLog.
+
+    .OUTPUTS
+
+    Nothing.
+
+    .EXAMPLE
+
+    C:\PS> New-WRADLog -LogSeverity 2 -LogText "Added new group honda"                     
+
+    #>
 }
 
 function Get-WRADExcludedUser {
@@ -2845,6 +2925,34 @@ function Get-WRADExcludedUser {
 			break
 		}
 	}
+<#
+    .SYNOPSIS
+
+    Gets WRAD excluded users.
+
+    .DESCRIPTION
+
+    Gets all WRAD excluded users from the Database.
+
+    .INPUTS
+
+    None. You cannot pipe objects to Get-WRADExcludedUser.
+
+    .OUTPUTS
+
+    System.Row. Get-WRADExcludedUser returns all excluded users in an row.
+
+    .EXAMPLE
+
+    C:\PS> Get-WRADExcludedUser 
+      
+    ExcludeID ObjectGUID        
+    --------- ------------        
+            3 0b9462b3-3bc3-4849-a509-b5d5eb061461
+            4 734d3f7c-961e-467f-b4fb-72fce8d4cb6d
+            5 dc33b32c-af4f-4f07-8efd-e9a37f67f1da
+
+    #>
 }
 
 function New-WRADExcludedUser {
@@ -2903,6 +3011,32 @@ function New-WRADExcludedUser {
 	End
 	{
 	}
+<#
+    .SYNOPSIS
+
+    Adds new WRAD excluded users.
+
+    .DESCRIPTION
+
+    Adds a new WRAD excluded users into the Database.
+
+    .PARAMETER ObjectGUID
+
+    The ObjectGUID from the user which will be excluded for some operations.
+
+    .INPUTS
+
+    None. You cannot pipe objects to New-WRADExcludedUser.
+
+    .OUTPUTS
+
+    Nothing.
+
+    .EXAMPLE
+
+    C:\PS> New-WRADExcludedUser -ObjectGUID 734d3f7c-961e-467f-b4fb-72fce8d4cb6d
+
+ #>
 }
 
 function Get-WRADExcludedGroup {
@@ -2934,6 +3068,33 @@ function Get-WRADExcludedGroup {
 			break
 		}
 	}
+<#
+    .SYNOPSIS
+
+    Gets WRAD excluded groups.
+
+    .DESCRIPTION
+
+    Gets all WRAD excluded groups from the Database.
+
+    .INPUTS
+
+    None. You cannot pipe objects to Get-WRADExcludedGroup.
+
+    .OUTPUTS
+
+    System.Row. Get-WRADExcludedGroup returns all excluded users in an row.
+
+    .EXAMPLE
+
+    C:\PS> Get-WRADExcludedGroup 
+      
+    ExcludeID ObjectGUID        
+    --------- ------------        
+           55 97656ab1-edbf-4df2-a9bf-13c91e70dcdb
+           78 586b0ff2-9f51-4319-9645-62cc61207a2c
+
+    #>
 }
 
 function New-WRADExcludedGroup {
@@ -2992,6 +3153,32 @@ function New-WRADExcludedGroup {
 	End
 	{
 	}
+<#
+    .SYNOPSIS
+
+    Adds new WRAD excluded group.
+
+    .DESCRIPTION
+
+    Adds a new WRAD excluded group into the Database. This group will be excluded for some operations.
+
+    .PARAMETER ObjectGUID
+
+    The ObjectGUID from the group.
+
+    .INPUTS
+
+    None. You cannot pipe objects to New-WRADExcludedGroup.
+
+    .OUTPUTS
+
+    Nothing.
+
+    .EXAMPLE
+
+    C:\PS> New-WRADExcludedGroup -ObjectGUID 54f3acba-39d1-4af8-863b-d32f682686dc
+
+ #>
 }
 
 function Get-WRADEvent {
@@ -3074,6 +3261,74 @@ function Get-WRADEvent {
 	End
 	{
 	}
+<#
+    .SYNOPSIS
+
+    Gets all WRAD events.
+
+    .DESCRIPTION
+
+    Gets all WRAD events from the Database. These events show the difference between the reference and the actual Active Directory.
+
+    .PARAMETER SrcUserObjectGUID
+    This parameter represents the actual source user.
+
+    .PARAMETER SrcGroupObjectGUID
+    This parameter represents the actual source group.
+
+    .PARAMETER SrcRefUserObjectGUID
+    This parameter represents the reference source user.
+
+    .PARAMETER SrcRefGroupObjectGUID
+    This parameter represents the reference source group.
+
+    .PARAMETER DestGroupObjectGUID
+    This parameter represents the actual destination group.
+
+    .PARAMETER DestRefGroupObjectGUID
+    This parameter represents the reference destination group.
+
+    .PARAMETER EventType
+    The type of the event (User not in Group, Group not in Group and so on...)
+
+    .PARAMETER NotResolved
+    The switch if the event is resolved or not.
+
+    .INPUTS
+
+    None. You cannot pipe objects to Get-WRADEvent.
+
+    .OUTPUTS
+
+    System.Row. Get-WRADEvent returns all events in an row.
+
+    .EXAMPLE
+
+    C:\PS> Get-WRADEvent 
+      
+    EventID                : 23
+    CreatedDate            : 04.11.2018 10:50:23
+    ResolvedDate           : 08.11.2018 13:59:26
+    SrcUserObjectGUID      :
+    SrcGroupObjectGUID     :
+    SrcRefUserObjectGUID   : noguid1541155481408
+    SrcRefGroupObjectGUID  :
+    DestGroupObjectGUID    :
+    DestRefGroupObjectGUID :
+    EventType              : 1
+
+    EventID                : 130
+    CreatedDate            : 04.11.2018 10:50:51
+    ResolvedDate           :
+    SrcUserObjectGUID      :
+    SrcGroupObjectGUID     :
+    SrcRefUserObjectGUID   : noguid1541155481408
+    SrcRefGroupObjectGUID  :
+    DestGroupObjectGUID    :
+    DestRefGroupObjectGUID :
+    EventType              : 2
+
+    #>
 }
 
 function Set-WRADEventResolved {
@@ -3107,6 +3362,31 @@ function Set-WRADEventResolved {
 	End
 	{
 	}
+    <#
+    .SYNOPSIS
+
+    Set an WRAD as resolved.
+
+    .DESCRIPTION
+
+    Set an WRAD as resolved in the Database. These events show the difference between the reference and the actual Active Directory.
+
+    .PARAMETER EventID
+    The ID of the event which is resolved.
+
+    .INPUTS
+
+    None. You cannot pipe objects to Set-WRADEventResolved.
+
+    .OUTPUTS
+
+    Nothing.
+
+    .EXAMPLE
+
+    C:\PS> Set-WRADEventResolved -EventID 130  
+  
+    #>
 }
 
 function New-WRADEvent {
@@ -3191,6 +3471,49 @@ function New-WRADEvent {
 	End
 	{
 	}
+<#
+    .SYNOPSIS
+
+    Creates a new WRAD event.
+
+    .DESCRIPTION
+
+    Creates a new WRAD event in the Database. These events show the difference between the reference and the actual Active Directory.
+
+    .PARAMETER SrcUserObjectGUID
+    This parameter represents the actual source user.
+
+    .PARAMETER SrcGroupObjectGUID
+    This parameter represents the actual source group.
+
+    .PARAMETER SrcRefUserObjectGUID
+    This parameter represents the reference source user.
+
+    .PARAMETER SrcRefGroupObjectGUID
+    This parameter represents the reference source group.
+
+    .PARAMETER DestGroupObjectGUID
+    This parameter represents the actual destination group.
+
+    .PARAMETER DestRefGroupObjectGUID
+    This parameter represents the reference destination group.
+
+    .PARAMETER EventType
+    The type of the event (User not in Group, Group not in Group and so on...)
+
+    .INPUTS
+
+    None. You cannot pipe objects to New-WRADEvent.
+
+    .OUTPUTS
+
+    Nothing
+
+    .EXAMPLE
+
+    C:\PS> New-WRADEvent -SrcUserObjectGUID 54f3acba-39d1-4af8-863b-d32f682686dc -DestGroupObjectGUID cf6f0c47-cc6c-4108-8084-e6e5bfd0841b -EventType 4  
+
+    #>
 }
 
 # Connect to database on module import
