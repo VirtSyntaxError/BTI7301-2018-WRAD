@@ -35,9 +35,14 @@ function load-WRADModules {
             Import-Module $Script:ScriptPath\..\modules\WRADEventText.psm1
             write-host "Import Module WRADEventText"
         }
-        #load WRAD
+        #load WRADCreateReport
         if(!(get-module WRADCreateReport)){
             Import-Module $Script:ScriptPath\..\modules\WRADCreateReport.psm1
+            write-host "Import Module WRADCreateReport"
+        }
+        #load WRADcsvSOLL
+        if(!(get-module WRADcsvSOLL)){
+            Import-Module $Script:ScriptPath\..\modules\WRADcsvSOLL.psm1
             write-host "Import Module WRADCreateReport"
         }
         #load WRADLogging
@@ -250,7 +255,7 @@ $PageReports = New-UDPage -Name "Action and Reports" -AuthorizedRole @("WRADadmi
         }
         New-UDColumn -Size 6 -Content {
             #Show Reports
-            $RepUsrActn = New-UDElement -Tag "a" -Attributes @{
+            <#$RepUsrActn = New-UDElement -Tag "a" -Attributes @{
                 className = "btn"
                 target = "_self"
                 href = "#"
@@ -266,16 +271,102 @@ $PageReports = New-UDPage -Name "Action and Reports" -AuthorizedRole @("WRADadmi
                     
 <#17:31:44 DashboardHub Endpoint 9b5a0558-23b6-4bdd-8eaf-019c9efce7f5onClick not found.
 17:31:44 DashboardHub Failed to execute endpoint. Endpoint 9b5a0558-23b6-4bdd-8eaf-019c9efce7f5onClick not found.
-17:31:44 Microsoft.AspNetCore.SignalR.Internal.DefaultHubDispatcher Failed to invoke hub method 'clientEvent'.#>
+17:31:44 Microsoft.AspNetCore.SignalR.Internal.DefaultHubDispatcher Failed to invoke hub method 'clientEvent'.
 
                 } 
-            } -Content {"Create"}
-            $Reports += @{Label = "User Report"; Action = $RepUsrActn}
+            } -Content {"Create"}#>
+            
+            $Reports = @()
+            $Reports += @{Label = "User Report"; Action = (New-UDLink -Text "Create" -Url "AaR/UsrRprt")}
+            $Reports += @{Label = "Event Report"; Action = (New-UDLink -Text "Create" -Url "AaR/EvntRprt")}
+            $Reports += @{Label = "Both Reports"; Action = (New-UDLink -Text "Create" -Url "AaR/BothRprt")}
+            $Reports += @{Label = "Soll/Ist Vergleich"; Action = (New-UDLink -Text "Run" -Url "AaR/SIVrgl")}
+            $Reports += @{Label = "User-CSV"; Action = (New-UDLink -Text "Import" -Url "AaR/UsrImport")}
+            $Reports += @{Label = "Group-CSV"; Action = (New-UDLink -Text "Import" -Url "AaR/GrpImport")}
+            $Reports += @{Label = "User-CSV"; Action = (New-UDLink -Text "Export" -Url "AaR/UsrExport")}
+            $Reports += @{Label = "Group-CSV"; Action = (New-UDLink -Text "Export" -Url "AaR/GrpExport")}
+
             New-UDGrid -Title "Reports" -Header @("Action", "Edit") -Properties @("Label", "Action") -Endpoint {
                 $Reports | Out-UDGridData
-            }
+            } -DefaultSortColumn "Edit"
         }
     }
+}
+
+$PageAaRActions = New-UDPage -Id "PageAaRActions" -URL "/AaR/:action" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","Auditor", "DepLead", "SysAdmin") -Endpoint {
+	param($action)
+    
+    $Global:WRADDBConnection = $ArgumentList[0].dbconnection
+    $DBConnect = $Global:WRADDBConnection
+    $Script:Scriptpath = $ArgumentList[0].scrptroot
+
+    load-WRADModules
+
+
+
+    if($action  -eq "UsrRprt") {
+        #$report = Write-WRADReport -users
+        #$zippath = $report[$report.Count-1]
+
+        $title = "User report"
+        $text = "The user report is saved in the following folder: "
+
+
+    } elseif ($action  -eq "EvntRprt") {
+        $title = "Event report"
+        $text = "The event report is saved in the following folder: "
+    } elseif ($action  -eq "BothRprt") {
+        $title = "Event and User report"
+        $text = "Both reports are saved in the following folder: "
+    } elseif ($action  -eq "SIVrgl") {
+        $title = "Soll- / Ist-Vergleich"
+        $text = "The comparison run successfully."
+    } elseif ($action  -eq "UsrImport") {
+        $folder = Convert-Path "$Script:Scriptpath\..\csv\"
+        $file = "UsrImport.csv"
+
+        $title = "User import"
+        $text = "If your file was at $folder$file, then the import was succefull."
+    } elseif ($action  -eq "GrpImport") {
+        $folder = Convert-Path "$Script:Scriptpath\..\csv\"
+        $file = "GrpImport.csv"
+
+        $title = "Group import"
+        $text = "If your file was at $folder$file, then the import was succefull."
+    } elseif ($action  -eq "UsrExport") {
+        $folder = Convert-Path "$Script:Scriptpath\..\csv\"
+        $file = "UsrExport.csv"
+        
+        #Export-WRADcsv -csvPath $folder$file -ExportOf Users
+
+        $title = "User export"
+        $text = "Your file is located at $folder$file."
+    } elseif ($action  -eq "GrpExport") {
+        $folder = Convert-Path "$Script:Scriptpath\..\csv\"
+        $file = "GrpExport.csv"
+
+        #Export-WRADcsv -csvPath $folder$file -ExportOf Groups
+
+        $title = "Group export"
+        $text = "Your file is located at $folder$file."
+    } else {
+        $title = "Default title"
+        $text = "Default"
+    }
+
+    New-UDRow {
+        New-UDColumn -Size 3 -Content {
+
+        }
+        New-UDColumn -Size 6 -Content {
+            New-UDCard -Title $title -Content {
+                New-UDParagraph -Text $text
+            } -Links @(
+                New-UDLink -Text 'Back' -Url '../Action-and-Reports'
+            )
+        }
+    }
+
 }
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #Close runnig Dashboards
@@ -289,6 +380,6 @@ $reportFolder = Publish-UDFolder -Path $PSScriptRoot\..\reports\ -RequestPath "/
 #Start Dashboard
 Start-UDDashboard -Port 10000 -AllowHttpForLogin -Content {
     
-    New-UDDashboard -Login $login -Pages @($pageDBSysadm, $pageDBDepLead, $pageDBAuditor, $PageAddUser, $PageEditUser, $PageEditUserDyn, $PageEditGroup, $PageEditGroupDyn, $PageReports, $PageSettings) -Title "Project WRAD" -Color 'Black' -Theme $theme -EndpointInitialization $InitiateWRADEndpoint 
+    New-UDDashboard -Login $login -Pages @($pageDBSysadm, $pageDBDepLead, $pageDBAuditor, $PageAddUser, $PageEditUser, $PageEditUserDyn, $PageEditGroup, $PageEditGroupDyn, $PageReports, $PageAaRActions, $PageSettings) -Title "Project WRAD" -Color 'Black' -Theme $theme -EndpointInitialization $InitiateWRADEndpoint 
     
 } -PublishedFolder $reportFolder
