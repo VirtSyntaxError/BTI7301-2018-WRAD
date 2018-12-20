@@ -191,7 +191,8 @@ function Write-WRADReport{
         # add text and image to pdf and html
         $report = "<!DOCTYPE html><head><title>Event Report</title></head><body><h1>Events</h1></body></html>"
         Add-Title -Document $pdf -Text "Event Report" -Color "black" -Centered
-        $report = $report -replace "</body>", "<h2>Number of Events</h2><img src='$target_path\pic.png'><h2>Current Events</h2></body>"
+        #$report = $report -replace "</body>", "<h2>Number of Events</h2><img src='$target_path\pic.png'><h2>Current Events</h2></body>"
+        $report = $report -replace "</body>", "<h2>Number of Events</h2><img src='pic.png'><h2>Current Events</h2></body>"
         Add-Title -Document $pdf -Text "Number of Events" -Color "blue" -FontSize 10
         Add-Image -Document $pdf -File "$target_path\pic.png"
         Add-Title -Document $pdf -Text "Current Events" -Color "blue" -FontSize 10
@@ -232,7 +233,8 @@ function Write-WRADReport{
         Add-Table -Document $pdf -Dataset $set_to_write -Cols 4
         $report = $disabled | ConvertTo-Html -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName
         $report = $report -replace "<body>", "<body><h1>Disabled Users</h1>"
-        $report = $report -replace "</body>", "<h1>Inactive Users</h1><img src='$target_path\pic.png'></body>"
+        #$report = $report -replace "</body>", "<h1>Inactive Users</h1><img src='$target_path\pic.png'></body>"
+        $report = $report -replace "</body>", "<h1>Inactive Users</h1><img src='pic.png'></body>"
         $users_30_90_html = $users_30_90 | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
         $users_90_X_html = $users_90_X | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
         $users_never_html = $users_never | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
@@ -320,7 +322,8 @@ function Write-WRADReport{
         Add-Table -Document $pdf -Dataset $set_to_write -Cols 4
         $report = $disabled | ConvertTo-Html -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName
         $report = $report -replace "<body>", "<body><h1>Disabled Users</h1>"
-        $report = $report -replace "</body>", "<h1>Inactive Users</h1><img src='$target_path\USRpic.png'></body>"
+        #$report = $report -replace "</body>", "<h1>Inactive Users</h1><img src='$target_path\USRpic.png'></body>"
+        $report = $report -replace "</body>", "<h1>Inactive Users</h1><img src='USRpic.png'></body>"
         $users_30_90_html = $users_30_90 | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
         $users_90_X_html = $users_90_X | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
         $users_never_html = $users_never | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
@@ -377,7 +380,8 @@ function Write-WRADReport{
         # additional comments in the above sections      
         $evs_chart.SaveImage("$target_path\EVSpic.png","PNG")
         $report = $report -replace "</body>", "<h1>Events</h1></body>"
-        $report = $report -replace "</body>", "<h2>Number of Events</h2><img src='$target_path\EVSpic.png'><h2>Current Events</h2></body>"
+        #$report = $report -replace "</body>", "<h2>Number of Events</h2><img src='$target_path\EVSpic.png'><h2>Current Events</h2></body>"
+        $report = $report -replace "</body>", "<h2>Number of Events</h2><img src='EVSpic.png'><h2>Current Events</h2></body>"
         Add-Title -Document $pdf -Text "Current Events" -Color "blue" -FontSize 10
         foreach ($t in $texts){
             $report = $report -replace "</body>", "<p>$(toHtml($t))</p></body>"
@@ -385,6 +389,8 @@ function Write-WRADReport{
         }
         Add-Title -Document $pdf -Text "Number of Events" -Color "blue" -FontSize 10
         Add-Image -Document $pdf -File "$target_path\EVSpic.png"
+        $report = $report -replace "</body>","<a href='.\report.pdf'>Download Report as PDF</a>"
+
         $report | Out-File "$target_path\report.html"
     }
 
