@@ -1,2 +1,6 @@
 # ignore db pw configuration
 db_pw.ini
+doc/license.txt
+src/modules/report.html
+src/modules/report.pdf
+src/modules/EVSpic.png
