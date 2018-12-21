@@ -134,10 +134,8 @@ function Get-WRADReportUsers{
     $chart.Series["Data"].ChartType= "Pie"
     $chart.Series["Data"]["PieLabelStyle"] = "Outside"
     $chart.Series["Data"]["PieLineColor"] = "Black"
-    $chart.GetType().FullName
-
     # return the variables seperately and also the created chart
-    return @($disabled, $users_30_90, $users_90_X, $users_never, $chart)
+    return ,@($disabled, $users_30_90, $users_90_X, $users_never, $chart)
 }
 function Write-WRADReport{
     Param
