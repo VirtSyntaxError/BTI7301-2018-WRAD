@@ -74,7 +74,7 @@ function Invoke-WRADSOLLISTVergleich{
             continue
         }
         # comparisons. if not equal, create event
-        if ($uRef.Username -ne $username){
+        if ($uRef.Username -ne $username -and $uRef.Username -ne $username.SubString(0,$username.IndexOf("@"))) {
             $ev = [WRADEvent]::new()
             $ev.EventType = 3
             $ev.SrcUser = $uIST.ObjectGUID

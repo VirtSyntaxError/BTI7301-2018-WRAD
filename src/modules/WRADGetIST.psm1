@@ -157,14 +157,21 @@ function Write-WRADISTtoDB
                 $expired = $FALSE
 			}
 
+            ## Bug Enabled is not shown -> set to true
+            if($user.Enabled -eq "") {
+                [boolean]$enabled = $TRUE
+            } else {
+                [boolean]$enabled = $user.Enabled
+            }
+
 			## Actually write/update Users to DB
 			if($DBusers.ObjectGUID -contains $user.ObjectGUID){
 				Write-Verbose "Updating User to DB: $user"
-				Update-WRADUser -ObjectGUID:$user.ObjectGUID -SAMAccountName:$user.SamAccountName -DistinguishedName:$user.DistinguishedName -UserPrincipalName:$user.UserPrincipalName -DisplayName:$user.DisplayName -Description:$user.Description -LastLogonTimestamp:$user.LastLogonDate -Enabled:$user.Enabled
+				Update-WRADUser -ObjectGUID:$user.ObjectGUID -SAMAccountName:$user.SamAccountName -DistinguishedName:$user.DistinguishedName -UserPrincipalName:$user.UserPrincipalName -DisplayName:$user.DisplayName -Description:$user.Description -LastLogonTimestamp:$user.LastLogonDate -Enabled:$enabled -Expired:$expired
 			}
 			else{
 				Write-Verbose "Writing new User to DB: $user"
-                New-WRADUser -ObjectGUID:$user.ObjectGUID -SAMAccountName:$user.SamAccountName -DistinguishedName:$user.DistinguishedName -UserPrincipalName:$user.UserPrincipalName -DisplayName:$user.DisplayName -Description:$user.Description -LastLogonTimestamp:$user.LastLogonDate -Enabled:$user.Enabled -Expired:$expired
+                New-WRADUser -ObjectGUID:$user.ObjectGUID -SAMAccountName:$user.SamAccountName -DistinguishedName:$user.DistinguishedName -UserPrincipalName:$user.UserPrincipalName -DisplayName:$user.DisplayName -Description:$user.Description -LastLogonTimestamp:$user.LastLogonDate -Enabled:$enabled -Expired:$expired
 			}
 
 			## Write User in Group Membership to DB

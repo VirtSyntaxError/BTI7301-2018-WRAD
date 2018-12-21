@@ -3450,6 +3450,7 @@ function New-WRADEvent {
         $Query += $QueryMiddle
         $Query += ($QueryValue -join ", ")
         $Query += $QueryEnd
+        $Validation += ' -NotResolved '
 	}
 	Process
 	{

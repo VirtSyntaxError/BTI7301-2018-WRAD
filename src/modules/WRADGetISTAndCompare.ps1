@@ -11,8 +11,8 @@
 		Write-Error -Message $_.Exception.Message
 	}
 
-Write-WRADISTtoDB -verbose
+Write-WRADISTtoDB
 
-Update-WRADReferenceObjectGUID -verbose
+Update-WRADReferenceObjectGUID
 
-Invoke-WRADSOLLISTVergleich -verbose
+Invoke-WRADSOLLISTVergleich
