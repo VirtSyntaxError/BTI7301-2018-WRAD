@@ -26,16 +26,16 @@ function Get-WRADReportEvents{
     # get events from DB and then convert eventID to actual message
     $events = Get-WRADEvent
     $texts = Get-WRADEventText -evs $events
-    # get events that are newer than 90 days
-    $90_days_date = (Get-Date).AddDays(-90)
-    $90_days_events = Get-WRADEvent | Where-Object {$_.ResolvedDate -is [System.DBNull] -or $_.ResolvedDate -gt $90_days_date}
+    # get events that are newer than 14 days
+    $14_days_date = (Get-Date).AddDays(-14)
+    $14_days_events = Get-WRADEvent | Where-Object {$_.ResolvedDate -is [System.DBNull] -or $_.ResolvedDate -gt $14_days_date}
     $event_count = @{}
     # create values that are used to build the chart (number of events over time)
     # pretty much just check wheter a certain date was between created and resolved and then count up
-    for($i=-90;$i -le 0;$i++){
+    for($i=-14;$i -le 0;$i++){
         $str_date = (Get-Date -Date ((Get-Date).AddDays($i)) -UFormat "%Y%m%d").ToString()
         $event_count[$str_date] = 0
-        foreach($e in $90_days_events){
+        foreach($e in $14_days_events){
             $cr = $e.CreatedDate
             $re = $e.ResolvedDate
             # if not yet resolved, just set it to current day +1
@@ -69,7 +69,7 @@ function Get-WRADReportEvents{
     $chart.Series["Data"]["PieLineColor"] = "Black"
 
     # return event texts and the created chart
-    return @($texts,$chart)
+    return ,@($texts,$chart)
 }
 function Get-WRADReportUsers{
     # import DB module
@@ -134,10 +134,8 @@ function Get-WRADReportUsers{
     $chart.Series["Data"].ChartType= "Pie"
     $chart.Series["Data"]["PieLabelStyle"] = "Outside"
     $chart.Series["Data"]["PieLineColor"] = "Black"
-    $chart.GetType().FullName
-
     # return the variables seperately and also the created chart
-    return @($disabled, $users_30_90, $users_90_X, $users_never, $chart)
+    return ,@($disabled, $users_30_90, $users_90_X, $users_never, $chart)
 }
 function Write-WRADReport{
     Param
