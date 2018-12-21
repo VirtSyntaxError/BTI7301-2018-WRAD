@@ -69,7 +69,7 @@ function Get-WRADReportEvents{
     $chart.Series["Data"]["PieLineColor"] = "Black"
 
     # return event texts and the created chart
-    return @($texts,$chart)
+    return ,@($texts,$chart)
 }
 function Get-WRADReportUsers{
     # import DB module
