@@ -236,10 +236,10 @@ function Write-WRADReport{
         $users_30_90_html = $users_30_90 | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
         $users_90_X_html = $users_90_X | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
         $users_never_html = $users_never | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
-        $report = $report -replace "</body>", "<h2>30d &gt; Last Logon &lt; 90d</h2>$($users_30_90_html)</body>"
+        $report = $report -replace "</body>", "<h2>30d &lt; Last Logon &lt; 90d</h2>$($users_30_90_html)</body>"
         $report = $report -replace "</body>", "<h2>90d &lt; Last Logon</h2>$($users_90_X_html)</body>"
         $report = $report -replace "</body>", "<h2>Never logged in</h2>$($users_never_html)</body>"
-        Add-Title -Document $pdf -Text "30d > Last Logon < 90d" -FontSize 10
+        Add-Title -Document $pdf -Text "30d < Last Logon < 90d" -FontSize 10
         $set_to_write = New-Object System.Collections.Generic.List[System.Object]
         $set_to_write.Add("ObjectGUID")
         $set_to_write.Add("userPrincipalName")
@@ -254,7 +254,7 @@ function Write-WRADReport{
             $set_to_write.Add($u.Enabled)
         }
         Add-Table -Document $pdf -Dataset $set_to_write -Cols 5
-        Add-Title -Document $pdf -Text "90d > Last Logon" -FontSize 10
+        Add-Title -Document $pdf -Text "90d < Last Logon" -FontSize 10
         $set_to_write = New-Object System.Collections.Generic.List[System.Object]
         $set_to_write.Add("ObjectGUID")
         $set_to_write.Add("userPrincipalName")
@@ -325,10 +325,10 @@ function Write-WRADReport{
         $users_30_90_html = $users_30_90 | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
         $users_90_X_html = $users_90_X | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
         $users_never_html = $users_never | ConvertTo-HTML -Fragment -Property ObjectGUID,userPrincipalName,LastLogonTimestamp,DisplayName,Enabled
-        $report = $report -replace "</body>", "<h2>30d &gt; Last Logon &lt; 90d</h2>$($users_30_90_html)</body>"
+        $report = $report -replace "</body>", "<h2>30d &lt; Last Logon &lt; 90d</h2>$($users_30_90_html)</body>"
         $report = $report -replace "</body>", "<h2>90d &lt; Last Logon</h2>$($users_90_X_html)</body>"
         $report = $report -replace "</body>", "<h2>Never logged in</h2>$($users_never_html)</body>"
-        Add-Title -Document $pdf -Text "30d > Last Logon < 90d" -FontSize 10
+        Add-Title -Document $pdf -Text "30d < Last Logon < 90d" -FontSize 10
         $set_to_write = New-Object System.Collections.Generic.List[System.Object]
         $set_to_write.Add("ObjectGUID")
         $set_to_write.Add("userPrincipalName")
@@ -343,7 +343,7 @@ function Write-WRADReport{
             $set_to_write.Add($u.Enabled)
         }
         Add-Table -Document $pdf -Dataset $set_to_write -Cols 5
-        Add-Title -Document $pdf -Text "90d > Last Logon" -FontSize 10
+        Add-Title -Document $pdf -Text "90d < Last Logon" -FontSize 10
         $set_to_write = New-Object System.Collections.Generic.List[System.Object]
         $set_to_write.Add("ObjectGUID")
         $set_to_write.Add("userPrincipalName")
