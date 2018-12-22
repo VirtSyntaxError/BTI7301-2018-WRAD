@@ -1,0 +1,52 @@
+WRAD Installation
+BFH: Projekt 1
+
+Team:
+Dario Furigo
+Nicola Michaelis
+Philipp Köfer
+Beat Schärz
+
+Betreuer:
+Christof Jungo
+
+
+Dezember 2018
+-------------------------------------------------
+Prerequisits
+- .NET 4.7.2 oder höher
+-- https://dotnet.microsoft.com/download/dotnet-framework-runtime
+- Posh-SYSLOG 3.3
+-- Powershell als Administrator:
+-- Install-Module -Name Posh-SYSLOG -RequiredVersion 3.3
+- MariaDB 10.3
+-- downloads.mariadb.org -> Nach passendem MSI suchen
+-- Bei der Installation gewünschtes root PW setzen ansonsten Standard Werte
+- MySQL Connector
+-- https://dev.mysql.com/downloads/connector/net/
+-- Download mysql-installer-web-community-X.X.X.X.msi
+-- Custom wählen -> MYSQL Connectors->Connector/NET->Connector/NET X.X->Connector/NET X.X.X - X86
+-- Ansonsten Standard beibehalten
+
+DB Schema
+- Download DB Schema: https://github.com/VirtSyntaxError/BTI7301-2018-WRAD/blob/master/doc/dbschema.sql
+- Import DB Schema
+-- Utility HeidiSQL öffnen & Login mit vorhin gewähltem root-PW
+-- Query SELECT PASSWORD('<yourPW>'); ausführen und Ergebnis kopieren
+-- File->Load SQL File->File auswählen
+-- Zeile "CREATE USER[...]": Sterne (***) durch kopierten PW-hash ersetzen. 
+-- ZEILE "INSERT INTO Settings[...]" gewünschte Settingvalues setzen
+-- Run Statement
+-- Nun sollte eine wrad DB existieren
+
+Installation WRAD
+- Git Repo an gewünschten Ort klonen: https://github.com/VirtSyntaxError/BTI7301-2018-WRAD/tree/master/src
+- Von Hand File "db_pw.ini" im Ordner src/modules erstellen und dort das vorher gewählte <yourPW> eintragen.
+
+Start WRAD
+- Mit Powershell src/GUI/UDGUI.ps1 ausführen
+- Der Port auf welchem das GUI verfügbar ist wird ausgegeben
+- Per Firefox auf localhost:<PORT>/login zugreifen und einloggen mit Admin:admin
+
+
+
