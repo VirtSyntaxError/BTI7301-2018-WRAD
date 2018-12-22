@@ -247,6 +247,7 @@ $login = new-UDLoginPage -AuthenticationMethod $auth -WelcomeText "Welcome to WR
 . .\pageEditGroup.ps1
 . .\pageDashboards.ps1
 . .\pageReports.ps1
+. .\pageUserHistory.ps1
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -261,6 +262,6 @@ $reportFolder = Publish-UDFolder -Path $PSScriptRoot\..\reports\ -RequestPath "/
 #Start Dashboard
 Start-UDDashboard -Port 10000 -AllowHttpForLogin -Content {
     
-    New-UDDashboard -Login $login -Pages @($pageDBSysadm, $pageDBDepLead, $pageDBAuditor, $PageAddUser, $PageEditUser, $PageEditUserDyn, $PageEditGroup, $PageEditGroupDyn, $PageReports, $PageAaRActions, $PageSettings) -Title "Project WRAD" -Color 'Black' -Theme $theme -EndpointInitialization $InitiateWRADEndpoint 
+    New-UDDashboard -Login $login -Pages @($pageDBSysadm, $pageDBDepLead, $pageDBAuditor, $PageAddUser, $PageEditUser, $PageEditUserDyn, $PageEditGroup, $PageEditGroupDyn, $PageUserHistory, $PageReports, $PageAaRActions, $PageSettings) -Title "Project WRAD" -Color 'Black' -Theme $theme -EndpointInitialization $InitiateWRADEndpoint 
     
 } -PublishedFolder $reportFolder
