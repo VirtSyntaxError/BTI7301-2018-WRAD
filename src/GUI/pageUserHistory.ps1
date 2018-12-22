@@ -7,7 +7,11 @@ $PageUserHistory = New-UDPage -Name "User History" -AuthorizedRole @("WRADadmin"
         }
         New-UDColumn -Size 6 -Content {
             #List All User
+<<<<<<< HEAD
+            New-UDGrid -Title "All user" -Header @("Username", "Displayname", "Create date", "Enabled", "History") -Properties @("Username", "DisplayName", "CreatedDate", "Enabled", "History") -Endpoint {
+=======
             New-UDGrid -Title "All user" -Header @("Username", "Displayname", "Create date", "Enabled", "Edit") -Properties @("Username", "DisplayName", "CreatedDate", "Enabled", "Edit") -Endpoint {
+>>>>>>> 6581f3e577d4a41c3d8c8e039f5dde8d03cd2c79
                 
                 $Global:WRADDBConnection = $ArgumentList[0].dbconnection
 
@@ -15,7 +19,11 @@ $PageUserHistory = New-UDPage -Name "User History" -AuthorizedRole @("WRADadmin"
                 $AllUser = Get-WRADUser
 
                 ForEach($User in $AllUser){
+<<<<<<< HEAD
+                    $AllUserGrid += @{Username = $User.UserPrincipalName; DisplayName = $User.DisplayName; Enabled = $User.Enabled; History =(New-UDLink -Text "History" -Url "/UserHistory/$($User.ObjectGUID)")} 
+=======
                     $AllUserGrid += @{Username = $User.UserPrincipalName; DisplayName = $User.DisplayName; Enabled = $User.Enabled; Edit =(New-UDLink -Text "History" -Url "/UserHistory/$($User.ObjectGUID)")} 
+>>>>>>> 6581f3e577d4a41c3d8c8e039f5dde8d03cd2c79
                 }
                 
                 $AllUserGrid | Out-UDGridData
@@ -24,9 +32,14 @@ $PageUserHistory = New-UDPage -Name "User History" -AuthorizedRole @("WRADadmin"
     }
 }
 
+<<<<<<< HEAD
+$PageUserHistoryDetail = New-UDPage -URL "/UserHistory/:usrguid" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","Auditor") -Endpoint {
+    param($usrguid)
+=======
 $PageUserHistoryDyn = New-UDPage -URL "/UserHistory/:usrguid" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","Auditor") -Endpoint {
     param($usrguid)
     #Edit User details with Memberships
+>>>>>>> 6581f3e577d4a41c3d8c8e039f5dde8d03cd2c79
 
     #load-WRADDBCommands
     $Global:WRADDBConnection = $ArgumentList[0].dbconnection
@@ -34,6 +47,55 @@ $PageUserHistoryDyn = New-UDPage -URL "/UserHistory/:usrguid" -ArgumentList $WRA
     $DBConnect = $Global:WRADDBConnection
 
     load-WRADModules
+<<<<<<< HEAD
+
+    #History View of User
+    $UserHistory = Get-WRADHistoryOfUser -ObjectGUID $usrguid | Sort-Object -Property VersionEndTime -Descending
+    $UserNow = Get-WRADUser -ObjectGUID $usrguid
+    New-UDRow {
+        New-UDColumn -Size 12 -Content {
+            New-UDHTML "<p style='color:white;font-size:1.8em'>History of User $usrguid</p>"
+        }
+    }
+    New-UDRow {
+        New-UDColumn -Size 12 -Content {
+            New-UDCollapsible -Items {
+
+                $DateFrom = $UserNow.LastModifiedDate |get-Date -format "dd.MM.yyyy HH:mm:ss"
+                    $DateTo = "now"
+                        New-UDCollapsibleItem -Title "$DateFrom - $DateTo" -Content {
+                             New-UDCollection -Content {
+                                New-UDCollectionItem -Content { "Username: "+$UserNow.userPrincipalName }
+                                New-UDCollectionItem -Content { "SAMAccountName: "+$UserNow.SAMAccountName }
+                                New-UDCollectionItem -Content { "Display Name: "+$UserNow.DisplayName }
+                                New-UDCollectionItem -Content { "Distinguished Name: "+$UserNow.DistinguishedName }
+                                New-UDCollectionItem -Content { "Description: "+$UserNow.Description }
+                                New-UDCollectionItem -Content { "Enabled: "+$UserNow.Enabled }
+                                New-UDCollectionItem -Content { "Expired: "+$UserNow.Expired }
+                            }
+                        }
+
+                ForEach($Entry in $UserHistory){
+                    $DateFrom = $Entry.VersionStartTime |get-Date -format "dd.MM.yyyy HH:mm:ss"
+                    $DateTo = $Entry.VersionEndTime |get-Date -format "dd.MM.yyyy HH:mm:ss"
+                    New-UDCollapsibleItem -Title "$DateFrom - $DateTo" -Content {
+                         New-UDCollection -Content {
+                            New-UDCollectionItem -Content { "Username: "+$Entry.userPrincipalName }
+                            New-UDCollectionItem -Content { "SAMAccountName: "+$Entry.SAMAccountName }
+                            New-UDCollectionItem -Content { "Display Name: "+$Entry.DisplayName }
+                            New-UDCollectionItem -Content { "Distinguished Name: "+$Entry.DistinguishedName }
+                            New-UDCollectionItem -Content { "Description: "+$Entry.Description }
+                            New-UDCollectionItem -Content { "Enabled: "+$Entry.Enabled }
+                            New-UDCollectionItem -Content { "Expired: "+$Entry.Expired }
+                            New-UDCollectionItem -Content { "OperationType: "+$Entry.OperationType }
+                        }
+                    }
+                }
+            }
+        }
+    }
+        
+=======
     enable-WRADLogging
     
     New-UDRow {
@@ -111,4 +173,5 @@ $PageUserHistoryDyn = New-UDPage -URL "/UserHistory/:usrguid" -ArgumentList $WRA
             }
         }
     } 
+>>>>>>> 6581f3e577d4a41c3d8c8e039f5dde8d03cd2c79
 }
