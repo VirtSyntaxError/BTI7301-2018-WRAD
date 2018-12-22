@@ -43,7 +43,7 @@ function load-WRADModules {
         #load WRADcsvSOLL
         if(!(get-module WRADcsvSOLL)){
             Import-Module $Script:ScriptPath\..\modules\WRADcsvSOLL.psm1
-            write-host "Import Module WRADCreateReport"
+            write-host "Import Module WRADcsvSOLL"
         }
         #load WRADLogging
         if(!(get-module WRADLogging)){
@@ -86,11 +86,7 @@ function get-WRADDBADInconsistence {
             $opText += @{Text = $eventText; Date = $event.CreatedDate}
         }
 
-        $title = "AD Inconsistency"
-        $header = @("Text", "Date")
-        $prprts = @("Text", "Date")
-
-        return($title, $header, $prprts, $opText)
+        return($opText)
 
     }
     catch {
@@ -124,11 +120,7 @@ function get-WRADDBLastChanges {
         }
 
         #Return values
-        $title = "Last changes"
-        $header = @("Date", "Severity", "Text")
-        $prprts =  @("Date", "Severity", "Text")
-        
-        return($title, $header, $prprts, $entries)
+        return($entries)
     }
     catch {
         Write-Error -Message $_.Exception.Message
@@ -212,7 +204,7 @@ load-WRADUDDashboard
 enable-WRADLogging
 load-WRADModules
 
-$InitiateWRADEndpoint = New-UDEndpointInitialization -Module $PSScriptRoot\..\modules\WRADDBCommands.psm1 -Function enable-WRADLogging,load-WRADModules #-Variable $ScrptRt 
+$InitiateWRADEndpoint = New-UDEndpointInitialization -Module $PSScriptRoot\..\modules\WRADDBCommands.psm1 -Function enable-WRADLogging,load-WRADModules,get-WRADDBLastChanges,get-WRADDBADInconsistence,get-WRADDBUserStatusGrid,get-WRADDBUserStatusChart #-Variable $ScrptRt 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -247,6 +239,8 @@ $login = new-UDLoginPage -AuthenticationMethod $auth -WelcomeText "Welcome to WR
 . .\pageEditGroup.ps1
 . .\pageDashboards.ps1
 . .\pageReports.ps1
+. .\pageUserHistory.ps1
+. .\pageGroupHistory.ps1
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -261,6 +255,6 @@ $reportFolder = Publish-UDFolder -Path $PSScriptRoot\..\reports\ -RequestPath "/
 #Start Dashboard
 Start-UDDashboard -Port 10000 -AllowHttpForLogin -Content {
     
-    New-UDDashboard -Login $login -Pages @($pageDBSysadm, $pageDBDepLead, $pageDBAuditor, $PageAddUser, $PageEditUser, $PageEditUserDyn, $PageEditGroup, $PageEditGroupDyn, $PageReports, $PageAaRActions, $PageSettings) -Title "Project WRAD" -Color 'Black' -Theme $theme -EndpointInitialization $InitiateWRADEndpoint 
+    New-UDDashboard -Login $login -Pages @($pageDBSysadm, $pageDBDepLead, $pageDBAuditor, $PageAddUser, $PageEditUser, $PageEditUserDyn, $PageEditGroup, $PageEditGroupDyn, $PageUserHistory, $PageUserHistoryDetail, $PageGroupHistory, $PageGroupHistoryDetail, $PageReports, $PageAaRActions, $PageSettings) -Title "Project WRAD" -Color 'Black' -Theme $theme -EndpointInitialization $InitiateWRADEndpoint 
     
 } -PublishedFolder $reportFolder
