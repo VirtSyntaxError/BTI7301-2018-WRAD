@@ -21,13 +21,17 @@ function Connect-WRADDatabase {
 	{
 		try
 		{
+            if (-not (Get-Variable 'WRADDBConnection' -Scope Global -ErrorAction 'Ignore')) {
     
-            [MySql.Data.MySqlClient.MySqlConnection]$Connection = New-Object MySql.Data.MySqlClient.MySqlConnection($ConnectionString)
+                [MySql.Data.MySqlClient.MySqlConnection]$Connection = New-Object MySql.Data.MySqlClient.MySqlConnection($ConnectionString)
 
-            $Global:WRADDBConnection = $Connection
+                $Global:WRADDBConnection = $Connection
 
-            Write-Verbose "Connecting to Database";
-            $Connection.Open()
+                Write-Verbose "Connecting to Database";
+                $Connection.Open()
+            } else {
+                Write-Verbose "Connection already exists";
+            }
         }
 		catch
 		{
