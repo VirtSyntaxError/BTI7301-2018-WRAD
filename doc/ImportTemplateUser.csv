@@ -3,7 +3,7 @@ ObjectGUID,DisplayName,UserPrincipalName,Enabled,Membership;
 ,Bla Blup,bla.blup,TRUE,Group10;group1
 ,Sascha Banz,sascha.banz,FALSE,;
 ,Dario Furigo,furigod,TRUE,group1;group3
-,Beat Schärz,schaerzb,FALSE,group1;
-,Philipp Köfer,koeferp,TRUE,group3;
+,Beat Schaerz,schaerzb,FALSE,group1;
+,Philipp Koefer,koeferp,TRUE,group3;
 ,Christof Jungo,jungoc,TRUE,;
 ,Nicola Michaelis,michaelisn,TRUE,group3;

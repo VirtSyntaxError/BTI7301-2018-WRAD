@@ -25,7 +25,7 @@ Prerequisits
 - MySQL Connector
 -- https://dev.mysql.com/downloads/connector/net/
 -- Download mysql-installer-web-community-X.X.X.X.msi
--- Custom wählen -> MYSQL Connectors->Connector/NET->Connector/NET X.X->Connector/NET X.X.X - X86
+-- Custom wählen -> MYSQL Connectors -> Connector/NET -> Connector/NET X.X -> Connector/NET X.X.X - X86
 -- Ansonsten Standard beibehalten
 
 DB Schema
@@ -33,7 +33,7 @@ DB Schema
 - Import DB Schema
 -- Utility HeidiSQL öffnen & Login mit vorhin gewähltem root-PW
 -- Query SELECT PASSWORD('<yourPW>'); ausführen und Ergebnis kopieren
--- File->Load SQL File->File auswählen
+-- File -> Load SQL File -> File auswählen
 -- Zeile "CREATE USER[...]": Sterne (***) durch kopierten PW-hash ersetzen. 
 -- ZEILE "INSERT INTO Settings[...]" gewünschte Settingvalues setzen
 -- Run Statement
