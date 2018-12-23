@@ -35,7 +35,12 @@ $PageAaRActions = New-UDPage -Id "PageAaRActions" -URL "/AaR/:action" -ArgumentL
         $title = "User report"
         $text = "The user report has been created. Click the link to open: "
 
+        #Start Task and wait until it is finished
         Start-ScheduledTask -TaskName "WRADUsersReport"
+        while((Get-ScheduledTask -TaskName "WRADUsersReport").State -ne "Ready"){
+            Start-Sleep -Seconds 3
+        }
+
         $report = $true
 
     } elseif ($action  -eq "EvntRprt") {
@@ -43,7 +48,12 @@ $PageAaRActions = New-UDPage -Id "PageAaRActions" -URL "/AaR/:action" -ArgumentL
         $title = "Event report"
         $text = "The user report has been created. Click the link to open: "
         
+        #Start Task and wait until it is finished
         Start-ScheduledTask -TaskName "WRADEventsReport"
+        while((Get-ScheduledTask -TaskName "WRADEventsReport").State -ne "Ready"){
+            Start-Sleep -Seconds 3
+        }
+
         $report = $true
 
     } elseif ($action  -eq "BothRprt") {
@@ -51,13 +61,25 @@ $PageAaRActions = New-UDPage -Id "PageAaRActions" -URL "/AaR/:action" -ArgumentL
         $title = "Event and User report"
         $text = "The user report has been created. Click the link to open: "
         
+        #Start Task and wait until it is finished
         Start-ScheduledTask -TaskName "WRADFullReport"
+        while((Get-ScheduledTask -TaskName "WRADFullReport").State -ne "Ready"){
+            Start-Sleep -Seconds 3
+        }
+
         $report = $true
 
     } elseif ($action  -eq "SIVrgl") {
         #Action: Run should/be comparison
         $title = "Soll- / Ist-Vergleich"
         $text = "The comparison run successfully."
+
+        Start-ScheduledTask -TaskName "WRADGetISTAndCompare"
+
+        while((Get-ScheduledTask -TaskName "WRADGetISTAndCompare").State -ne "Ready"){
+            Start-Sleep -Seconds 5
+        }
+
     } elseif ($action  -eq "UsrImport") {
         #Action: Import USer CSV
         $folder = Convert-Path "$Script:Scriptpath\..\csv\"
