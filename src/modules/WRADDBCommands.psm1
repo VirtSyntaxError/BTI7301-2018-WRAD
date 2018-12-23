@@ -63,13 +63,53 @@ function Connect-WRADDatabase {
     #>
 }
 
+function Close-WRADDBConnection {
+    begin
+	{
+	}
+	Process
+	{
+		try
+		{
+            $Global:WRADDBConnection.Close()
+        }
+		catch
+		{
+			Write-Error -Message $_.Exception.Message
+		}
+	}
+
+    <#
+    .SYNOPSIS
+
+    Close a WRAD Database connection.
+
+    .DESCRIPTION
+
+    Closes the database connection to localhost.
+
+    .INPUTS
+
+    None. You cannot pipe objects to Close-WRADDBConnection.
+
+    .OUTPUTS
+
+    Nothing.
+
+    .EXAMPLE
+
+    C:\PS> Close-WRADDBConnection
+    
+    #>
+}
+
 function Invoke-MariaDBQuery {
 	Param
 	(
         [Parameter()]
 		[ValidateNotNullOrEmpty()]
         [MySql.Data.MySqlClient.MySqlConnection]
-		$Connection = $Global:WRADDBConnection,
+		$Connection,
 
 		[Parameter(Mandatory)]
 		[ValidateNotNullOrEmpty()]
@@ -82,7 +122,14 @@ function Invoke-MariaDBQuery {
 	{
 		try
 		{
-			
+            # Connect to database
+            Write-Verbose "Connecting to database"
+            Connect-WRADDatabase
+
+            if(-not $Connection){
+                $Connection = $Global:WRADDBConnection	
+            }
+
 			[MySql.Data.MySqlClient.MySqlCommand]$Command = New-Object MySql.Data.MySqlClient.MySqlCommand
 			$command.Connection = $Connection
 			$command.CommandText = $Query
@@ -95,6 +142,9 @@ function Invoke-MariaDBQuery {
             }
 			$Dataset.Tables.foreach{$_}
             Write-Verbose "Query succeeded"
+
+            Write-Verbose "Closing database connection"
+            Close-WRADDBConnection	
 		}
 		catch
 		{
@@ -3520,6 +3570,3 @@ function New-WRADEvent {
 
     #>
 }
-
-# Connect to database on module import
-Connect-WRADDatabase
