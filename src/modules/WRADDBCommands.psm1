@@ -21,17 +21,12 @@ function Connect-WRADDatabase {
 	{
 		try
 		{
-            if (-not (Get-Variable 'WRADDBConnection' -Scope Global -ErrorAction 'Ignore')) {
-    
                 [MySql.Data.MySqlClient.MySqlConnection]$Connection = New-Object MySql.Data.MySqlClient.MySqlConnection($ConnectionString)
-
-                $Global:WRADDBConnection = $Connection
 
                 Write-Verbose "Connecting to Database";
                 $Connection.Open()
-            } else {
-                Write-Verbose "Connection already exists";
-            }
+
+                return $Connection
         }
 		catch
 		{
@@ -54,7 +49,7 @@ function Connect-WRADDatabase {
 
     .OUTPUTS
 
-    Sets the current connection in a global variable named WRADDBConnection.
+    Returns the mysql connection.
 
     .EXAMPLE
 
@@ -64,6 +59,14 @@ function Connect-WRADDatabase {
 }
 
 function Close-WRADDBConnection {
+	Param
+	(
+        [Parameter(Mandatory=$true)]
+		[ValidateNotNullOrEmpty()]
+        [MySql.Data.MySqlClient.MySqlConnection]
+		$Connection
+    )
+
     begin
 	{
 	}
@@ -71,7 +74,7 @@ function Close-WRADDBConnection {
 	{
 		try
 		{
-            $Global:WRADDBConnection.Dispose()
+            $Connection.Dispose()
         }
 		catch
 		{
@@ -86,8 +89,11 @@ function Close-WRADDBConnection {
 
     .DESCRIPTION
 
-    Closes the database connection to localhost.
-
+    Closes the database connection specified.
+ 
+    .PARAMETER Connection
+    Specifies the connection to a database.
+    
     .INPUTS
 
     None. You cannot pipe objects to Close-WRADDBConnection.
@@ -98,7 +104,7 @@ function Close-WRADDBConnection {
 
     .EXAMPLE
 
-    C:\PS> Close-WRADDBConnection
+    C:\PS> Close-WRADDBConnection -Connection $Connection
     
     #>
 }
@@ -122,12 +128,11 @@ function Invoke-MariaDBQuery {
 	{
 		try
 		{
-            # Connect to database
-            Write-Verbose "Connecting to database"
-            Connect-WRADDatabase
 
             if(-not $Connection){
-                $Connection = $Global:WRADDBConnection	
+                # Connect to database
+                Write-Verbose "Connecting to database"
+                $Connection = Connect-WRADDatabase
             }
 
 			[MySql.Data.MySqlClient.MySqlCommand]$Command = New-Object MySql.Data.MySqlClient.MySqlCommand
@@ -149,7 +154,7 @@ function Invoke-MariaDBQuery {
 		}
         Finally {
             Write-Verbose "Closing database connection"
-            Close-WRADDBConnection	
+            Close-WRADDBConnection $Connection
         }
 	}
     <#
@@ -162,7 +167,7 @@ function Invoke-MariaDBQuery {
     Invokes the given query to the given connection and catches errors.
 
     .PARAMETER Connection
-    Specifies the connection to a database. The global connection is the default.
+    Specifies the connection to a database.
 
     .PARAMETER Query
     Specifies the SQL query.
