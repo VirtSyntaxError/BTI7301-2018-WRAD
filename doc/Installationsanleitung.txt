@@ -49,8 +49,7 @@ Installation Tasks
 
 Start WRAD
 - Mit Powershell src/GUI/UDGUI_Lokal.ps1 ausführen
+- Beim ersten Mal muss diese zwei Mal ausgeführt werden.
 - Der Port auf welchem das GUI verfügbar ist wird ausgegeben
 - Per Firefox auf localhost:<PORT>/login zugreifen und einloggen mit Admin:admin
-
-
 
