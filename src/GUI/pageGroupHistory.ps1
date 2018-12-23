@@ -9,8 +9,6 @@ $PageGroupHistory = New-UDPage -Name "Group History" -AuthorizedRole @("WRADadmi
             #List All User
             New-UDGrid -Title "All user" -Header @("Groupname", "Group Type", "Create date", "History") -Properties @("Groupname", "GroupType", "CreatedDate", "History") -Endpoint {
                 
-                $Global:WRADDBConnection = $ArgumentList[0].dbconnection
-
                 $AllGroupGrid = @()
                 $AllGroup = Get-WRADGroup
 
@@ -27,11 +25,8 @@ $PageGroupHistory = New-UDPage -Name "Group History" -AuthorizedRole @("WRADadmi
 $PageGroupHistoryDetail = New-UDPage -URL "/GroupHistory/:grpguid" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","Auditor","DepLead") -Endpoint {
     param($grpguid)
 
-    #load-WRADDBCommands
-    $Global:WRADDBConnection = $ArgumentList[0].dbconnection
+    #loadWRADModules
     $Script:Scriptpath = $ArgumentList[0].scrptroot
-    $DBConnect = $Global:WRADDBConnection
-
     load-WRADModules
 
     #History View of Group

@@ -8,7 +8,7 @@ $PageEditGroup = New-UDPage -Name "Edit Group" -AuthorizedRole @("WRADadmin","De
         New-UDColumn -Size 6 -Content {
             New-UDGrid -Title "All user" -Header @("CommonName", "Create date", "Group Type", "Security Type", "Edit") -Properties @("CommonName", "CreatedDate", "GroupType", "SecurityType", "Edit") -Endpoint {
                 
-                $Global:WRADDBConnection = $ArgumentList[0].dbconnection
+                #$Global:WRADDBConnection = $ArgumentList[0].dbconnection
 
                 $AllGroupGrid = @()
                 $AllGroups = Get-WRADGroup -Reference
@@ -27,8 +27,6 @@ $AllGrpFUsr = @();
 $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","DepLead") -Endpoint {
 	param($grpguid)
 
-    $Global:WRADDBConnection = $ArgumentList[0].dbconnection
-    $DBConnect = $Global:WRADDBConnection
     $Script:Scriptpath = $ArgumentList[0].scrptroot
 
     load-WRADModules
@@ -72,10 +70,6 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
                     href = "$grpguid"
                     onClick = {
                         #Remove selected Group from Group
-                        if([string]::IsNullOrEmpty($Global:WRADDBConnection)){
-                            $Global:WRADDBConnection = $DBConnect
-                        }
-
                         Remove-WRADGroupOfGroup -Reference -ChildGroupObjectGUID $grpguid -ParentGroupObjectGUID $tg.ObjectGUID
                         Write-WRADLog -logtext "Removed Group $logGrpName from Group $($tg.CommonName)"
                     } 
@@ -106,10 +100,6 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
                     href = "$grpguid"
                     onClick = {
                         #Remove selected Group from Group
-                        if([string]::IsNullOrEmpty($Global:WRADDBConnection)){
-                            $Global:WRADDBConnection = $DBConnect
-                        }
-
                         Remove-WRADGroupOfGroup -Reference -ChildGroupObjectGUID $tg.ObjectGUID -ParentGroupObjectGUID $grpguid
                         Write-WRADLog -logtext "Removed Group $($tg.CommonName) from $logGrpName" -level 0
                     } 
@@ -144,10 +134,6 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
                     href = "$grpguid"
                     onClick = {
                         #Remove User from selected
-                        if([string]::IsNullOrEmpty($Global:WRADDBConnection)){
-                            $Global:WRADDBConnection = $DBConnect
-                        }
-
                         Remove-WRADGroupOfUser -Reference -UserObjectGUID $($UsrInGrp.ObjectGUID) -GroupObjectGUID $grpguid
                         Write-WRADLog -logtext "Removed User $($UsrInGrp.UserName) from $logGrpName" -level 0
                     } 
@@ -181,10 +167,6 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
                     href = "$grpguid"
                     onClick = {
                         #Add Group to selected Group
-                        if([string]::IsNullOrEmpty($Global:WRADDBConnection)){
-                            $Global:WRADDBConnection = $DBConnect
-                        }
-
                         New-WRADGroupOfGroup -Reference -ChildGroupObjectGUID $group -ParentGroupObjectGUID $grpguid
                         Write-WRADLog -logtext "Added Group $($tg.CommonName) to Group $logGrpName" -level 0
                     } 
@@ -217,10 +199,6 @@ $PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid"
                     href = "$grpguid"
                     onClick = {
                         #Add User to Group
-                        if([string]::IsNullOrEmpty($Global:WRADDBConnection)){
-                            $Global:WRADDBConnection = $DBConnect
-                        }
-
                         New-WRADGroupOfUser -Reference -UserObjectGUID $usr -GroupObjectGUID $grpguid
                         Write-WRADLog -logtext "Added User $($tu.UserName) to Group $logGrpName" -level 0
                     } 

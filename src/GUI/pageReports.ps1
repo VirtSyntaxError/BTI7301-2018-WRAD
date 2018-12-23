@@ -26,10 +26,7 @@ $PageReports = New-UDPage -Name "Action and Reports" -AuthorizedRole @("WRADadmi
 $PageAaRActions = New-UDPage -Id "PageAaRActions" -URL "/AaR/:action" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","Auditor", "DepLead", "SysAdm") -Endpoint {
 	param($action)
     
-    $Global:WRADDBConnection = $ArgumentList[0].dbconnection
-    $DBConnect = $Global:WRADDBConnection
     $Script:Scriptpath = $ArgumentList[0].scrptroot
-
     load-WRADModules
 
     $report = $false

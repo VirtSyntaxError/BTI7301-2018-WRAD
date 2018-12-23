@@ -28,10 +28,7 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -ArgumentList $WRADEndpo
     param($usrguid)
     #Edit User details with Memberships
 
-    #load-WRADDBCommands
-    $Global:WRADDBConnection = $ArgumentList[0].dbconnection
     $Script:Scriptpath = $ArgumentList[0].scrptroot
-    $DBConnect = $Global:WRADDBConnection
     
     $UsrUN = (Get-WRADUser -Reference -ObjectGUID $usrguid).UserName
 
@@ -88,10 +85,6 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -ArgumentList $WRADEndpo
                     href = "$usrguid"
                     onClick = {
                         #Remove selected Group from Group
-                        if([string]::IsNullOrEmpty($Global:WRADDBConnection)){
-                            $Global:WRADDBConnection = $DBConnect
-                        }
-
                         Remove-WRADGroupOfUser -Reference -UserObjectGUID $usrguid -GroupObjectGUID $newgroup.ObjectGUID
                         Write-WRADLog -logtext "Removed User $UsrUN from Group $($newgroup.CommonName)" -level 0
                     } 
@@ -119,10 +112,6 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -ArgumentList $WRADEndpo
                     href = "$usrguid"
                     onClick = {
                         #Remove selected Group from Group
-                        if([string]::IsNullOrEmpty($Global:WRADDBConnection)){
-                            $Global:WRADDBConnection = $DBConnect
-                        }
-
                         New-WRADGroupOfUser -Reference -UserObjectGUID $usrguid -GroupObjectGUID $tg.ObjectGUID
                         Write-WRADLog -logtext "Added User $UsrUN to Group $($tg.CommonName)" -level 0
                     } 

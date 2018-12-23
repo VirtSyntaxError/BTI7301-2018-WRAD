@@ -10,8 +10,6 @@ $PageUserHistory = New-UDPage -Name "User History" -AuthorizedRole @("WRADadmin"
             #List All User
             New-UDGrid -Title "All user" -Header @("Username", "Displayname", "Create date", "Enabled", "History") -Properties @("Username", "DisplayName", "CreatedDate", "Enabled", "History") -Endpoint {
                 
-                $Global:WRADDBConnection = $ArgumentList[0].dbconnection
-
                 $AllUserGrid = @()
                 $AllUser = Get-WRADUser
 
@@ -29,9 +27,7 @@ $PageUserHistoryDetail = New-UDPage -URL "/UserHistory/:usrguid" -ArgumentList $
     param($usrguid)
 
     #load-WRADDBCommands
-    $Global:WRADDBConnection = $ArgumentList[0].dbconnection
     $Script:Scriptpath = $ArgumentList[0].scrptroot
-    $DBConnect = $Global:WRADDBConnection
 
     load-WRADModules
 
