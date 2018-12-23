@@ -48,7 +48,7 @@ Installation Tasks
 - Den Task Scheduler öffnen und die 4 Tasks mit den Defaultwerten importieren
 
 Start WRAD
-- Mit Powershell src/GUI/UDGUI.ps1 ausführen
+- Mit Powershell src/GUI/UDGUI_Lokal.ps1 ausführen
 - Der Port auf welchem das GUI verfügbar ist wird ausgegeben
 - Per Firefox auf localhost:<PORT>/login zugreifen und einloggen mit Admin:admin
 
