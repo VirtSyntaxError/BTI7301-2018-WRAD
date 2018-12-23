@@ -71,7 +71,7 @@ function Close-WRADDBConnection {
 	{
 		try
 		{
-            $Global:WRADDBConnection.Close()
+            $Global:WRADDBConnection.Dispose()
         }
 		catch
 		{
@@ -142,14 +142,15 @@ function Invoke-MariaDBQuery {
             }
 			$Dataset.Tables.foreach{$_}
             Write-Verbose "Query succeeded"
-
-            Write-Verbose "Closing database connection"
-            Close-WRADDBConnection	
 		}
 		catch
 		{
 			Write-Error -Message $_.Exception.Message
 		}
+        Finally {
+            Write-Verbose "Closing database connection"
+            Close-WRADDBConnection	
+        }
 	}
     <#
     .SYNOPSIS
