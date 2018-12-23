@@ -1,4 +1,4 @@
-WRAD Installation
+﻿WRAD Installation
 BFH: Projekt 1
 
 Team:
@@ -42,6 +42,10 @@ DB Schema
 Installation WRAD
 - Git Repo an gewünschten Ort klonen: https://github.com/VirtSyntaxError/BTI7301-2018-WRAD/tree/master/src
 - Von Hand File "db_pw.ini" im Ordner src/modules erstellen und dort das vorher gewählte <yourPW> eintragen.
+
+Installation Tasks
+- Bei jedem XML-Tasks im Ordner src/tasks die Variable %PATH% mit dem Installationspfad anpassen
+- Den Task Scheduler öffnen und die 4 Tasks mit den Defaultwerten importieren
 
 Start WRAD
 - Mit Powershell src/GUI/UDGUI.ps1 ausführen
