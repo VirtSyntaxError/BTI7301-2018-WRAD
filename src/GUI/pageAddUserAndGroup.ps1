@@ -1,4 +1,4 @@
-$PageAddUser = New-UDPage -Name "Add User or Group" -AuthorizedRole @("WRADadmin","Auditor") -Content {
+$PageAddUser = New-UDPage -Name "Add User or Group" -AuthorizedRole @("WRADadmin","DepLead") -Content {
     New-UDRow {
 
         #Add User

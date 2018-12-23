@@ -1,5 +1,5 @@
 #History of User
-$PageUserHistory = New-UDPage -Name "User History" -AuthorizedRole @("WRADadmin","Auditor") -AutoRefresh -RefreshInterval 30 -Content {
+$PageUserHistory = New-UDPage -Name "User History" -AuthorizedRole @("WRADadmin","Auditor","DepLead") -AutoRefresh -RefreshInterval 30 -Content {
     #Show User
     New-UDRow {
         New-UDColumn -Size 3 -Content {
@@ -25,7 +25,7 @@ $PageUserHistory = New-UDPage -Name "User History" -AuthorizedRole @("WRADadmin"
     }
 }
 
-$PageUserHistoryDetail = New-UDPage -URL "/UserHistory/:usrguid" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","Auditor") -Endpoint {
+$PageUserHistoryDetail = New-UDPage -URL "/UserHistory/:usrguid" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","Auditor","DepLead") -Endpoint {
     param($usrguid)
 
     #load-WRADDBCommands

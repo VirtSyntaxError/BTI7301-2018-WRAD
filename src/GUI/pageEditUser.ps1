@@ -1,5 +1,5 @@
 #Edit User
-$PageEditUser = New-UDPage -Name "Edit User" -AuthorizedRole @("WRADadmin","Auditor") -AutoRefresh -RefreshInterval 30 -Content {
+$PageEditUser = New-UDPage -Name "Edit User" -AuthorizedRole @("WRADadmin","DepLead") -AutoRefresh -RefreshInterval 30 -Content {
     #Show User
     New-UDRow {
         New-UDColumn -Size 3 -Content {
@@ -24,7 +24,7 @@ $PageEditUser = New-UDPage -Name "Edit User" -AuthorizedRole @("WRADadmin","Audi
     }
 }
 
-$PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","Auditor") -Endpoint {
+$PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","DepLead") -Endpoint {
     param($usrguid)
     #Edit User details with Memberships
 
@@ -32,6 +32,8 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -ArgumentList $WRADEndpo
     $Global:WRADDBConnection = $ArgumentList[0].dbconnection
     $Script:Scriptpath = $ArgumentList[0].scrptroot
     $DBConnect = $Global:WRADDBConnection
+    
+    $UsrUN = (Get-WRADUser -Reference -ObjectGUID $usrguid).UserName
 
     load-WRADModules
     enable-WRADLogging
@@ -91,7 +93,7 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -ArgumentList $WRADEndpo
                         }
 
                         Remove-WRADGroupOfUser -Reference -UserObjectGUID $usrguid -GroupObjectGUID $newgroup.ObjectGUID
-                        Write-WRADLog -logtext "Removed User $usrguid from Group $($newgroup.CommonName)" -level 0
+                        Write-WRADLog -logtext "Removed User $UsrUN from Group $($newgroup.CommonName)" -level 0
                     } 
                 } -Content {"Leave"}
 
@@ -122,7 +124,7 @@ $PageEditUserDyn = New-UDPage -URL "/EditUser/:usrguid" -ArgumentList $WRADEndpo
                         }
 
                         New-WRADGroupOfUser -Reference -UserObjectGUID $usrguid -GroupObjectGUID $tg.ObjectGUID
-                        Write-WRADLog -logtext "Added User $usrguid to Group $($tg.CommonName)" -level 0
+                        Write-WRADLog -logtext "Added User $UsrUN to Group $($tg.CommonName)" -level 0
                     } 
                 } -Content {"Add"}
 

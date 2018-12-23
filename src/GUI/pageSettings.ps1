@@ -1,5 +1,5 @@
 
-$PageSettings = New-UDPage -Name "Settings" -AuthorizedRole @("WRADadmin","Auditor") -Content {
+$PageSettings = New-UDPage -Name "Settings" -AuthorizedRole @("WRADadmin","SysAdm") -Content {
     New-UDRow {
         New-UDColumn -size 3 -Content {
 			

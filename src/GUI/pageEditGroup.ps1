@@ -1,5 +1,5 @@
 #Edit Group
-$PageEditGroup = New-UDPage -Name "Edit Group" -AuthorizedRole @("WRADadmin","Auditor") -AutoRefresh -RefreshInterval 30 -Content {
+$PageEditGroup = New-UDPage -Name "Edit Group" -AuthorizedRole @("WRADadmin","DepLead") -AutoRefresh -RefreshInterval 30 -Content {
     
     New-UDRow {
         New-UDColumn -Size 3 -Content {
@@ -24,7 +24,7 @@ $PageEditGroup = New-UDPage -Name "Edit Group" -AuthorizedRole @("WRADadmin","Au
 
 $AllGrpFGrp = @();
 $AllGrpFUsr = @();
-$PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","Auditor") -Endpoint {
+$PageEditGroupDyn = New-UDPage -Id "PageEditGroupDyn" -URL "/EditGroup/:grpguid" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","DepLead") -Endpoint {
 	param($grpguid)
 
     $Global:WRADDBConnection = $ArgumentList[0].dbconnection

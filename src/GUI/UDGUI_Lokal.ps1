@@ -73,7 +73,7 @@ function enable-WRADLogging {
 #Dashboard Functions
 function get-WRADDBADInconsistence {
     #Get WRAD DashBoard: ActiveDirectory Inconsistence
-    #Return data for false rights and links of user and groups
+    #Return data for inconsitent rights and links of user and groups
     Param()
     try {
         #get Event Texts
@@ -151,12 +151,8 @@ function get-WRADDBUserStatusGrid {
         $usrStatus += @{descr = "Total Users"; count = $allUsrCount}
         $usrStatus += @{descr = "Total Groups"; count = $allGrpCnt}
                 
-        #Return vlaues
-        $title = "Last logon"
-        $header = @("Description", "Count")
-        $prprts =  @("descr", "count")
-        
-        return($title, $header, $prprts, $usrStatus)
+        #Return vlaues        
+        return($usrStatus)
     }
     catch{
         Write-Error -Message $_.Exception.Message
@@ -186,13 +182,8 @@ function get-WRADDBUserStatusChart {
         $usrStatus += @{descr = "Never loged in"; prcnt = ($users_never.Count/$allUsrCount)*100}
                 
         #Return vlaues
-        $title = "Last logon chart [%]"
-        $type = "bar"
-        $lblPrprt = "descr"
-        $dataPrprt = "prcnt"
-        $lbl = "Users [%]"
         
-        return($title, $type, $lblPrprt, $dataPrprt, $lbl, $usrStatus)
+        return($usrStatus)
     }
     catch{
         Write-Error -Message $_.Exception.Message
@@ -206,9 +197,7 @@ load-WRADModules
 
 $InitiateWRADEndpoint = New-UDEndpointInitialization -Module $PSScriptRoot\..\modules\WRADDBCommands.psm1 -Function enable-WRADLogging,load-WRADModules,get-WRADDBLastChanges,get-WRADDBADInconsistence,get-WRADDBUserStatusGrid,get-WRADDBUserStatusChart #-Variable $ScrptRt 
 
-#----------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #Login
 $auth = New-UDAuthenticationMethod -Endpoint {
 	param([PSCredential]$Credentials)
@@ -225,13 +214,18 @@ $auth = New-UDAuthenticationMethod -Endpoint {
 		New-UDAuthenticationResult -Success -UserName $Credentials.UserName -Role "Auditor"
     } ElseIf ($Credentials.UserName -eq "Admin" -and $Credentials.GetNetworkCredential().Password -eq "Admin") {
 		New-UDAuthenticationResult -Success -UserName $Credentials.UserName -Role "WRADadmin"
+    } ElseIf ($Credentials.UserName -eq "DepLead" -and $Credentials.GetNetworkCredential().Password -eq "DepLead") {
+		New-UDAuthenticationResult -Success -UserName $Credentials.UserName -Role "DepLead"
+    } ElseIf ($Credentials.UserName -eq "SysAdm" -and $Credentials.GetNetworkCredential().Password -eq "SysAdm") {
+		New-UDAuthenticationResult -Success -UserName $Credentials.UserName -Role "SysAdm"
     }
 
 	New-UDAuthenticationResult -ErrorMessage "You are not allowed to login!"
 }
     
 $login = new-UDLoginPage -AuthenticationMethod $auth -WelcomeText "Welcome to WRAD" -PageBackgroundColor "white" -LoginFormFontColor "black" -LoginFormBackgroundColor "grey"
-#---------------------------------------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #Load outsourced Pages
 . .\pageSettings.ps1
 . .\pageAddUserAndGroup.ps1
@@ -241,7 +235,6 @@ $login = new-UDLoginPage -AuthenticationMethod $auth -WelcomeText "Welcome to WR
 . .\pageReports.ps1
 . .\pageUserHistory.ps1
 . .\pageGroupHistory.ps1
-#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #Close runnig Dashboards
@@ -249,12 +242,24 @@ Get-UDDashboard | Stop-UDDashboard
 
 #Themes Azure,Blue,Default,Earth,Green,Red
 $theme = Get-UDTheme -Name "Azure"
-#Publish Folder for Reports
-$reportFolder = Publish-UDFolder -Path $PSScriptRoot\..\reports\ -RequestPath "/Reports"
 
 #Start Dashboard
 Start-UDDashboard -Port 10000 -AllowHttpForLogin -Content {
     
-New-UDDashboard -Login $login -Pages @($pageDBSysadm, $pageDBDepLead, $pageDBAuditor, $PageAddUser, $PageEditUser, $PageEditUserDyn, $PageEditGroup, $PageEditGroupDyn, $PageUserHistory, $PageUserHistoryDetail, $PageGroupHistory, $PageGroupHistoryDetail, $PageReports, $PageAaRActions, $PageSettings) -Title "Project WRAD" -Color 'Black' -Theme $theme -EndpointInitialization $InitiateWRADEndpoint 
+New-UDDashboard -Login $login -Pages @($pageDBSysadm, 
+    $pageDBDepLead, 
+    $pageDBAuditor, 
+    $PageAddUser, 
+    $PageEditUser, 
+    $PageEditUserDyn, 
+    $PageEditGroup, 
+    $PageEditGroupDyn, 
+    $PageUserHistory, 
+    $PageUserHistoryDetail, 
+    $PageGroupHistory, 
+    $PageGroupHistoryDetail, 
+    $PageReports, 
+    $PageAaRActions, 
+    $PageSettings) -Title "Project WRAD" -Color 'Black' -Theme $theme -EndpointInitialization $InitiateWRADEndpoint 
 
 }

@@ -1,5 +1,5 @@
 #History of Group
-$PageGroupHistory = New-UDPage -Name "Group History" -AuthorizedRole @("WRADadmin","Auditor") -AutoRefresh -RefreshInterval 30 -Content {
+$PageGroupHistory = New-UDPage -Name "Group History" -AuthorizedRole @("WRADadmin","Auditor","DepLead") -AutoRefresh -RefreshInterval 30 -Content {
     #Show Group
     New-UDRow {
         New-UDColumn -Size 3 -Content {
@@ -24,7 +24,7 @@ $PageGroupHistory = New-UDPage -Name "Group History" -AuthorizedRole @("WRADadmi
     }
 }
 
-$PageGroupHistoryDetail = New-UDPage -URL "/GroupHistory/:grpguid" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","Auditor") -Endpoint {
+$PageGroupHistoryDetail = New-UDPage -URL "/GroupHistory/:grpguid" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","Auditor","DepLead") -Endpoint {
     param($grpguid)
 
     #load-WRADDBCommands

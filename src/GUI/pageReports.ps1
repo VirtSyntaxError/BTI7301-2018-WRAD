@@ -1,5 +1,5 @@
 #Page: Reports
-$PageReports = New-UDPage -Name "Action and Reports" -AuthorizedRole @("WRADadmin","Auditor", "DepLead", "SysAdmin") -AutoRefresh -RefreshInterval 30 -Content {
+$PageReports = New-UDPage -Name "Action and Reports" -AuthorizedRole @("WRADadmin","Auditor", "DepLead", "SysAdm") -AutoRefresh -RefreshInterval 30 -Content {
     New-UDRow {
         New-UDColumn -Size 3 -Content {
 
@@ -23,7 +23,7 @@ $PageReports = New-UDPage -Name "Action and Reports" -AuthorizedRole @("WRADadmi
     }
 }
 
-$PageAaRActions = New-UDPage -Id "PageAaRActions" -URL "/AaR/:action" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","Auditor", "DepLead", "SysAdmin") -Endpoint {
+$PageAaRActions = New-UDPage -Id "PageAaRActions" -URL "/AaR/:action" -ArgumentList $WRADEndpointVar -AuthorizedRole @("WRADadmin","Auditor", "DepLead", "SysAdm") -Endpoint {
 	param($action)
     
     $Global:WRADDBConnection = $ArgumentList[0].dbconnection
