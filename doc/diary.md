@@ -1,5 +1,25 @@
 # Meetings
 
+## 2019-01-09
+### Attendees
+* Beat Schärz (pidu2)
+* Dario Furigo (VirtSyntaxError)
+* Philipp Köfer (kofep1)
+* Nicola Michaelis (michn2)
+* Christof Jungo
+
+### Agenda
+* Presentation
+
+### Decisions
+
+### ToDo
+Presentation
+* Beat -> Zeitplan und Zielsetzungen/Anforderungen
+* Nicola -> Demo
+* Philipp -> Lösungskonzept und Herausforderungen
+* Dario -> Aufgabenstellung
+
 ## 2018-12-14
 ### Attendees
 * Beat Schärz (pidu2)
