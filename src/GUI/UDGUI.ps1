@@ -227,14 +227,14 @@ $login = new-UDLoginPage -AuthenticationMethod $auth -WelcomeText "Welcome to WR
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #Load outsourced Pages
-. .\pageSettings.ps1
-. .\pageAddUserAndGroup.ps1
-. .\pageEditUser.ps1
-. .\pageEditGroup.ps1
-. .\pageDashboards.ps1
-. .\pageReports.ps1
-. .\pageUserHistory.ps1
-. .\pageGroupHistory.ps1
+. $PSScriptRoot\pageSettings.ps1
+. $PSScriptRoot\pageAddUserAndGroup.ps1
+. $PSScriptRoot\pageEditUser.ps1
+. $PSScriptRoot\pageEditGroup.ps1
+. $PSScriptRoot\pageDashboards.ps1
+. $PSScriptRoot\pageReports.ps1
+. $PSScriptRoot\pageUserHistory.ps1
+. $PSScriptRoot\pageGroupHistory.ps1
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #Close runnig Dashboards
