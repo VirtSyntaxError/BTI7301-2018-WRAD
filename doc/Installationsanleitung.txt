@@ -58,5 +58,5 @@ Start WRAD
 - Beim ersten Mal muss diese zwei Mal ausgeführt werden.
 - Der Port auf welchem das GUI verfügbar ist wird ausgegeben
 - Per Firefox auf localhost:<PORT>/login zugreifen und einloggen mit Admin:admin
-- 
+- Settings nach Wunsch anpassen
 
