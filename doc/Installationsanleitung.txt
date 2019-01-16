@@ -38,11 +38,11 @@ DB Schema
 - Download DB Schema: https://github.com/VirtSyntaxError/BTI7301-2018-WRAD/blob/master/doc/dbschema.sql
 - Import DB Schema
 -- Utility HeidiSQL öffnen & Login mit vorhin gewähltem root-PW
--- Query SELECT PASSWORD('<yourPW>'); ausführen und Ergebnis kopieren
+-- Query SELECT PASSWORD('<yourPW>'); ausführen und Ergebnis kopieren (nicht zwingend dasselbe wie das root PW)
 -- File -> Load SQL File -> File auswählen
 -- Zeile "CREATE USER[...]": Sterne (***) durch kopierten PW-hash ersetzen. 
 -- Run Statement
--- Refresh ausführen (F5)
+-- Refresh ausführen (Grüne Pfeile)
 -- Nun sollte links eine wrad DB existieren
 
 Installation WRAD
