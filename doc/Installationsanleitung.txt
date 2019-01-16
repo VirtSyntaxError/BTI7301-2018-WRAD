@@ -23,6 +23,7 @@ Prerequisits
 -- Powershell als Administrator: Install-Module -Name Posh-SYSLOG -RequiredVersion 3.3
 - Universal Dashboard
 -- Powershell als Administrator: Install-Module PowershellGet -Force
+-- Damit die neuste PowershellGet Version verwendet wird müssen eventuell ältere (1.0.0.1) unter C:\Program Files\WindowsPowershell\Modules\PowershellGet\ weggelöscht und das Powershell Terminal neu gestartet werden.
 -- Powershell als Administrator: Install-Module UniversalDashboard
 - MariaDB 10.3
 -- downloads.mariadb.org -> Nach passendem MSI suchen
@@ -42,7 +43,8 @@ DB Schema
 -- Zeile "CREATE USER[...]": Sterne (***) durch kopierten PW-hash ersetzen. 
 -- ZEILE "INSERT INTO Settings[...]" gewünschte Settingvalues setzen
 -- Run Statement
--- Nun sollte eine wrad DB existieren
+-- Refresh ausführen (F5)
+-- Nun sollte links eine wrad DB existieren
 
 Installation WRAD
 - Git Repo an gewünschten Ort klonen: https://github.com/VirtSyntaxError/BTI7301-2018-WRAD/tree/master/src
