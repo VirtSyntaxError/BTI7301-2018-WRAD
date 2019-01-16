@@ -47,7 +47,7 @@ DB Schema
 
 Installation WRAD
 - Git Repo an gewünschten Ort klonen: https://github.com/VirtSyntaxError/BTI7301-2018-WRAD/tree/master/src
-- Von Hand File "db_pw.ini" im Ordner src/modules erstellen und dort das vorher gewählte <yourPW> eintragen.
+- Von Hand File "db_pw.ini" im Ordner src/modules erstellen und dort das vorher gewählte <yourPW> im Klartext eintragen.
 
 Installation Tasks
 - Bei jedem XML-Tasks im Ordner src/tasks die Variable %PATH% mit dem Installationspfad anpassen
