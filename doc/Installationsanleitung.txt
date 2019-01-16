@@ -54,6 +54,7 @@ Installation Tasks
 - Den Task Scheduler öffnen und die 4 Tasks mit den Defaultwerten importieren
 
 Start WRAD
+- Powershell als Admin: Unblock-File src\* gui\*
 - Mit Powershell src/GUI/UDGUI.ps1 ausführen
 - Beim ersten Mal muss diese zwei Mal ausgeführt werden.
 - Der Port auf welchem das GUI verfügbar ist wird ausgegeben
