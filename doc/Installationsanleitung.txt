@@ -14,11 +14,16 @@ Christof Jungo
 Dezember 2018
 -------------------------------------------------
 Prerequisits
+- Windows Server 2012/2016
+-- Server muss in AD gejoint sein
+-- Powershell als Administrator: Add-WindowsFeature RSAT-AD-Powershell
 - .NET 4.7.2 oder höher
 -- https://dotnet.microsoft.com/download/dotnet-framework-runtime
 - Posh-SYSLOG 3.3
--- Powershell als Administrator:
--- Install-Module -Name Posh-SYSLOG -RequiredVersion 3.3
+-- Powershell als Administrator: Install-Module -Name Posh-SYSLOG -RequiredVersion 3.3
+- Universal Dashboard
+-- Powershell als Administrator: Install-Module PowershellGet -Force
+-- Powershell als Administrator: Install-Module UniversalDashboard
 - MariaDB 10.3
 -- downloads.mariadb.org -> Nach passendem MSI suchen
 -- Bei der Installation gewünschtes root PW setzen ansonsten Standard Werte
