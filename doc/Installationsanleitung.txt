@@ -41,7 +41,6 @@ DB Schema
 -- Query SELECT PASSWORD('<yourPW>'); ausführen und Ergebnis kopieren
 -- File -> Load SQL File -> File auswählen
 -- Zeile "CREATE USER[...]": Sterne (***) durch kopierten PW-hash ersetzen. 
--- ZEILE "INSERT INTO Settings[...]" gewünschte Settingvalues setzen
 -- Run Statement
 -- Refresh ausführen (F5)
 -- Nun sollte links eine wrad DB existieren
@@ -59,4 +58,5 @@ Start WRAD
 - Beim ersten Mal muss diese zwei Mal ausgeführt werden.
 - Der Port auf welchem das GUI verfügbar ist wird ausgegeben
 - Per Firefox auf localhost:<PORT>/login zugreifen und einloggen mit Admin:admin
+- 
 
