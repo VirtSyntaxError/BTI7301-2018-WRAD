@@ -24,7 +24,7 @@ function Get-WRADReportEvents{
 	}
     Import-Module -Name ($PSScriptRoot+"\WRADEventText.psd1")
     # get events from DB and then convert eventID to actual message
-    $events = Get-WRADEvent
+    $events = Get-WRADEvent -NotResolved
     $texts = Get-WRADEventText -evs $events
     # get events that are newer than 14 days
     $14_days_date = (Get-Date).AddDays(-14)
